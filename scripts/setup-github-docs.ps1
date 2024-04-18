@@ -61,13 +61,13 @@ function Expand-DocsTemplate {
   }
   Copy-Item $TemplateRoot $Dest -Recurse
 
-  $docsHost = Get-DocsHost -Domain $Site.Domain
+  $siteHost = Get-SiteHost -Site $Site
   $replacements = @{
     '{{BRAND}}'    = $Site.Brand
     '{{CHINESE}}'  = $Site.Chinese
     '{{DOMAIN}}'   = $Site.Domain
     '{{ORG}}'      = $Site.Org
-    '{{DOCS_HOST}}'= $docsHost
+    '{{DOCS_HOST}}'= $siteHost
     '{{TAGLINE}}'  = $Site.Tagline
     '{{YEAR}}'     = (Get-Date).Year.ToString()
   }
@@ -139,36 +139,68 @@ function Push-DocsContent {
   return "pushed"
 }
 
+function Get-PagesCname {
+  param([string]$Repo)
+  gh api "repos/$Repo/pages" --jq '.cname' 2>$null
+  if ($LASTEXITCODE -ne 0) { return $null }
+  return (gh api "repos/$Repo/pages" --jq '.cname' 2>$null)
+}
+
+function Invoke-GhApiJson {
+  param(
+    [string]$Endpoint,
+    [string]$Method = "GET",
+    [hashtable]$Body
+  )
+  $json = $Body | ConvertTo-Json -Compress
+  $tmp = [System.IO.Path]::GetTempFileName()
+  try {
+    [System.IO.File]::WriteAllText($tmp, $json)
+    if ($Method -eq "GET") {
+      gh api $Endpoint 2>$null
+    } else {
+      gh api $Endpoint -X $Method --input $tmp 2>$null
+    }
+    return ($LASTEXITCODE -eq 0)
+  } finally {
+    Remove-Item $tmp -Force -ErrorAction SilentlyContinue
+  }
+}
+
 function Enable-GithubPages {
   param([hashtable]$Site)
 
   $org = $Site.Org
   $repo = "$org/docs"
-  $docsHost = Get-DocsHost -Domain $Site.Domain
+  $siteHost = Get-SiteHost -Site $Site
+  $branch = Get-RepoDefaultBranch -Org $org
 
   if (-not (Test-RepoExists -Org $org)) {
     Write-Host "  skip Pages: $repo does not exist" -ForegroundColor Yellow
     return "no-repo"
   }
 
-  $pages = gh api "repos/$repo/pages" 2>$null
-  if ($LASTEXITCODE -ne 0) {
-    gh api "repos/$repo/pages" -X POST -f build_type=workflow | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "Failed to enable Pages on $repo" }
+  gh api "repos/$repo/pages" 2>$null | Out-Null
+  $pagesEnabled = ($LASTEXITCODE -eq 0)
+  if (-not $pagesEnabled) {
+    $ok = Invoke-GhApiJson -Endpoint "repos/$repo/pages" -Method POST -Body @{ build_type = "workflow" }
+    if (-not $ok) { throw "Failed to enable Pages on $repo" }
     Write-Host "  Pages enabled (workflow) on $repo" -ForegroundColor Green
   } else {
-    gh api "repos/$repo/pages" -X PUT -f build_type=workflow | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "Failed to update Pages on $repo" }
     Write-Host "  Pages already enabled on $repo" -ForegroundColor DarkGray
   }
 
-  $domains = gh api "repos/$repo/pages/domains" --jq '.[].name' 2>$null
-  if ($domains -notcontains $docsHost) {
-    gh api "repos/$repo/pages/domains" -X POST -f "domain=$docsHost" | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw "Failed to set custom domain $docsHost on $repo" }
-    Write-Host "  custom domain set: $docsHost" -ForegroundColor Green
+  $currentCname = Get-PagesCname -Repo $repo
+  if ($currentCname -eq $siteHost) {
+    Write-Host "  custom domain OK: $siteHost" -ForegroundColor DarkGray
   } else {
-    Write-Host "  custom domain OK: $docsHost" -ForegroundColor DarkGray
+    $ok = Invoke-GhApiJson -Endpoint "repos/$repo/pages" -Method PUT -Body @{
+      build_type = "workflow"
+      cname      = $siteHost
+      source     = @{ branch = $branch; path = "/" }
+    }
+    if (-not $ok) { throw "Failed to set custom domain $siteHost on $repo" }
+    Write-Host "  custom domain set: $siteHost" -ForegroundColor Green
   }
 
   return "ok"
@@ -179,11 +211,11 @@ function New-GithubDocsRepo {
 
   $org = $Site.Org
   $repo = "$org/docs"
-  $docsHost = Get-DocsHost -Domain $Site.Domain
-  $desc = "$($Site.Brand) ($($Site.Chinese)) documentation — https://$docsHost"
+  $siteHost = Get-SiteHost -Site $Site
+  $desc = "$($Site.Brand) ($($Site.Chinese)) — https://$siteHost"
 
   Write-Host ""
-  Write-Host "=== $org/docs ($docsHost) ===" -ForegroundColor Cyan
+  Write-Host "=== $org/docs ($siteHost) ===" -ForegroundColor Cyan
 
   $exists = Test-RepoExists -Org $org
   if (-not $exists) {

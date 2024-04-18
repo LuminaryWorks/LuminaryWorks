@@ -1,13 +1,16 @@
-# LuminaryWorks — Cloudflare DNS: docs.{domain} CNAME → {org}.github.io
+# LuminaryWorks — Cloudflare DNS for docs sites / apex marketing sites
 # Usage:
-#   $env:CF_API_TOKEN = '<cloudflare-dns-token>'
-#   .\scripts\setup-cloudflare-docs-dns.ps1 [-WhatIf] [-Skip dataluminary] [-Only vistacast]
+#   $env:CF_API_TOKEN = '<token>'
+#   .\scripts\setup-cloudflare-docs-dns.ps1 [-Only LuminaryWorks] [-Proxied]
 #
-# Token needs Zone:DNS:Edit on all six apex zones.
-# GitHub Pages requires DNS-only (proxied=false) for automatic HTTPS.
+# Host modes (docs-sites.config.ps1):
+#   default  -> docs.{domain} CNAME -> {org}.github.io
+#   apex     -> @ + www CNAME -> github.io; docs.{domain} 301 -> https://{domain}
 
 param(
   [switch]$WhatIf,
+  [switch]$Proxied,
+  [switch]$DnsOnly,
   [string[]]$Skip = @(),
   [string[]]$Only = @(),
   [string]$CfApiToken = $env:CF_API_TOKEN
@@ -29,28 +32,19 @@ function Get-CfHeaders {
 function Test-CfToken {
   param([string]$Token)
   if (-not $Token) {
-    Write-Host "CF_API_TOKEN not set. Example:" -ForegroundColor Red
-    Write-Host '  $env:CF_API_TOKEN = "cfut_..."' -ForegroundColor Yellow
-    Write-Host "  .\scripts\setup-cloudflare-docs-dns.ps1"
+    Write-Host "CF_API_TOKEN not set." -ForegroundColor Red
     exit 1
   }
-
   $resp = Invoke-RestMethod -Uri "$CfBase/user/tokens/verify" -Headers (Get-CfHeaders $Token) -Method Get
-  if (-not $resp.success) {
-    throw "Cloudflare token verify failed"
-  }
+  if (-not $resp.success) { throw "Cloudflare token verify failed" }
   Write-Host "Cloudflare token OK (status: $($resp.result.status))" -ForegroundColor Green
 }
 
 function Get-CfZoneId {
-  param(
-    [string]$Token,
-    [string]$Domain
-  )
-  $uri = "$CfBase/zones?name=$Domain"
-  $resp = Invoke-RestMethod -Uri $uri -Headers (Get-CfHeaders $Token) -Method Get
+  param([string]$Token, [string]$Domain)
+  $resp = Invoke-RestMethod -Uri "$CfBase/zones?name=$Domain" -Headers (Get-CfHeaders $Token) -Method Get
   if (-not $resp.success -or $resp.result.Count -eq 0) {
-    throw "Zone not found in Cloudflare account: $Domain"
+    throw "Zone not found: $Domain"
   }
   return $resp.result[0].id
 }
@@ -60,67 +54,174 @@ function Get-CfDnsRecord {
     [string]$Token,
     [string]$ZoneId,
     [string]$Name,
-    [string]$Type = "CNAME"
+    [string]$Type
   )
   $q = [uri]::EscapeDataString($Name)
   $uri = "$CfBase/zones/$ZoneId/dns_records?type=$Type&name=$q"
   $resp = Invoke-RestMethod -Uri $uri -Headers (Get-CfHeaders $Token) -Method Get
-  if (-not $resp.success) {
-    throw "Failed to list DNS records for $Name"
-  }
+  if (-not $resp.success) { throw "Failed to list DNS for $Name" }
   if ($resp.result.Count -eq 0) { return $null }
   return $resp.result[0]
 }
 
-function Set-CfDocsCname {
+function Set-CfCname {
   param(
-    [hashtable]$Site,
-    [string]$Token
+    [string]$Token,
+    [string]$ZoneId,
+    [string]$Label,
+    [string]$Fqdn,
+    [string]$Target,
+    [bool]$UseProxy,
+    [switch]$WhatIf
   )
 
-  $domain = $Site.Domain
-  $docsHost = Get-DocsHost -Domain $domain
-  $target = Get-GithubPagesCname -Org $Site.Org
+  $proxyLabel = if ($UseProxy) { "proxied" } else { "DNS only" }
+  Write-Host "  CNAME $Label -> $Target ($proxyLabel)" -ForegroundColor DarkGray
 
-  Write-Host ""
-  Write-Host "=== $docsHost → $target ===" -ForegroundColor Cyan
+  if ($WhatIf) { return "whatif" }
 
-  if ($WhatIf) {
-    Write-Host "[WhatIf] CNAME docs.$domain → $target (proxied=false)" -ForegroundColor Cyan
-    return "whatif"
-  }
-
-  $zoneId = Get-CfZoneId -Token $Token -Domain $domain
-  $existing = Get-CfDnsRecord -Token $Token -ZoneId $zoneId -Name $docsHost -Type "CNAME"
-
+  $existing = Get-CfDnsRecord -Token $Token -ZoneId $ZoneId -Name $Fqdn -Type "CNAME"
   $body = @{
     type    = "CNAME"
-    name    = "docs"
-    content = $target
+    name    = $Label
+    content = $Target
     ttl     = 1
-    proxied = $false
-  }
+    proxied = $UseProxy
+  } | ConvertTo-Json
 
   if ($existing) {
-    if ($existing.content -eq $target -and $existing.proxied -eq $false) {
-      Write-Host "  already correct" -ForegroundColor DarkGray
-      return "unchanged"
-    }
-    $uri = "$CfBase/zones/$zoneId/dns_records/$($existing.id)"
-    $resp = Invoke-RestMethod -Uri $uri -Headers (Get-CfHeaders $Token) -Method Put -Body ($body | ConvertTo-Json)
-    if (-not $resp.success) { throw "Failed to update CNAME for $docsHost" }
-    Write-Host "  updated CNAME" -ForegroundColor Green
+    if ($existing.content -eq $Target -and $existing.proxied -eq $UseProxy) { return "unchanged" }
+    $resp = Invoke-RestMethod -Uri "$CfBase/zones/$ZoneId/dns_records/$($existing.id)" `
+      -Headers (Get-CfHeaders $Token) -Method Put -Body $body
+    if (-not $resp.success) { throw "Failed to update CNAME $Fqdn" }
     return "updated"
   }
 
-  $uri = "$CfBase/zones/$zoneId/dns_records"
-  $resp = Invoke-RestMethod -Uri $uri -Headers (Get-CfHeaders $Token) -Method Post -Body ($body | ConvertTo-Json)
-  if (-not $resp.success) { throw "Failed to create CNAME for $docsHost" }
-  Write-Host "  created CNAME" -ForegroundColor Green
+  $resp = Invoke-RestMethod -Uri "$CfBase/zones/$ZoneId/dns_records" `
+    -Headers (Get-CfHeaders $Token) -Method Post -Body $body
+  if (-not $resp.success) { throw "Failed to create CNAME $Fqdn" }
   return "created"
 }
 
-Write-Host "=== LuminaryWorks Cloudflare docs DNS ===" -ForegroundColor Cyan
+function Set-CfSubdomainRedirect {
+  param(
+    [string]$Token,
+    [string]$ZoneId,
+    [string]$FromHost,
+    [string]$ToHost,
+    [switch]$WhatIf
+  )
+
+  $ruleDesc = "Redirect $FromHost to $ToHost"
+  Write-Host "  redirect rule: $FromHost -> https://$ToHost" -ForegroundColor DarkGray
+
+  if ($WhatIf) { return "whatif" }
+
+  try {
+    $entryUri = "$CfBase/zones/$ZoneId/rulesets/phases/http_request_dynamic_redirect/entrypoint"
+    $entry = $null
+    try {
+      $entry = Invoke-RestMethod -Uri $entryUri -Headers (Get-CfHeaders $Token) -Method Get
+    } catch {
+      $entry = $null
+    }
+
+    $newRule = @{
+      expression        = "(http.host eq `"$FromHost`")"
+      description       = $ruleDesc
+      action            = "redirect"
+      action_parameters = @{
+        from_value = @{
+          status_code           = 301
+          preserve_query_string = $true
+          target_url            = @{
+            expression = "concat(`"https://$ToHost`", http.request.uri.path)"
+          }
+        }
+      }
+    }
+
+    if ($entry -and $entry.result -and $entry.result.id) {
+      $rulesetId = $entry.result.id
+      $rules = @($entry.result.rules | Where-Object { $_.description -ne $ruleDesc })
+      $rules += $newRule
+      $body = @{ rules = $rules } | ConvertTo-Json -Depth 10
+      $resp = Invoke-RestMethod -Uri "$CfBase/zones/$ZoneId/rulesets/$rulesetId" `
+        -Headers (Get-CfHeaders $Token) -Method Put -Body $body
+      if ($resp.success) { return "updated" }
+    } else {
+      $body = @{
+        name  = "default"
+        kind  = "zone"
+        phase = "http_request_dynamic_redirect"
+        rules = @($newRule)
+      } | ConvertTo-Json -Depth 10
+
+      try {
+        $resp = Invoke-RestMethod -Uri $entryUri -Headers (Get-CfHeaders $Token) -Method Put -Body $body
+        if ($resp.success) { return "created" }
+      } catch { }
+
+      $resp = Invoke-RestMethod -Uri "$CfBase/zones/$ZoneId/rulesets" `
+        -Headers (Get-CfHeaders $Token) -Method Post -Body $body
+      if ($resp.success) { return "created" }
+    }
+  } catch { }
+
+  Write-Host "  WARN: redirect rule needs Zone:Rules:Edit (add manually in dashboard):" -ForegroundColor Yellow
+  Write-Host "    Rules -> Redirect Rules -> Custom rule" -ForegroundColor Yellow
+  Write-Host "    If hostname equals $FromHost -> Static 301 -> https://$ToHost/`${http.request.uri.path}" -ForegroundColor Yellow
+  return "manual"
+}
+
+function Set-CfSiteDns {
+  param(
+    [hashtable]$Site,
+    [string]$Token,
+    [bool]$UseProxy,
+    [switch]$WhatIf
+  )
+
+  $domain = $Site.Domain
+  $target = Get-GithubPagesCname -Org $Site.Org
+  $siteHost = Get-SiteHost -Site $Site
+  $zoneId = if ($WhatIf) { "" } else { Get-CfZoneId -Token $Token -Domain $domain }
+
+  Write-Host ""
+  Write-Host "=== $siteHost ($($Site.Org)) ===" -ForegroundColor Cyan
+
+  if (Test-SiteUsesApex -Site $Site) {
+    $apex = Set-CfCname -Token $Token -ZoneId $zoneId -Label "@" -Fqdn $domain `
+      -Target $target -UseProxy $UseProxy -WhatIf:$WhatIf
+    $www = Set-CfCname -Token $Token -ZoneId $zoneId -Label "www" -Fqdn "www.$domain" `
+      -Target $target -UseProxy $UseProxy -WhatIf:$WhatIf
+
+    $redirect = "skipped"
+    if ($Site.RedirectLegacyDocs) {
+      $legacy = Get-LegacyDocsHost -Site $Site
+      $docsDns = Set-CfCname -Token $Token -ZoneId $zoneId -Label "docs" -Fqdn $legacy `
+        -Target $target -UseProxy $UseProxy -WhatIf:$WhatIf
+      $redirect = Set-CfSubdomainRedirect -Token $Token -ZoneId $zoneId `
+        -FromHost $legacy -ToHost $domain -WhatIf:$WhatIf
+      if ($redirect -eq "manual") {
+        return "apex:$apex,www:$www,docs:$docsDns,redirect:manual"
+      }
+      return "apex:$apex,www:$www,docs:$docsDns,redirect:$redirect"
+    }
+    return "apex:$apex,www:$www"
+  }
+
+  $docsHost = Get-DocsHost -Domain $domain
+  $result = Set-CfCname -Token $Token -ZoneId $zoneId -Label "docs" -Fqdn $docsHost `
+    -Target $target -UseProxy $UseProxy -WhatIf:$WhatIf
+  return $result
+}
+
+$useCloudflareProxy = $true
+if ($DnsOnly) { $useCloudflareProxy = $false }
+if ($Proxied) { $useCloudflareProxy = $true }
+
+Write-Host "=== LuminaryWorks Cloudflare site DNS ===" -ForegroundColor Cyan
 Test-CfToken -Token $CfApiToken
 
 $sites = $script:DocsSites
@@ -134,7 +235,7 @@ if ($Skip.Count -gt 0) {
 $results = @{}
 foreach ($site in $sites) {
   try {
-    $results[$site.Org] = Set-CfDocsCname -Site $site -Token $CfApiToken
+    $results[$site.Org] = Set-CfSiteDns -Site $site -Token $CfApiToken -UseProxy $useCloudflareProxy -WhatIf:$WhatIf
   } catch {
     Write-Host "  ERROR: $($_.Exception.Message)" -ForegroundColor Red
     $results[$site.Org] = "failed"
@@ -148,5 +249,7 @@ $results.GetEnumerator() | Sort-Object Name | ForEach-Object {
 }
 
 Write-Host ""
-Write-Host "DNS propagation + GitHub Pages cert may take up to 24h." -ForegroundColor Yellow
-Write-Host "Verify: .\scripts\verify-docs-deployment.ps1"
+if ($useCloudflareProxy) {
+  Write-Host "Cloudflare proxy on. Dashboard: SSL/TLS -> Flexible; Edge Certificates -> Always Use HTTPS" -ForegroundColor Yellow
+}
+Write-Host "Verify: .\scripts\verify-docs-deployment.ps1 -Only LuminaryWorks -CheckHttp"

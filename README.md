@@ -18,7 +18,7 @@
 | 2 | **BlockyEdu** | 智码工坊 | [blockyedu.com](https://blockyedu.com) | [blockyedu/VibeEdu](https://github.com/blockyedu/VibeEdu) | AI 教育 — Blockly 编程与课程 |
 | 3 | **DoerFlow** | 智工网 | [doerflow.dev](https://doerflow.dev) | [doerflow/VibeAgent](https://github.com/doerflow/VibeAgent) | 执行者价值网络 — Agent/链上结算 |
 | 4 | **VistaCast** | 视界云遥 | [vistacast.dev](https://vistacast.dev) | [VistaCast/vistacast](https://github.com/VistaCast/vistacast) | AI 摄像头云监控（**文档先行**） |
-| 5 | **VistaRemote** | 视界远程 | — | [VistaRemote/vibeCode](https://github.com/VistaRemote/vibeCode) | WebRTC 远程桌面 + AI 录制 |
+| 5 | **VistaRemote** | 视界远程 | [remote.vistacast.dev](https://remote.vistacast.dev) | [VistaRemote/vibeCode](https://github.com/VistaRemote/vibeCode) | WebRTC 远程桌面 + AI 录制 |
 | 6 | **SyncroBrain** | 万物智脑 | [syncrobrain.com](https://syncrobrain.com) | [syncrobrain/LuminaryIoTChain](https://github.com/syncrobrain/LuminaryIoTChain) | 连接设备的 AI OS |
 
 本地路径（Phase C）：
@@ -117,6 +117,7 @@ pnpm docs:dev      # 本地预览文档站
 
 ## 许可与独立性
 
+- 生态核心产品默认采用 **[Polyform Noncommercial License 1.0.0](LICENSE)**（Polyform-NC）；商业使用须另行授权
 - 各产品保留**独立 Git 组织、独立域名、独立发版、独立 LICENSE**
 - LuminaryWorks 仅维护**叙事、标准、共享库**，不替代各产品 MetaRepo 治理
 - 跨产品集成一律 **HTTP / OIDC / MQTT / 事件**，禁止运行时跨仓 import

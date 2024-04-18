@@ -2,6 +2,7 @@
   "name": "@luminaryworks/meta",
   "version": "0.1.0",
   "private": true,
+  "license": "Polyform-Noncommercial-1.0.0",
   "description": "LuminaryWorks ecosystem MetaRepo — orchestration scripts for identity, shared libs and docs",
   "scripts": {
     "bootstrap": "node scripts/bootstrap.mjs",

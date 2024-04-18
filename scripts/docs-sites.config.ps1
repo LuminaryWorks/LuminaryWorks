@@ -1,13 +1,15 @@
-﻿# Shared config for docs.{domain} -> GitHub Pages
+﻿# Shared site config: docs.{domain} or apex {domain} -> GitHub Pages
 # Dot-source from setup-github-docs.ps1 / setup-cloudflare-docs-dns.ps1
 
 $script:DocsSites = @(
   @{
-    Brand   = "LuminaryWorks"
-    Chinese = "启明工坊"
-    Domain  = "luminaryworks.dev"
-    Org     = "LuminaryWorks"
-    Tagline = "AI ecosystem orchestration, shared identity and standards"
+    Brand              = "LuminaryWorks"
+    Chinese            = "启明工坊"
+    Domain             = "luminaryworks.dev"
+    Org                = "LuminaryWorks"
+    Tagline            = "AI ecosystem orchestration, shared identity and standards"
+    HostMode           = "apex"
+    RedirectLegacyDocs = $true
   },
   @{
     Brand   = "DataLuminary"
@@ -46,9 +48,25 @@ $script:DocsSites = @(
   }
 )
 
+function Get-SiteHost {
+  param([hashtable]$Site)
+  if ($Site.HostMode -eq "apex") { return $Site.Domain }
+  return "docs.$($Site.Domain)"
+}
+
 function Get-DocsHost {
   param([string]$Domain)
   "docs.$Domain"
+}
+
+function Get-LegacyDocsHost {
+  param([hashtable]$Site)
+  "docs.$($Site.Domain)"
+}
+
+function Test-SiteUsesApex {
+  param([hashtable]$Site)
+  return ($Site.HostMode -eq "apex")
 }
 
 function Get-GithubPagesCname {

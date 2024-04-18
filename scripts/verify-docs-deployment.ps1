@@ -1,10 +1,10 @@
-# Verify {org}/docs GitHub Pages + Cloudflare CNAME for docs.{domain}
+# Verify {org}/docs GitHub Pages + Cloudflare DNS
 # Usage:
-#   .\scripts\verify-docs-deployment.ps1
-#   .\scripts\verify-docs-deployment.ps1 -CheckHttp   # also curl docs hosts
+#   .\scripts\verify-docs-deployment.ps1 [-Only LuminaryWorks] [-CheckHttp]
 
 param(
   [switch]$CheckHttp,
+  [string[]]$Only = @(),
   [string]$CfApiToken = $env:CF_API_TOKEN
 )
 
@@ -14,37 +14,39 @@ $ErrorActionPreference = "Continue"
 $CfBase = "https://api.cloudflare.com/client/v4"
 $allOk = $true
 
-function Test-DnsCname {
+function Test-CfCname {
   param(
-    [string]$DocsHost,
-    [string]$ExpectedTarget
+    [string]$Fqdn,
+    [string]$ExpectedTarget,
+    [bool]$ExpectProxied = $true
   )
-  if (-not $env:CF_API_TOKEN) {
-    return $null
-  }
+  if (-not $env:CF_API_TOKEN) { return $null }
   try {
-    $domain = ($DocsHost -split '\.', 2)[1]
+    $domain = if ($Fqdn -match '^[^.]+\.(.+)$') { $Matches[1] } else { $Fqdn }
     $headers = @{ Authorization = "Bearer $env:CF_API_TOKEN" }
-    $zones = Invoke-RestMethod -Uri "$CfBase/zones?name=$domain" -Headers $headers
-    if ($zones.result.Count -eq 0) { return $false }
-    $zoneId = $zones.result[0].id
-    $q = [uri]::EscapeDataString($DocsHost)
+    $zoneId = (Invoke-RestMethod -Uri "$CfBase/zones?name=$domain" -Headers $headers).result[0].id
+    $q = [uri]::EscapeDataString($Fqdn)
     $recs = Invoke-RestMethod -Uri "$CfBase/zones/$zoneId/dns_records?type=CNAME&name=$q" -Headers $headers
     if ($recs.result.Count -eq 0) { return $false }
     $r = $recs.result[0]
-    return ($r.content -eq $ExpectedTarget -and $r.proxied -eq $false)
+    return ($r.content -eq $ExpectedTarget -and $r.proxied -eq $ExpectProxied)
   } catch {
     return $false
   }
 }
 
-Write-Host "=== Docs deployment verification ===" -ForegroundColor Cyan
-Write-Host ("{0,-14} {1,-28} {2,-6} {3,-6} {4,-6} {5}" -f "Org", "Docs URL", "Repo", "Pages", "Domain", "DNS")
+$sites = $script:DocsSites
+if ($Only.Count -gt 0) {
+  $sites = $sites | Where-Object { $Only -contains $_.Org -or $Only -contains $_.Brand }
+}
+
+Write-Host "=== Site deployment verification ===" -ForegroundColor Cyan
+Write-Host ("{0,-14} {1,-28} {2,-6} {3,-6} {4,-6} {5}" -f "Org", "Site URL", "Repo", "Pages", "Domain", "DNS")
 Write-Host ("-" * 90)
 
-foreach ($site in $script:DocsSites) {
+foreach ($site in $sites) {
   $org = $site.Org
-  $docsHost = Get-DocsHost -Domain $site.Domain
+  $siteHost = Get-SiteHost -Site $site
   $cnameTarget = Get-GithubPagesCname -Org $org
   $repo = "$org/docs"
 
@@ -55,15 +57,20 @@ foreach ($site in $script:DocsSites) {
   $pagesOk = $false
   $domainOk = $false
   if ($repoOk) {
-    $pages = gh api "repos/$repo/pages" 2>$null
+    gh api "repos/$repo/pages" 2>$null | Out-Null
     if ($LASTEXITCODE -eq 0) {
       $pagesOk = $true
-      $domains = gh api "repos/$repo/pages/domains" --jq '.[].name' 2>$null
-      if ($domains -contains $docsHost) { $domainOk = $true }
+      $cname = gh api "repos/$repo/pages" --jq '.cname' 2>$null
+      if ($cname -eq $siteHost) { $domainOk = $true }
     }
   }
 
-  $dnsOk = Test-DnsCname -DocsHost $docsHost -ExpectedTarget $cnameTarget
+  $dnsOk = $false
+  if (Test-SiteUsesApex -Site $site) {
+    $dnsOk = Test-CfCname -Fqdn $site.Domain -ExpectedTarget $cnameTarget
+  } else {
+    $dnsOk = Test-CfCname -Fqdn $siteHost -ExpectedTarget $cnameTarget
+  }
   $dnsLabel = if ($null -eq $dnsOk) { "n/a" } elseif ($dnsOk) { "yes" } else { "no" }
 
   $rowOk = $repoOk -and $pagesOk -and $domainOk
@@ -71,8 +78,7 @@ foreach ($site in $script:DocsSites) {
   if (-not $rowOk) { $allOk = $false }
 
   Write-Host ("{0,-14} {1,-28} {2,-6} {3,-6} {4,-6} {5}" -f `
-    $org, `
-    $docsHost, `
+    $org, $siteHost, `
     $(if ($repoOk) { "yes" } else { "no" }), `
     $(if ($pagesOk) { "yes" } else { "no" }), `
     $(if ($domainOk) { "yes" } else { "no" }), `
@@ -82,15 +88,30 @@ foreach ($site in $script:DocsSites) {
 if ($CheckHttp) {
   Write-Host ""
   Write-Host "HTTP checks:" -ForegroundColor Cyan
-  foreach ($site in $script:DocsSites) {
-    $docsHost = Get-DocsHost -Domain $site.Domain
-    $url = "https://$docsHost/"
+  foreach ($site in $sites) {
+    $siteHost = Get-SiteHost -Site $site
+    $url = "https://$siteHost/"
     try {
-      $resp = Invoke-WebRequest -Uri $url -Method Head -TimeoutSec 15 -MaximumRedirection 5
-      Write-Host ("  {0} → {1}" -f $docsHost, $resp.StatusCode) -ForegroundColor Green
+      $resp = Invoke-WebRequest -Uri $url -Method Head -TimeoutSec 20 -MaximumRedirection 5
+      Write-Host ("  {0} -> {1}" -f $siteHost, $resp.StatusCode) -ForegroundColor Green
     } catch {
-      Write-Host ("  {0} → FAIL ({1})" -f $docsHost, $_.Exception.Message) -ForegroundColor Red
+      Write-Host ("  {0} -> FAIL ({1})" -f $siteHost, $_.Exception.Message) -ForegroundColor Red
       $allOk = $false
+    }
+
+    if (Test-SiteUsesApex -Site $site -and $site.RedirectLegacyDocs) {
+      $legacy = Get-LegacyDocsHost -Site $site
+      try {
+        $r = Invoke-WebRequest -Uri "https://$legacy/" -Method Head -TimeoutSec 20 -MaximumRedirection 0 -ErrorAction Stop
+      } catch {
+        if ($_.Exception.Response.StatusCode.value__ -eq 301 -or $_.Exception.Response.StatusCode.value__ -eq 302) {
+          $loc = $_.Exception.Response.Headers.Location
+          Write-Host ("  {0} -> {1} -> {2}" -f $legacy, $_.Exception.Response.StatusCode.value__, $loc) -ForegroundColor Green
+        } else {
+          Write-Host ("  {0} -> FAIL ({1})" -f $legacy, $_.Exception.Message) -ForegroundColor Red
+          $allOk = $false
+        }
+      }
     }
   }
 }
@@ -102,6 +123,5 @@ if ($allOk) {
 }
 
 Write-Host "Not complete. Run:" -ForegroundColor Yellow
-Write-Host "  .\scripts\setup-docs-all.ps1"
-Write-Host "  .\scripts\verify-docs-deployment.ps1 -CheckHttp"
+Write-Host "  .\scripts\setup-docs-all.ps1 -Only LuminaryWorks"
 exit 1

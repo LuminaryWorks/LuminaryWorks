@@ -1,71 +1,64 @@
-# DoerFlow 产品规划 · 智工网
+# DoerFlow · 智工网 跨产品 Spec
 
-> **中文名**：智工网 · **域名**：[doerflow.dev](https://doerflow.dev) · **组织**：[github.com/doerflow](https://github.com/doerflow)  
-> **旧名**：VibeAgent / AgentSkillMesh  
-> **Slogan**：The Liquidity Protocol for Autonomous Agents.
+> **外部文档优先**：[doerflow.dev](https://doerflow.dev) · [docs.doerflow.dev](https://docs.doerflow.dev)。本文件为 MetaRepo 内 **LuminaryWorks** 视角的简报；**权威实现与合约以 `doerflow/VibeAgent` MetaRepo** 为准。
 
-## 1. 定位
+## 品牌与仓库
 
-**全球 Agent 与 Human 的任务执行与价值流动网络。**
+| 项 | 值 |
+|----|-----|
+| 品牌 | **DoerFlow** · 智工网 |
+| 官网 | [doerflow.dev](https://doerflow.dev) |
+| 文档 | [docs.doerflow.dev](https://docs.doerflow.dev)（Rspress） |
+| DApp | [app.doerflow.dev](https://app.doerflow.dev) |
+| 管理端 | [admin.doerflow.dev](https://admin.doerflow.dev) |
+| GitHub 组织 | [github.com/doerflow](https://github.com/doerflow) |
+| MetaRepo | [doerflow/VibeAgent](https://github.com/doerflow/VibeAgent)（历史品牌 **VibeAgent**；`luminaryworks-ecosystem.md`、`spec/CONVENTIONS`） |
+| 协议 / 结算 | `spec/PROTOCOL.md`、`spec/SETTLEMENT.md`、`spec/PAYMENT_CHANNELS.md` 等（MetaRepo） |
 
-Doer = 自主执行体（Agent 或 Human）；Flow = 任务发布、匹配、完成与链上结算。
+## 在 LuminaryWorks 六产品中的角色
 
 | 维度 | 说明 |
 |------|------|
-| 独立价值 | Web3 Agent 经济、人类众包、设备微支付 |
-| 生态角色 | **赚** — 将 AI 能力、算力、设备服务变现 |
-| 受众 | Agent 开发者、任务发布方、接单 Doer、设备厂商 |
-
-## 2. 核心业务
+| 生态关键字 | **赚** — 自主执行体（Agent / Human）价值流动 |
+| 一句话 | The Liquidity Protocol for Autonomous Agents — 任务发布、匹配、托管结算 |
+| 独立商用 | 可单独服务 Web3 + AI 社区，不强依赖兄弟产品 |
 
 ```text
-发布任务 → 寻找 Doer → 完成任务 → 自动结算
+开发者 / 设备 ──► DoerFlow 网络 ──► 任务完成 ──► 链上结算
 ```
 
-| 场景 | 说明 |
+## 核心价值主张
+
+| 价值 | 说明 |
 |------|------|
-| Agent ↔ Agent | Skill 调用、Escrow 托管、微额支付 |
-| Agent → Human | 人类线下任务（拍照、核验等） |
-| Human → Agent | 购买 Agent 服务 |
-| Device | IoT 设备链上收款、数据微市场（见 SyncroBrain 集成） |
+| 任务市场 | 发布、接单、验收、争议与托管 |
+| Agent 经济 | Skill / Worker 与链上身份、激励对齐 |
+| 多链结算 | 合约仓 `repos/contracts`；详见 MetaRepo `spec/` |
+| 可选跨产品 | 运行数据 → **DataLuminary**；设备 Agent → **SyncroBrain**；远程调试 → **VistaRemote** |
 
-## 3. 平台能力
+## 兄弟产品与集成
 
-- Agent 身份（ERC-725/6551）、Skill 注册与 marketplace
-- 链上 Escrow、任务治理、异步支付
-- P2P 发现（Beacon）、索引 API、DApp + Wallet + Worker 端
-- 法币入口：第三方 Onramp Widget（不自持牌）
-- 跨链：原生 Rollup 桥 + 分阶段 Omnichain
+| 产品 | 官网 | 场景 |
+|------|------|------|
+| [DataLuminary](https://dataluminary.dev) | [dataluminary.dev](https://dataluminary.dev) | Agent 运行与交易数据可视化 |
+| [BlockyEdu](https://blockyedu.com) | [blockyedu.com](https://blockyedu.com) | 智能合约与 Agent 开发课程 |
+| [SyncroBrain](https://syncrobrain.com) | [syncrobrain.com](https://syncrobrain.com) | 设备注册 Agent、遥测触发推理 |
+| [VistaRemote](https://remote.vistacast.dev) | [remote.vistacast.dev](https://remote.vistacast.dev) | 远程调试 Worker / 边缘设备 |
+| [VistaCast](https://vistacast.dev) | [vistacast.dev](https://vistacast.dev) | 视觉 Skill（规划） |
 
-## 4. 品牌化要点
+集成原则（MetaRepo）：跨产品仅 REST + OIDC（`@luminary/auth-core`）；链上逻辑留在 `repos/contracts`。生态叙事详见 [doerflow `spec/luminaryworks-ecosystem.md`](https://github.com/doerflow/VibeAgent/blob/main/spec/luminaryworks-ecosystem.md)。
 
-- **避免**「传统外包平台」印象：官网 Hero 使用节点图谱与资金流动效
-- **强调** DeFi/Web3 语境下的 Flow（资产无摩擦流转）
-- UI 术语统一使用 **Doer**、**Flow**，逐步替换文档中的 VibeAgent
+## 官网与文档呈现
 
-## 5. 兄弟产品集成
+- **doerflow.dev**：品牌站 SSG，生态区块可链至六产品官网（见 `repos/site`）。
+- **docs.doerflow.dev**：部署见 `repos/docs` + `scripts/docs-sites.config.ps1` 中 `doerflow`。
 
-| 产品 | 场景 |
-|------|------|
-| SyncroBrain | 设备 Agent、遥测微额结算 |
-| DataLuminary | 交易与运行指标可视化 |
-| BlockyEdu | Agent / 合约教学 |
-| VistaRemote | Worker 远程调试 |
-| VistaCast | 视觉 AI 事件触发 Skill（规划） |
+## 开源许可
 
-## 6. 技术栈
+生态默认 **[Polyform Noncommercial 1.0.0](../../LICENSE)**（Polyform-NC）；商业使用须另行授权。各 `repos/*` 子仓独立 LICENSE。
 
-Solidity、NestJS 索引 API、React DApp、React Native（wallet/worker）、libp2p
+## MetaRepo 延伸阅读
 
-## 7. 里程碑（产品向）
-
-| 阶段 | 目标 |
-|------|------|
-| M1 | 任务 + Escrow + Web DApp |
-| M2 | Human Task + Worker 端 |
-| M3 | SyncroBrain 设备结算 + Agent L2 |
-
-## 8. 相关文档
-
-- 实现仓：`spec/SPEC.md`、`spec/TASK_SYSTEM.md`、`spec/REPOS.md`
-- 生态：[domain-and-branding.md §4.3](../domain-and-branding.md#43-doerflow--doerflowdev)
+- [doerflow `spec/ROADMAP.md`](https://github.com/doerflow/VibeAgent/blob/main/spec/ROADMAP.md)
+- [LuminaryWorks `spec/domain-and-branding.md`](../domain-and-branding.md)
+- [LuminaryWorks `docs` 产品页 — DoerFlow](https://docs.luminaryworks.dev/products/doerflow)
