@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/LuminaryWorks/LuminaryWorks/main/assets/logo.png" alt="LuminaryWorks" width="128" />
+  <img src="https://raw.githubusercontent.com/LuminaryWorks/LuminaryWorks/main/assets/logo.svg" alt="LuminaryWorks" width="128" />
 </p>
 
 <h1 align="center">LuminaryWorks · 启明工坊</h1>
