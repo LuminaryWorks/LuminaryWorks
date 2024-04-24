@@ -43,4 +43,8 @@ step("Shared libraries", "shared", (dir) => {
   run("pnpm build", dir);
 });
 
-console.log("\n✓ Bootstrap complete. Docs: pnpm docs:dev");
+step("Entitlement DB", "services/entitlement", (dir) => {
+  run("docker compose up -d entitlement-db", dir);
+});
+
+console.log("\n✓ Bootstrap complete. Docs: pnpm docs:dev · Entitlement: pnpm ent:dev");

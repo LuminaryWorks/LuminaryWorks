@@ -60,7 +60,31 @@ React、Zustand、Blockly、Monaco · NestJS、TypeORM、Redis、Kafka · WebSoc
 | M2 | AI Copilot / Tutor / Debugger GA |
 | M3 | SyncroBrain 联合实验包 |
 
-## 6. 相关文档
+## 6. 身份 · 权益 · 资源权限
+
+接入顺序：**Logto AuthN → 中央 Entitlement → Casbin 资源 ACL**。权威规范：[subscription-and-entitlement.md](../subscription-and-entitlement.md)、[identity-and-permissions.md](../identity-and-permissions.md)。
+
+| 层 | BlockyEdu 要点 |
+|----|----------------|
+| 身份 | 统一 Logto `sub`；`edu-app-web` / `code-app-web` 在 OIDC 未稳时可保留 legacy 登录开关 |
+| 权益 | 迁移 `memberTier` / `code_pro` 等为 feature code；ToC Trial 每用户每产品一次；Pro / Ultra / 企业 seat |
+| 资源 | 课程、班级、作业、workspace 仍由角色 + Casbin 控制；**禁止**用 role 名推断会员档 |
+| 迁移 | account membership / wallet → 中央 subscription/order/grant；双读比对后再停本地会员主写 |
+
+### 6.1 产品接线（已落地）
+
+| 仓 | 集成 |
+|----|------|
+| `edu-server` | `@luminaryworks/entitlement-client`；`ENTITLEMENT_MODE=off\|shadow_read\|enforce`；`GET /membership` + dual-read `GET /edu/account/membership`；Casbin 课程 ACL 不变 |
+| `server` | 同上；`code.execute.pro` / `ai.copilot` / `ai.tutor` 以 `@RequireEntitlement` 门禁；RBAC `code_pro` 保留作本地事实 |
+| `edu-app-web` / `code-app-web` | 权益状态来自 membership API；Trial 倒计时；402 → 升级 UX；legacy + OIDC 并存 |
+
+Feature codes：`code.execute.pro`、`ai.copilot`、`ai.tutor`、`student.limit`（配额；创建学员 API 到位后再 consume）。
+
+迁移脚本：`pnpm migrate:legacy-membership`（`--dry-run` 默认；`--apply` 写中央）。
+
+## 7. 相关文档
 
 - 实现仓：`spec/product-spec.md`、`spec/ai-platform-spec.md`
 - 生态：[domain-and-branding.md §4.2](../domain-and-branding.md#42-blockyedu--blockyeducom)
+- 权益：[subscription-and-entitlement.md](../subscription-and-entitlement.md)

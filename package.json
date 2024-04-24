@@ -8,7 +8,25 @@
     "bootstrap": "node scripts/bootstrap.mjs",
     "id:up": "node scripts/run.mjs identity bootstrap",
     "id:down": "node scripts/run.mjs identity down",
+    "id:register": "node scripts/run.mjs identity register",
+    "id:sync": "node scripts/run.mjs identity sync",
+    "auth:gateway": "node services/auth-gateway/src/main.mjs",
     "shared:build": "node scripts/run.mjs shared build",
-    "docs:dev": "node scripts/run.mjs docs dev"
+    "docs:dev": "node scripts/run.mjs docs dev",
+    "ent:up": "node scripts/run.mjs entitlement up",
+    "ent:down": "node scripts/run.mjs entitlement down",
+    "ent:install": "node scripts/run.mjs entitlement install",
+    "ent:build": "node scripts/run.mjs entitlement build",
+    "ent:check": "node scripts/run.mjs entitlement check",
+    "ent:test": "node scripts/run.mjs entitlement test",
+    "ent:migrate": "node scripts/run.mjs entitlement migrate",
+    "ent:seed": "node scripts/run.mjs entitlement seed",
+    "ent:dev": "node scripts/run.mjs entitlement dev",
+    "ent:client:sync": "node scripts/sync-entitlement-client.mjs",
+    "ent:client:build": "pnpm --dir shared/packages/entitlement-client run build",
+    "lock:node24": "node scripts/lock-node24-ecosystem.mjs"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   }
 }

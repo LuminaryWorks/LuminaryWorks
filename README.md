@@ -72,33 +72,63 @@ LuminaryWorks/                  # 本仓：叙事 + 标准 + 编排脚本
 |------|------|
 | [docs](https://github.com/LuminaryWorks/docs) | 营销站 + 开发者文档（RsPress） |
 | [identity](https://github.com/LuminaryWorks/identity) | Logto + PG + Redis + 应用注册脚本 |
-| [shared](https://github.com/LuminaryWorks/shared) | `@luminary/auth-core`、`auth-react`、`pal`、`tooling` |
+| [shared](https://github.com/LuminaryWorks/shared) | `@luminaryworks/auth-core`、`auth-react`、`pal`、`notification`、`entitlement-client`、`tooling` |
+| `services/entitlement` | 中央订阅/权益服务（NestJS + PostgreSQL；见 `pnpm ent:*`） |
+| `@luminaryworks/entitlement-client` | 产品侧客户端；源码变更后执行 `pnpm ent:client:sync` 刷新各仓 `file:` 安装（避免缺 `dist/trial.js`） |
+
+DoerFlow 采用特殊无试用策略：平台只展示 Pro / Ultra / Enterprise。其 Logto 平台会话与非托管钱包/SIWE 是独立状态；平台套餐控制托管 API 与配额，Gas、Escrow 和协议费仍走链上协议经济。统一错误语义为 401 身份、402 权益、403 资源 ACL。
 
 ## 一键初始化
 
 ```bash
 # 克隆三个子仓到本目录后：
 pnpm bootstrap     # 起 identity（Logto）+ 构建 shared（@luminary/*）
-pnpm id:up         # 仅拉起统一登录
+pnpm id:up         # 仅拉起统一登录（Docker Desktop 重启后 normally 会 unless-stopped 自启；详见 identity/LOCAL_DEV_DOCKER.md）
 pnpm docs:dev      # 本地预览文档站
 ```
+
+## Cursor 模型策略（强制）
+
+开发 / 测试 / 验证 / 写文档 / 落地实现默认只用：
+
+1. **Cursor Grok 4.5 High Fast**
+2. **Composer 2.5**（备选）
+
+**仅规划**（Plan mode）可用 GPT / Claude 等 Other Models。计划 Accept 后必须切回 Grok 4.5 或 Composer 2.5；未在对话中明确点名高消耗模型时，不得用其执行代码或验证。
+
+规则文件：各仓 `.cursor/rules/model-usage-policy.mdc`（`alwaysApply: true`）。重同步：`node scripts/write-model-usage-policy.mjs`。
+
+## Node.js 版本（强制）
+
+生态所有 Node 项目统一：
+
+- **Node.js >= 24.0.0**
+- `package.json` → `"engines": { "node": ">=24.0.0" }`
+- MetaRepo → `.nvmrc` / `.node-version` = `24`，`.npmrc` → `engine-strict=true`
+- 重同步：`pnpm lock:node24`
+
+Nest 共享库（如 `@luminaryworks/entitlement-client`）**源码是 ES import**，发布产物当前仍编译为 **CommonJS `require`**，以便 Nest 后端加载；这不等于落后于 Node 24。
 
 ## 文档索引
 
 | 文档 | 说明 |
 |------|------|
+| [spec/identity-and-permissions.md](./spec/identity-and-permissions.md) | **身份与权限**：Logto AuthN + Experience Headless + Casbin 资源 AuthZ |
+| [spec/subscription-and-entitlement.md](./spec/subscription-and-entitlement.md) | **订阅与权益**：Trial / Pro / Ultra / 企业 seat / License / Partner（权益不进 JWT） |
 | [spec/domain-and-branding.md](./spec/domain-and-branding.md) | **域名与品牌决策**（六产品 + VistaCast/VistaRemote 并存） |
 | [spec/github-org-migration.md](./spec/github-org-migration.md) | **GitHub 组织迁移**与 remote 更新 |
 | [spec/products/](./spec/products/index.md) | **六产品规划**摘要 |
 | [spec/ecosystem-refactoring.md](./spec/ecosystem-refactoring.md) | 生态重构：共享能力收敛、迁移里程碑 |
 | [spec/repository-relationships.md](./spec/repository-relationships.md) | 仓库关系与集成矩阵 |
 | [docs 站点](https://github.com/LuminaryWorks/docs) | 生态叙事 / 架构 / 产品 / 开发者指南 |
+| [.cursor/skills/product-auth-implementation](./.cursor/skills/product-auth-implementation/SKILL.md) | 各产品登录/权限落地 Cursor 规范 |
 
 ## 共享服务（收敛至本组织）
 
 | 资产 | 现状 → 目标 |
 |------|-------------|
-| `@luminary/auth-core` / `auth-react` / `pal` | DataLuminary `packages/` → `LuminaryWorks/shared` |
+| `@luminaryworks/auth-core` / `auth-react` / `pal` / `notification` | DataLuminary `packages/` → `LuminaryWorks/shared` |
+| 中央 Entitlement 服务 + `@luminaryworks/entitlement-client` | `services/entitlement` + `shared/packages/entitlement-client`（`pnpm ent:up` / `ent:dev`） |
 | Biome tooling preset | 各仓 `tooling/` → `shared/packages/tooling` |
 | Logto 部署 | DataLuminary `scripts/` → `LuminaryWorks/identity` |
 

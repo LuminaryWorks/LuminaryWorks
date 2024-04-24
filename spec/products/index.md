@@ -1,8 +1,8 @@
 # 六产品规划索引
 
-> **品牌决策**：[../domain-and-branding.md](../domain-and-branding.md) · **组织迁移**：[../github-org-migration.md](../github-org-migration.md)
+> **品牌决策**：[../domain-and-branding.md](../domain-and-branding.md) · **组织迁移**：[../github-org-migration.md](../github-org-migration.md) · **IAM**：[../identity-and-permissions.md](../identity-and-permissions.md) · **Entitlement**：[../subscription-and-entitlement.md](../subscription-and-entitlement.md) · **Notify**：[../notification-service.md](../notification-service.md)
 
-LuminaryWorks（**启明工坊**）生态采用 **House of Brands**：六个产品各自独立品牌与 GitHub 组织（VistaCast / VistaRemote 为两个独立视觉产品线），通过 OIDC / HTTP / MQTT 按需集成。
+LuminaryWorks（**启明工坊**）生态采用 **House of Brands**：六个产品各自独立品牌与 GitHub 组织（VistaCast / VistaRemote 为两个独立视觉产品线），通过 OIDC / HTTP / MQTT 按需集成。身份统一用 **Logto**（Experience Headless 登录页）；商业套餐 / Trial / License 用中央 **Entitlement**；产品资源权限用 **Casbin**。商业权益**不**进入 JWT。
 
 ## 品牌中英对照
 

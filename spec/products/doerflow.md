@@ -48,6 +48,23 @@
 
 集成原则（MetaRepo）：跨产品仅 REST + OIDC（`@luminary/auth-core`）；链上逻辑留在 `repos/contracts`。生态叙事详见 [doerflow `spec/luminaryworks-ecosystem.md`](https://github.com/doerflow/VibeAgent/blob/main/spec/luminaryworks-ecosystem.md)。
 
+## 身份、权益与协议经济
+
+接入顺序固定为 **Logto AuthN → 中央 Entitlement → DoerFlow Casbin**。
+
+| 层 | DoerFlow 契约 |
+|----|---------------|
+| 平台身份 | Logto 会话负责会员、组织和平台 API；与钱包连接/SIWE 分离 |
+| 钱包身份 | 钱包证明地址并直接签名；私钥不离开 web/mobile 客户端，Logto 不代表钱包所有权 |
+| 套餐 | 仅 Pro / Ultra / Enterprise；`trialPolicy=disabled`，不得有免费试用 CTA、倒计时或自动 Trial |
+| 会员快照 | `GET /api/v1/platform/membership` 返回 `effectivePlan`、组织和 quota；不从 JWT 推断 |
+| 钱包链接 | 平台 JWT + 新鲜 SIWE 证明；UI 显示链接状态但不能把链接当作密钥托管 |
+| 资源授权 | admin/web 控件消费 API `permissions`；不使用 mock role 或 Logto claim 授予资源操作 |
+
+商业边界：Pro/Ultra/Enterprise 控制托管平台能力（`agent.publish`、`skill.register`、`task.publish`、API/任务配额等）；Gas、Escrow、协议费、Skill/任务链上按次价格仍由协议路径收取，购买平台套餐不免除也不替代协议费用。
+
+错误和降级：`401` 要求平台登录；`402 ENTITLEMENT_*` 进入稳定升级/配额流程；`403` 表示 Casbin 资源拒绝。公开 marketplace 与直接链签名保持可用。rollout 为 `off` → `shadow_read` → 小范围 `enforce` → 全量，并保留快速回滚开关。
+
 ## 官网与文档呈现
 
 - **doerflow.dev**：品牌站 SSG，生态区块可链至六产品官网（见 `repos/site`）。

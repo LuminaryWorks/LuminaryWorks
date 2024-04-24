@@ -59,7 +59,24 @@ React、Ant Design、Sass · NestJS、TypeORM、PostgreSQL · VibeCode Spec-Driv
 | M2 | AI 报告 / 图表生成 GA |
 | M3 | SyncroBrain / DoerFlow 标准数据集模板 |
 
-## 6. 相关文档
+## 6. 身份 · 权益 · 资源权限
+
+接入顺序：**Logto AuthN → 中央 Entitlement → Casbin 资源 ACL**。权威规范：[subscription-and-entitlement.md](../subscription-and-entitlement.md)、[identity-and-permissions.md](../identity-and-permissions.md)。
+
+| 层 | DataLuminary 要点 |
+|----|-------------------|
+| 身份 | Logto `sub` → DataTalk 本地用户；OIDC→本地 JWT exchange 与本地开发兼容可保留 |
+| 权益 | ToC 每用户一次 7 天 Trial；Pro / Ultra；企业合同 + Space/Org seat；私有 License 不绕过 Casbin |
+| 资源 | Casbin 继续判定 dashboard / space / dataset；高级分析、导出、容量、dashboard 数量等走 feature/quota |
+| 迁移 | `ENTITLEMENT_MODE=shadow_read` 先行，再 `enforce`；Space ↔ Logto Organization 显式映射 |
+
+接入实现：
+
+- DataTalk：`@luminaryworks/entitlement-client` + `src/modules/entitlement/`（见产品仓 `spec/development/entitlement.md`）
+- DataView：`#/account`、Trial 倒计时、402 升级 UX（见 `spec/development/entitlement-ui.md`）
+
+## 7. 相关文档
 
 - 实现仓：`spec/ecosystem.md`、`spec/index.md`
 - 生态：[domain-and-branding.md §4.1](../domain-and-branding.md#41-dataluminary--dataluminarydev)
+- 权益：[subscription-and-entitlement.md](../subscription-and-entitlement.md)

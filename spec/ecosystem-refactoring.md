@@ -9,7 +9,7 @@
 |---|------|------|
 | D1 | **docs 独立成仓**，RsPress 对外宣传站 | `LuminaryWorks/docs`（本地 `LuminaryWorks/docs/`） |
 | D2 | **统一登录授权独立 Docker 服务** | `LuminaryWorks/identity`（Logto + PG + Redis + 注册脚本） |
-| D3 | **共享包迁出 DataLuminary** → `LuminaryWorks/shared` pnpm 工作区 | `@luminary/auth-core`、`auth-react`、`pal`、`tooling` |
+| D3 | **共享包迁出 DataLuminary** → `LuminaryWorks/shared` pnpm 工作区 | `@luminaryworks/auth-core`、`auth-react`、`pal`、`notification`、`tooling` |
 | D4 | **一键初始化脚本**，开发者 `bootstrap` 即可拉起 identity + 构建共享库 | `LuminaryWorks/scripts/bootstrap.*` |
 | D5 | **LuminaryWorks 作为编排 MetaRepo**，子仓为独立 Git（不做 submodule） | 沿用 DataLuminary/BlockyEdu 模式 |
 | D6 | **五产品 GitHub 组织与域名对齐** | 见 [domain-and-branding.md](./domain-and-branding.md)、[github-org-migration.md](./github-org-migration.md) |
@@ -29,7 +29,7 @@ github.com/LuminaryWorks/
 ├── docs               # RsPress 对外宣传 + 开发者门户（D1）
 ├── identity           # Logto 统一登录授权 Docker 服务（D2）
 ├── shared             # pnpm 工作区：@luminary/* 共享库（D3）
-│   └── packages/{auth-core,auth-react,pal,tooling}
+│   └── packages/{auth-core,auth-react,pal,notification,tooling}
 └── (后续) contracts   # 生态级 OpenAPI / 事件 schema（可选）
 ```
 
@@ -60,7 +60,8 @@ D:\www\LuminaryWorks\          # 根 MetaRepo
 | ONVIF / 摄像头 AI | VistaCast | **产品私有** | 规划，vistacast |
 | EMQX / ThingsBoard 编排 | SyncroBrain | **产品私有** | 留在 syncrobrain |
 | 媒体网关 media-platform | BlockyEdu | **候选共享**（IoT 摄像头/VistaCast 复用） | 评估，暂留 blockyedu |
-| 文件服务 / Notify | 各产品分散 | **候选共享** | 抽象接口 P3 |
+| Notify（Email） | DataTalk nodemailer 等 | **共享（一期包）** | `@luminaryworks/notification`；见 [notification-service.md](./notification-service.md) |
+| 文件服务 | 各产品分散 | **候选共享** | 抽象接口 P3 |
 
 **判定原则**：无业务域逻辑 + 被 ≥2 产品消费 + 契约稳定 → 收敛到 LuminaryWorks；否则留在产品仓。
 
@@ -78,12 +79,14 @@ D:\www\LuminaryWorks\          # 根 MetaRepo
 
 ## 5. 统一登录授权服务（D2 规格）
 
-详见 [`identity/README.md`](https://github.com/LuminaryWorks/identity)。要点：
+详见 [`identity/README.md`](https://github.com/LuminaryWorks/identity) 与 **[identity-and-permissions.md](./identity-and-permissions.md)**（IAM 决策全文）。要点：
 
 - 独立 `docker compose`：`logto`（OIDC 3001 / Admin 3002）+ `postgres` + `redis`
-- `scripts/register-apps.*`：幂等注册 6 个 Application（5 产品 + iot-console）
-- `.env.example` 暴露 `IDP_ISSUER` / 各 `CLIENT_ID`，供五产品 `.env` 引用
-- 五产品后端统一用 `@luminary/auth-core`（JWKS）；前端统一用 `@luminary/auth-react`
+- `scripts/register-apps.*`：幂等注册 SPA Application + API Resource
+- `.env.example` 暴露 `IDP_ISSUER` / 各 `CLIENT_ID`，供产品 `.env` 引用
+- 后端 `@luminaryworks/auth-core`（JWKS）；前端 `@luminary/auth-react`（OIDC PKCE）
+- **登录 UI**：Experience API（Headless）多品牌，不 fork Logto Experience 源码
+- **产品 AuthZ**：各产品 **Casbin**；Logto 只做身份与产品准入
 - 私有化：`IDP_MODE=external_oidc` 直连企业 IdP，无需改业务代码
 
 各产品**开发文档**新增「统一登录」章节，指向本服务（见 §7）。

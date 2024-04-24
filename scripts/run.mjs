@@ -7,6 +7,8 @@
  *   node scripts/run.mjs identity down
  *   node scripts/run.mjs shared build
  *   node scripts/run.mjs docs dev
+ *   node scripts/run.mjs entitlement up
+ *   node scripts/run.mjs entitlement dev
  */
 import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -21,9 +23,29 @@ const map = {
   identity: {
     bootstrap: isWin ? "powershell -ExecutionPolicy Bypass -File ./bootstrap.ps1" : "bash ./bootstrap.sh",
     down: "docker compose down",
+    register: "node scripts/register-apps.mjs",
+    sync: "node scripts/sync-client-ids.mjs",
+    "seed-user": "node scripts/seed-dev-user.mjs",
   },
   shared: { build: "pnpm build", check: "pnpm check" },
   docs: { dev: "pnpm dev", build: "pnpm build" },
+  entitlement: {
+    up: "docker compose up -d",
+    down: "docker compose down",
+    install: "pnpm install",
+    build: "pnpm build",
+    check: "pnpm check",
+    test: "pnpm test",
+    migrate: "pnpm migration:run",
+    seed: "pnpm seed",
+    dev: "pnpm start:dev",
+    start: "pnpm start",
+  },
+};
+
+/** Nested dirs for MetaRepo-owned services (not sibling clones). */
+const repoDirs = {
+  entitlement: "services/entitlement",
 };
 
 const cmd = map[repo]?.[action];
@@ -32,9 +54,9 @@ if (!cmd) {
   process.exit(1);
 }
 
-const dir = join(root, repo);
+const dir = join(root, repoDirs[repo] ?? repo);
 if (!existsSync(dir)) {
-  console.error(`✗ ${repo}/ not found. Clone LuminaryWorks/${repo} here.`);
+  console.error(`✗ ${repoDirs[repo] ?? repo}/ not found. Clone LuminaryWorks/${repo} here.`);
   process.exit(1);
 }
 

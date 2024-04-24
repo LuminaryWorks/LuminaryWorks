@@ -52,7 +52,29 @@
 
 WebRTC · NestJS · TypeORM · PostgreSQL · React / Electron / RN · Redis
 
-## 6. 相关文档
+## 6. 身份 · 权益 · 资源权限
+
+接入顺序：**Logto AuthN → 中央 Entitlement → Casbin / ABAC 资源 ACL**。权威规范：[subscription-and-entitlement.md](../subscription-and-entitlement.md)、[identity-and-permissions.md](../identity-and-permissions.md)。
+
+| 层 | VistaRemote 要点 |
+|----|------------------|
+| 身份 | 可选 `@luminaryworks/auth-core` 统一登录；本地 profile 映射 Logto `sub` |
+| 权益 | 以 `shared/src/billing` feature catalog 为迁移基线；中央适配后保持 `GET /billing/entitlements` 与多端 DTO 兼容；档位对齐 `trial` / `pro` / `ultra` / `enterprise` |
+| 门禁 | SFU、AI、录制、批量远控、`device.limit` 配额走 Entitlement；设备 / 会话 / 文件归属仍 Casbin/ABAC |
+| 私有化 | 签名 License 授予合同能力；**不**关闭身份校验或资源 ACL |
+| 迁移 | 内存订单与 `User.plan` / `trialEndsAt` / `planExpiresAt` → 中央；shadow-read 后停本地会员主写；Trial T-3 / 到期通知接邮件、站内 SSE、Push |
+
+### 6.1 产品接线（已落地）
+
+| 仓 | 集成 |
+|----|------|
+| `server` | `@luminaryworks/entitlement-client`；`ENTITLEMENT_MODE=off\|shadow_read\|enforce`；适配既有 `EntitlementService`；`GET /api/v1/billing/entitlements` DTO 兼容；org/member/seat 表 + Logto `logtoOrgId`；`scripts/migrate-legacy-billing.mjs` |
+| `shared` | feature catalog + Ultra SKU + `effectivePlan` / quotas 可选字段；legacy gate ↔ `ENTITLEMENT_*` 映射 |
+| `web` client/admin | Trial/Pro/Ultra/Enterprise UX；402 升级提示；Admin 套餐调整 |
+| `desktop` / `mobile` | 仍消费 `GET /billing/entitlements`；展示 `effectivePlan` 与 402 文案 |
+
+## 7. 相关文档
 
 - 实现仓：`D:\www\vistaremote\spec\`
 - 生态：[domain-and-branding.md §4.5](../domain-and-branding.md#45-vistaremote--vistaremote-组织)
+- 权益：[subscription-and-entitlement.md](../subscription-and-entitlement.md)
