@@ -1,0 +1,38 @@
+---
+description: Restrict high-cost Cursor models — execution must use Grok 4.5 / Composer 2.5 only
+alwaysApply: true
+---
+
+# Model usage policy (LuminaryWorks ecosystem)
+
+## Allowed execution models (default)
+
+For **implementation, coding, docs edits, tests, verification, debugging, migrations, refactors, and subagents/tasks**:
+
+1. **Primary:** Cursor Grok 4.5 High Fast (`cursor-grok-4.5-high-fast`)
+2. **Fallback:** Composer 2.5 (`composer-2.5-fast`)
+
+Do **not** use any other model for those tasks unless the **user explicitly names** that model in the current conversation (e.g. "用 GPT-5.6 实现" / "use Claude Opus for this").
+
+## When other models are allowed
+
+- **Planning only** (Plan mode / architecture / rollout design before Accept): other models (e.g. GPT-5.6 Sol Medium, Claude Opus) may be used.
+- After a plan is **Accepted**, switch execution to Grok 4.5 or Composer 2.5 immediately.
+- Spawning Task/subagents for code/test/verify: pass only `cursor-grok-4.5-high-fast` or `composer-2.5-fast` unless the user named another model.
+
+## Hard stops
+
+- If this session is a high-cost model (GPT / Claude / Other Models API) and the user asked for **implementation or verification** without explicitly authorizing that model: **stop coding**, tell the user to switch to **Grok 4.5 High Fast** (or Composer 2.5), and do not continue burning Other Models quota.
+- Never "quietly" continue expensive execution just because the chat was planned on GPT/Claude.
+- Docs, specs, tests, lint fixes, and smoke verification count as **execution**, not planning.
+
+## Examples
+
+- User: "规划 DoerFlow 接入" → planning model OK.
+- User: "Implement the plan" / "落地" / "验证" → **Grok 4.5 or Composer 2.5 only**.
+- User: "用 GPT-5.6 写这个修复" → that model allowed **for this request only**.
+- Subagent for product integration → model: `cursor-grok-4.5-high-fast` (or `composer-2.5-fast`).
+
+## Scope
+
+Applies to LuminaryWorks MetaRepo and all ecosystem products: DataLuminary, BlockyEdu, DoerFlow, VistaRemote, VistaCast, SyncroBrain (and their nested repos).

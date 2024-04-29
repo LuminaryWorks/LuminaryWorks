@@ -1,0 +1,15 @@
+{
+  "name": "@luminaryworks/auth-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Polyform-Noncommercial-1.0.0",
+  "description": "Luminary Auth Gateway — OIDC reverse proxy so products do not bind to a specific IdP",
+  "type": "module",
+  "scripts": {
+    "start": "node src/main.mjs",
+    "dev": "node --watch src/main.mjs"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  }
+}

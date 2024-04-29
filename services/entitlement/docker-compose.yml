@@ -1,0 +1,41 @@
+services:
+  entitlement-db:
+    image: postgres:16-alpine
+    container_name: luminary-entitlement-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: entitlement
+      POSTGRES_PASSWORD: ${ENTITLEMENT_DB_PASSWORD:-entitlement_dev}
+      POSTGRES_DB: entitlement
+    ports:
+      - "${ENTITLEMENT_DB_PORT:-5434}:5432"
+    volumes:
+      - luminary_entitlement_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U entitlement -d entitlement"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  entitlement:
+    build: .
+    container_name: luminary-entitlement
+    restart: unless-stopped
+    depends_on:
+      entitlement-db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      ENTITLEMENT_PORT: 3040
+      ENTITLEMENT_DATABASE_URL: postgres://entitlement:${ENTITLEMENT_DB_PASSWORD:-entitlement_dev}@entitlement-db:5432/entitlement
+      ENTITLEMENT_AUTH_MODE: ${ENTITLEMENT_AUTH_MODE:-legacy}
+      ENTITLEMENT_LEGACY_JWT_SECRET: ${ENTITLEMENT_LEGACY_JWT_SECRET:-dev-entitlement-secret-change-me}
+      ENTITLEMENT_SERVICE_API_KEY: ${ENTITLEMENT_SERVICE_API_KEY:-dev-service-key-change-me}
+      ENTITLEMENT_OIDC_ISSUER: ${ENTITLEMENT_OIDC_ISSUER:-http://localhost:3001/oidc}
+      ENTITLEMENT_OIDC_AUDIENCE: ${ENTITLEMENT_OIDC_AUDIENCE:-https://entitlement.luminaryworks.dev}
+      ENTITLEMENT_MIGRATIONS_RUN: "true"
+    ports:
+      - "${ENTITLEMENT_PORT:-3040}:3040"
+
+volumes:
+  luminary_entitlement_pg:

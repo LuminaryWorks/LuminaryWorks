@@ -1,0 +1,13 @@
+---
+description: Require Node.js >=24 for all LuminaryWorks ecosystem Node projects
+alwaysApply: true
+---
+
+# Node.js version (LuminaryWorks ecosystem)
+
+- **Required:** Node.js **>= 24.0.0** (Current LTS track for this ecosystem).
+- Every Node package must declare `"engines": { "node": ">=24.0.0" }`.
+- MetaRepos ship `.nvmrc` / `.node-version` with `24` and `.npmrc` with `engine-strict=true`.
+- Prefer `@types/node` `^24` when adding or bumping Node types.
+- Do **not** lower the engine range for convenience (no `>=18` / `>=20` / `>=22`).
+- Re-sync: `node scripts/lock-node24-ecosystem.mjs` from LuminaryWorks MetaRepo.
