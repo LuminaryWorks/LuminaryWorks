@@ -36,10 +36,10 @@ github.com/LuminaryWorks/
 本地（沿用 MetaRepo「嵌套独立仓」模式，根仓 `.gitignore` 忽略子仓）：
 
 ```text
-D:\www\LuminaryWorks\          # 根 MetaRepo
-├── docs\                      # 独立 git → LuminaryWorks/docs
-├── identity\                  # 独立 git → LuminaryWorks/identity
-└── shared\                    # 独立 git → LuminaryWorks/shared
+{workspace}/LuminaryWorks/     # 根 MetaRepo（与产品仓并列）
+├── docs/                      # 独立 git → LuminaryWorks/docs
+├── identity/                  # 独立 git → LuminaryWorks/identity
+└── shared/                    # 独立 git → LuminaryWorks/shared
 ```
 
 ## 3. 五产品共享能力盘点（架构分析）
@@ -84,7 +84,7 @@ D:\www\LuminaryWorks\          # 根 MetaRepo
 - 独立 `docker compose`：`logto`（OIDC 3001 / Admin 3002）+ `postgres` + `redis`
 - `scripts/register-apps.*`：幂等注册 SPA Application + API Resource
 - `.env.example` 暴露 `IDP_ISSUER` / 各 `CLIENT_ID`，供产品 `.env` 引用
-- 后端 `@luminaryworks/auth-core`（JWKS）；前端 `@luminary/auth-react`（OIDC PKCE）
+- 后端 `@luminaryworks/auth-core`（JWKS）；前端 `@luminaryworks/auth-react`（OIDC PKCE）
 - **登录 UI**：Experience API（Headless）多品牌，不 fork Logto Experience 源码
 - **产品 AuthZ**：各产品 **Casbin**；Logto 只做身份与产品准入
 - 私有化：`IDP_MODE=external_oidc` 直连企业 IdP，无需改业务代码
@@ -111,7 +111,7 @@ D:\www\LuminaryWorks\          # 根 MetaRepo
 1. 启动：`git clone LuminaryWorks/identity && cd identity && ./bootstrap.sh`（或 meta 仓 `pnpm id:up`）
 2. 配置：复制 identity 输出的 CLIENT_ID 到本仓 `.env`（VITE_IDP_* / IDP_ISSUER）
 3. 后端：依赖 `@luminary/auth-core`，`LuminaryAuthModule.forRootAsync({ mode, issuer })`
-4. 前端：依赖 `@luminary/auth-react`，OIDC PKCE 登录
+4. 前端：依赖 `@luminaryworks/auth-react`，OIDC PKCE 登录
 5. 私有化：`IDP_MODE=external_oidc` + 企业 OIDC issuer
 ```
 

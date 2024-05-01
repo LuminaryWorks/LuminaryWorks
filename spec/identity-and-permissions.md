@@ -87,20 +87,24 @@
 ### 3.2 推荐调用链（禁止产品直连 Logto Experience）
 
 ```text
-Product SPA  →  Luminary Auth SDK (@luminary/auth-react)
+Product SPA  →  Luminary Auth SDK (@luminaryworks/auth-react)
                     →  Auth Gateway（OIDC 反代 / 产品识别 / 白标 / 风控 / 审计）
                          →  Logto | Auth0 | Keycloak | Cognito | 企业 IdP
 ```
 
-**落地（MVP）**：`LuminaryWorks/services/auth-gateway` — 将产品 `issuer` 固定为 Gateway（默认 `:3010/oidc`），通过 `UPSTREAM_ISSUER` 切换真实 IdP，产品代码零修改。
+**落地（MVP）**：
+- 前端 SDK：`@luminaryworks/auth-react`（`HeadlessLoginPanel` + OIDC PKCE）
+- 本地同域代理：`@luminaryworks/auth-dev-proxy`（产品 SPA 代理 `/oidc` + `/api/experience`，无需强制启动 Auth Gateway）
+- 多产品 / 生产网关：`LuminaryWorks/services/auth-gateway` — 将产品 `issuer` 固定为 Gateway（默认 `:3010/oidc`），通过 `UPSTREAM_ISSUER` 切换真实 IdP
 
-| 部署 | 产品看到的 issuer | Upstream |
-|------|-------------------|----------|
+| 部署 | 产品看到的 Experience / issuer | Upstream |
+|------|-------------------------------|----------|
+| 本地开发 | SPA origin + `@luminaryworks/auth-dev-proxy` | 中心 Logto `:3001` |
 | SaaS 标准 | Auth Gateway | 中心 Logto |
 | 私有化 + 自托管 Logto | Auth Gateway（或直连） | 客户 Logto（接 AD/飞书/钉钉…） |
 | 私有化 + 企业 OIDC | Auth Gateway | Azure AD / Okta / … |
 
-本地开发可暂跳过 Gateway，直连 `http://localhost:3001/oidc`。生产与可售私有化包默认经 Gateway。注册、找回、MFA、企业 SSO 均走 IdP / Experience 能力，勿自造认证状态机。
+本地开发推荐：`AUTH_EXPERIENCE_URL=<SPA origin>` + `@luminaryworks/auth-dev-proxy` 直连 Logto `:3001`。生产与可售私有化包默认经 Gateway。注册、找回、MFA、企业 SSO 均走 IdP / Experience 能力，勿自造认证状态机。
 
 **默认登录心智**：各产品登录页以「统一账号 / 企业 SSO」为主 CTA；本地账密仅 `ALLOW_LOCAL_LOGIN` 开发折叠入口，生产关闭。
 

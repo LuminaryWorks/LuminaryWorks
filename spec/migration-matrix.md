@@ -45,7 +45,7 @@
 | DoerFlow api | auth-core | file: | 版本号 |
 | VistaCast server | auth-core | file: | 版本号 |
 | iot-gateway | auth-core | file: | 版本号 |
-| DataView 等 SPA | auth-react | 复制 idp 模式 | `@luminary/auth-react` |
+| DataView 等 SPA | auth-react | 复制 idp 模式 | `@luminaryworks/auth-react` |
 
 ## Identity 服务迁移（已完成 S0）
 

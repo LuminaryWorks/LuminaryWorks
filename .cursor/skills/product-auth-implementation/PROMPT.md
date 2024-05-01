@@ -15,16 +15,16 @@ Implement LuminaryWorks unified login and product authorization for **this** pro
 ## Decisions already made
 
 - **AuthN**: Logto OIDC (`IDP_ISSUER=http://localhost:3001/oidc` locally).
-- **Login UI**: Experience API / Headless (or `@luminary/auth-react` OIDC PKCE). Multi-brand per product. No Logto Experience fork. No Management API in browser.
+- **Login UI**: Experience API / Headless (or `@luminaryworks/auth-react` OIDC PKCE). Multi-brand per product. No Logto Experience fork. No Management API in browser.
 - **AuthZ**: **Casbin** in this product. JWT carries identity + platform access only — not resource ACL.
-- Shared libs: `@luminaryworks/auth-core`, `@luminary/auth-react`, optional `@luminary/pal`.
+- Shared libs: `@luminaryworks/auth-core`, `@luminaryworks/auth-react`, optional `@luminaryworks/pal`.
 
 ## Your tasks
 
 1. Audit current auth (guards, login pages, RBAC tables).
 2. Wire NestJS backend to `@luminaryworks/auth-core` + env `IDP_*`.
 3. Add Casbin `PermissionService`; map Logto `sub` → local user; compute `permission(s)` on resource APIs.
-4. Wire SPA login/callback with `@luminary/auth-react` + `VITE_IDP_*`.
+4. Wire SPA login/callback with `@luminaryworks/auth-react` + `VITE_IDP_*`.
 5. Update `.env.example`, product README/spec with Logto + Casbin notes.
 6. Prefer minimal diffs; migrate existing `@RequirePermission` to Casbin without rewriting all business modules at once.
 7. Do not commit unless asked.

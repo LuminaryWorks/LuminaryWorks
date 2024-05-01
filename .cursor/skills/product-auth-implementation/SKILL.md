@@ -18,8 +18,9 @@ Follow MetaRepo spec: `LuminaryWorks/spec/identity-and-permissions.md`.
 3. **Login UI = Experience API / OIDC PKCE Headless.** Do not fork Logto `packages/experience` as the default path. Do not call Management API from the browser.
 4. Use shared packages when available:
    - Backend: `@luminaryworks/auth-core` (JWKS verify + `LuminaryJwtAuthGuard`)
-   - Frontend: `@luminary/auth-react` (OIDC PKCE)
-   - Optional: `@luminary/pal` as abstraction over Casbin adapter
+   - Frontend: `@luminaryworks/auth-react` (OIDC PKCE + `HeadlessLoginPanel`)
+   - Dev proxy: `@luminaryworks/auth-dev-proxy` (same-origin `/oidc` + `/api/experience`)
+   - Optional: `@luminaryworks/pal` as abstraction over Casbin adapter
 5. Map Logto `sub` → local `user_id` on first authenticated request (upsert).
 6. List/detail APIs return `permissions: { view, edit, delete, ... }` computed by Casbin.
 
@@ -51,21 +52,30 @@ IDP_MODE=logto
 
 ### B. Frontend (React SPA)
 
-1. Wrap app with `LuminaryAuthProvider` from `@luminary/auth-react` (or product `lib/idp.ts` PKCE).
-2. **Login page default = unified account CTA** (OIDC). Local password only behind `VITE_ALLOW_LOCAL_LOGIN` (dev). Production: `false`.
+1. Use `@luminaryworks/auth-react`: `HeadlessLoginPanel` (default `mode="redirect"`) + `readIdpConfigFromEnv` / product `lib/idp.ts` with **static** `import.meta.env.KEY` / `process.env.NEXT_PUBLIC_*` reads (bundlers do not inline dynamic env maps).
+2. **Login UI = product-branded Headless.** Local password only behind `VITE_ALLOW_LOCAL_LOGIN` / `NEXT_PUBLIC_ALLOW_LOCAL_LOGIN` (dev). Production: `false`.
 3. Routes: path `/auth/callback` (history fallback) even if the app uses HashRouter — mount callback before the hash router when `pathname === /auth/callback`.
-4. Prefer `VITE_AUTH_GATEWAY_URL` (Auth Gateway) over raw Logto issuer so IdP can be swapped.
+4. **Same-origin IdP proxy (local default):** `@luminaryworks/auth-dev-proxy`
+   - Rsbuild/Vite: `createIdpDevProxyMap({ spaOrigin })` for `/oidc` + `/api/experience` **before** backend `/api` proxy.
+   - Next.js: `forwardIdpFetch` route handlers at `app/oidc/[...path]` and `app/api/experience/[[...path]]` (so Experience is not swallowed by API rewrites).
+   - Set `VITE_AUTH_EXPERIENCE_URL` / `PUBLIC_AUTH_EXPERIENCE_URL` / `NEXT_PUBLIC_AUTH_EXPERIENCE_URL` to the **SPA origin** (not `:3010`).
+   - Keep `VITE_IDP_ISSUER=http://localhost:3001/oidc` so JWT `iss` matches Logto.
+   - Auth Gateway (`:3010`) is optional locally; preferred in multi-product / production.
 5. Attach `Authorization: Bearer <access_token>` to API client; exchange via product `POST …/auth/sso/login` when the API still issues a local session JWT.
 6. Drive UI from resource `permissions` fields — do not hardcode role names for buttons.
 7. Brand the login page per product (logo, colors, copy). Auth logic stays SDK/API.
+8. Optional return-path helpers: `createPostLoginPathHelpers({ storageKey, defaultPath })` from `@luminaryworks/auth-react`.
 
 Env:
 
 ```bash
-# VITE_AUTH_GATEWAY_URL=http://localhost:3010
+# Same-origin Experience (dev) — required for Headless without Auth Gateway
+VITE_AUTH_EXPERIENCE_URL=http://localhost:<spa-port>
+# Optional: AUTH_IDP_PROXY_TARGET=http://localhost:3001
+# Optional multi-product: VITE_AUTH_GATEWAY_URL=http://localhost:3010
 VITE_IDP_ISSUER=http://localhost:3001/oidc
 VITE_IDP_CLIENT_ID=<from identity/registered-apps.json>
-VITE_IDP_REDIRECT_URI=http://localhost:<port>/auth/callback
+VITE_IDP_REDIRECT_URI=http://localhost:<spa-port>/auth/callback
 VITE_ALLOW_LOCAL_LOGIN=false
 ```
 

@@ -15,22 +15,23 @@
 | # | 品牌 | 中文名 | 域名 | GitHub | 一句话 |
 |---|------|--------|------|--------|--------|
 | 1 | **DataLuminary** | 数据明鉴 | [dataluminary.dev](https://dataluminary.dev) | [dataluminary/DataLuminary-Platform](https://github.com/dataluminary/DataLuminary-Platform) | AI 数据洞察 — BI、DataTalk 大屏 |
-| 2 | **BlockyEdu** | 智码工坊 | [blockyedu.com](https://blockyedu.com) | [blockyedu/VibeEdu](https://github.com/blockyedu/VibeEdu) | AI 教育 — Blockly 编程与课程 |
+| 2 | **BlockyEdu** | 智码工坊 | [blockyedu.com](https://blockyedu.com) | [blockyedu/VibeEdu](https://github.com/blockyedu/VibeEdu) | AI 全民创造 + VibeLearn 企业大学私有化 |
 | 3 | **DoerFlow** | 智工网 | [doerflow.dev](https://doerflow.dev) | [doerflow/VibeAgent](https://github.com/doerflow/VibeAgent) | 执行者价值网络 — Agent/链上结算 |
 | 4 | **VistaCast** | 视界云遥 | [vistacast.dev](https://vistacast.dev) | [VistaCast/vistacast](https://github.com/VistaCast/vistacast) | AI 摄像头云监控（**文档先行**） |
 | 5 | **VistaRemote** | 视界远程 | [remote.vistacast.dev](https://remote.vistacast.dev) | [VistaRemote/vibeCode](https://github.com/VistaRemote/vibeCode) | WebRTC 远程桌面 + AI 录制 |
 | 6 | **SyncroBrain** | 万物智脑 | [syncrobrain.com](https://syncrobrain.com) | [syncrobrain/LuminaryIoTChain](https://github.com/syncrobrain/LuminaryIoTChain) | 连接设备的 AI OS |
 
-本地路径（Phase C）：
+本地路径（Phase C）：本仓与六产品仓**并列**于同一工作区根目录（可为 `C:\www`、`D:\www`、`~/www` 等，不硬编码盘符）：
 
 ```text
-D:\www\LuminaryWorks\           # 启明工坊 MetaRepo
-D:\www\dataluminary\            # 数据明鉴
-D:\www\blockyedu\               # 智码工坊
-D:\www\doerflow\                # 智工网
-D:\www\vistacast\               # 视界云遥（规划 spec）
-D:\www\vistaremote\             # 视界远程（远程桌面实现）
-D:\www\syncrobrain\             # 万物智脑
+{workspace}/
+├── LuminaryWorks/           # 启明工坊 MetaRepo（本仓）
+├── dataluminary/            # 数据明鉴
+├── blockyedu/               # 智码工坊
+├── doerflow/                # 智工网
+├── vistacast/               # 视界云遥（规划 spec）
+├── vistaremote/             # 视界远程（远程桌面实现）
+└── syncrobrain/             # 万物智脑
 ```
 
 > GitHub 组织 rename 与 `git remote` 更新见 [spec/github-org-migration.md](./spec/github-org-migration.md)。
@@ -40,13 +41,14 @@ D:\www\syncrobrain\             # 万物智脑
 六个项目回答同一条价值链的不同环节：
 
 ```text
-         学（智码工坊）──► 连（万物智脑）──► 看（数据明鉴）
+      学+创（智码工坊）──► 连（万物智脑）──► 看（数据明鉴）
                                     │
           视（视界云遥 VistaCast）──┤  控（视界远程 VistaRemote）
                                     └──► 赚（智工网 DoerFlow）
 ```
 
-- **学**：智码工坊 BlockyEdu — AI 编程与课程  
+- **学 + 创**：智码工坊 BlockyEdu — AI 全民创造（网站 / 小程序 / 标准玩具）与学中创；**VibeLearn** 可对企业私有化交付内部培训（对标知鸟）
+
 - **连**：万物智脑 SyncroBrain — 开源 IoT PaaS  
 - **看**：数据明鉴 DataLuminary — 数据洞察与大屏  
 - **视**：视界云遥 VistaCast — AI 摄像头云监控（规划，文档先行）  
@@ -74,18 +76,44 @@ LuminaryWorks/                  # 本仓：叙事 + 标准 + 编排脚本
 | [identity](https://github.com/LuminaryWorks/identity) | Logto + PG + Redis + 应用注册脚本 |
 | [shared](https://github.com/LuminaryWorks/shared) | `@luminaryworks/auth-core`、`auth-react`、`pal`、`notification`、`entitlement-client`、`tooling` |
 | `services/entitlement` | 中央订阅/权益服务（NestJS + PostgreSQL；见 `pnpm ent:*`） |
-| `@luminaryworks/entitlement-client` | 产品侧客户端；源码变更后执行 `pnpm ent:client:sync` 刷新各仓 `file:` 安装（避免缺 `dist/trial.js`） |
+| `@luminaryworks/entitlement-client` | 产品侧客户端；测试/CI 用 GitHub Packages 版本（`^0.1.0`）。改 shared 源码后先发版，或本机 `pnpm.overrides` + `pnpm ent:client:sync` |
 
 DoerFlow 采用特殊无试用策略：平台只展示 Pro / Ultra / Enterprise。其 Logto 平台会话与非托管钱包/SIWE 是独立状态；平台套餐控制托管 API 与配额，Gas、Escrow 和协议费仍走链上协议经济。统一错误语义为 401 身份、402 权益、403 资源 ACL。
 
 ## 一键初始化
 
+本地 MetaRepo 编排栈（identity / shared / docs / entitlement / auth-gateway）用一条命令准备：
+
 ```bash
-# 克隆三个子仓到本目录后：
-pnpm bootstrap     # 起 identity（Logto）+ 构建 shared（@luminary/*）
-pnpm id:up         # 仅拉起统一登录（Docker Desktop 重启后 normally 会 unless-stopped 自启；详见 identity/LOCAL_DEV_DOCKER.md）
-pnpm docs:dev      # 本地预览文档站
+# 首次（克隆子仓 + 装依赖 + 起服务）：
+.\init.ps1                 # Windows
+# ./init.sh                # macOS / Linux
+
+# 子仓已在本目录时（只做环境准备）：
+pnpm bootstrap
 ```
+
+`pnpm bootstrap` 会依次：
+
+1. 拉起 **identity**（Logto + PG + Redis）
+2. **shared**：`pnpm install` + `pnpm build`（`@luminaryworks/*`）
+3. **docs**：`pnpm install`
+4. **entitlement**：补齐 `.env` → `pnpm install` → 起 DB → migrate / seed
+5. **auth-gateway**：从 `env.example` 生成 `.env`（无 npm 依赖）
+
+缺目录的子仓会跳过并警告，不中断。六个产品仓（DataLuminary 等）不在 MetaRepo 内，需各自目录安装。
+
+常用后续命令：
+
+```bash
+pnpm id:up         # 仅拉起统一登录（unless-stopped；Desktop 重启后自启，见 identity/LOCAL_DEV_DOCKER.md）
+pnpm id:down       # 临时 stop（保留容器，下次 Desktop 仍自启）
+pnpm id:destroy    # compose down（拆掉栈，需再 id:up）
+pnpm docs:dev      # 本地预览文档站
+pnpm ent:dev       # 权益服务开发态
+pnpm auth:gateway  # Auth Gateway :3010（需 identity 已起）
+```
+
 
 ## Cursor 模型策略（强制）
 
