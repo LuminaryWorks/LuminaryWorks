@@ -1,5 +1,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const metaRoot = path.resolve(__dirname, '..')
+const www = path.resolve(metaRoot, '..')
 
 const content = `---
 description: Restrict high-cost Cursor models — execution must use Grok 4.5 / Composer 2.5 only
@@ -41,36 +46,39 @@ Do **not** use any other model for those tasks unless the **user explicitly name
 Applies to LuminaryWorks MetaRepo and all ecosystem products: DataLuminary, BlockyEdu, DoerFlow, VistaRemote, VistaCast, SyncroBrain (and their nested repos).
 `
 
-const targets = [
-  'D:/www/LuminaryWorks/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/dataluminary/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/dataluminary/DataTalk/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/dataluminary/DataView/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/blockyedu/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/blockyedu/edu-server/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/blockyedu/server/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/blockyedu/edu-app-web/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/blockyedu/code-app-web/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/doerflow/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/doerflow/repos/api/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/doerflow/repos/web/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/doerflow/repos/admin/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/doerflow/repos/wallet/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/doerflow/repos/worker/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/vistaremote/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/vistaremote/server/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/vistaremote/web/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/vistaremote/shared/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/vistacast/.cursor/rules/model-usage-policy.mdc',
-  'D:/www/syncrobrain/.cursor/rules/model-usage-policy.mdc',
+/** Relative to workspace root (sibling of LuminaryWorks). */
+const relativeTargets = [
+  'LuminaryWorks/.cursor/rules/model-usage-policy.mdc',
+  'dataluminary/.cursor/rules/model-usage-policy.mdc',
+  'dataluminary/DataTalk/.cursor/rules/model-usage-policy.mdc',
+  'dataluminary/DataView/.cursor/rules/model-usage-policy.mdc',
+  'blockyedu/.cursor/rules/model-usage-policy.mdc',
+  'blockyedu/edu-server/.cursor/rules/model-usage-policy.mdc',
+  'blockyedu/server/.cursor/rules/model-usage-policy.mdc',
+  'blockyedu/edu-app-web/.cursor/rules/model-usage-policy.mdc',
+  'blockyedu/code-app-web/.cursor/rules/model-usage-policy.mdc',
+  'doerflow/.cursor/rules/model-usage-policy.mdc',
+  'doerflow/repos/api/.cursor/rules/model-usage-policy.mdc',
+  'doerflow/repos/web/.cursor/rules/model-usage-policy.mdc',
+  'doerflow/repos/admin/.cursor/rules/model-usage-policy.mdc',
+  'doerflow/repos/wallet/.cursor/rules/model-usage-policy.mdc',
+  'doerflow/repos/worker/.cursor/rules/model-usage-policy.mdc',
+  'vistaremote/.cursor/rules/model-usage-policy.mdc',
+  'vistaremote/server/.cursor/rules/model-usage-policy.mdc',
+  'vistaremote/web/.cursor/rules/model-usage-policy.mdc',
+  'vistaremote/shared/.cursor/rules/model-usage-policy.mdc',
+  'vistacast/.cursor/rules/model-usage-policy.mdc',
+  'syncrobrain/.cursor/rules/model-usage-policy.mdc',
 ]
+
+const targets = relativeTargets.map((rel) => path.join(www, rel))
 
 for (const file of targets) {
   fs.mkdirSync(path.dirname(file), { recursive: true })
   fs.writeFileSync(file, content, { encoding: 'utf8' })
 }
 
-console.log(`wrote ${targets.length} files`)
+console.log(`wrote ${targets.length} files (www=${www})`)
 for (const file of targets) {
   const buf = fs.readFileSync(file)
   const bom = buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf

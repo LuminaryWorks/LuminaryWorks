@@ -1,17 +1,21 @@
 # Verify GitHub org rename + local remotes alignment
+# Resolves {workspace} as parent of this MetaRepo.
+
+$MetaRoot = Split-Path $PSScriptRoot -Parent
+$Www = Split-Path $MetaRoot -Parent
 
 $checks = @(
-  @{ Org = "dataluminary"; Remote = "git@github.com:dataluminary/DataLuminary-Platform.git"; Path = "D:\www\dataluminary"; Repo = "DataLuminary-Platform"; Required = $true },
-  @{ Org = "blockyedu";    Remote = "git@github.com:blockyedu/VibeEdu.git";                   Path = "D:\www\blockyedu";    Repo = "VibeEdu"; Required = $true },
-  @{ Org = "doerflow";     Remote = "git@github.com:doerflow/VibeAgent.git";                Path = "D:\www\doerflow";     Repo = "VibeAgent"; Required = $true },
-  @{ Org = "VistaRemote";  Remote = "git@github.com:VistaRemote/vibeCode.git";              Path = "D:\www\vistaremote";  Repo = "vibeCode"; Required = $true },
-  @{ Org = "VistaCast";     Remote = "git@github.com:VistaCast/vistacast.git";               Path = "D:\www\vistacast";     Repo = "vistacast"; Required = $false },
-  @{ Org = "syncrobrain";  Remote = "git@github.com:syncrobrain/LuminaryIoTChain.git";       Path = "D:\www\syncrobrain";  Repo = "LuminaryIoTChain"; Required = $true }
+  @{ Org = "dataluminary"; Remote = "git@github.com:dataluminary/DataLuminary-Platform.git"; Path = (Join-Path $Www "dataluminary"); Repo = "DataLuminary-Platform"; Required = $true },
+  @{ Org = "blockyedu";    Remote = "git@github.com:blockyedu/VibeEdu.git";                   Path = (Join-Path $Www "blockyedu");    Repo = "VibeEdu"; Required = $true },
+  @{ Org = "doerflow";     Remote = "git@github.com:doerflow/VibeAgent.git";                Path = (Join-Path $Www "doerflow");     Repo = "VibeAgent"; Required = $true },
+  @{ Org = "VistaRemote";  Remote = "git@github.com:VistaRemote/vibeCode.git";              Path = (Join-Path $Www "vistaremote");  Repo = "vibeCode"; Required = $true },
+  @{ Org = "VistaCast";     Remote = "git@github.com:VistaCast/vistacast.git";               Path = (Join-Path $Www "vistacast");     Repo = "vistacast"; Required = $false },
+  @{ Org = "syncrobrain";  Remote = "git@github.com:syncrobrain/LuminaryIoTChain.git";       Path = (Join-Path $Www "syncrobrain");  Repo = "LuminaryIoTChain"; Required = $true }
 )
 
 # VistaCast: docs-only MetaRepo (no implementation subrepos yet)
 $optional = @(
-  @{ Org = "VistaCast"; Path = "D:\www\vistacast"; Note = "docs/spec MetaRepo — VistaCast/vistacast" }
+  @{ Org = "VistaCast"; Path = (Join-Path $Www "vistacast"); Note = "docs/spec MetaRepo — VistaCast/vistacast" }
 )
 
 function Find-GitRoot([string]$Start) {
@@ -22,7 +26,7 @@ function Find-GitRoot([string]$Start) {
   return $null
 }
 
-Write-Host "=== Migration verification ===" -ForegroundColor Cyan
+Write-Host "=== Migration verification (workspace=$Www) ===" -ForegroundColor Cyan
 $allOk = $true
 
 foreach ($c in $checks) {

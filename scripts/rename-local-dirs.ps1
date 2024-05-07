@@ -1,10 +1,12 @@
 # LuminaryWorks Phase C — rename local MetaRepo directories to match org/domain
 # Usage: .\scripts\rename-local-dirs.ps1 [-WhatIf]
+# Resolves {workspace} as parent of this MetaRepo (no hardcoded drive letter).
 
 param([switch]$WhatIf)
 
 $ErrorActionPreference = "Stop"
-$Www = "D:\www"
+$MetaRoot = Split-Path $PSScriptRoot -Parent
+$Www = Split-Path $MetaRoot -Parent
 
 $moves = @(
   @{ From = "$Www\DataLuminary\DataLuminary-Platform"; To = "$Www\dataluminary" },
@@ -54,7 +56,7 @@ function Move-Dir {
   }
 }
 
-Write-Host "=== Phase C: local directory rename ===" -ForegroundColor Cyan
+Write-Host "=== Phase C: local directory rename (workspace=$Www) ===" -ForegroundColor Cyan
 foreach ($m in $moves) {
   Move-Dir -From $m.From -To $m.To
 }

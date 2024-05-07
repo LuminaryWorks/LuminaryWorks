@@ -20,4 +20,10 @@ foreach ($r in $repos) {
   git clone "$Org/$($r.name).git" $dest
 }
 
-Write-Host "`nDone. Next: pnpm bootstrap"
+Write-Host "`n▶ Running pnpm bootstrap (install + services)…"
+Push-Location $Root
+try {
+  node scripts/bootstrap.mjs
+} finally {
+  Pop-Location
+}

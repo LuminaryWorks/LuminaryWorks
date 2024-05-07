@@ -1,10 +1,12 @@
-# Flatten Phase C layout: D:\www\{org}\{MetaRepo} -> D:\www\{org}
+# Flatten Phase C layout: {workspace}/{org}/{MetaRepo} -> {workspace}/{org}
 # Remove duplicate copies under old parent folders.
 # Usage: .\scripts\flatten-local-dirs.ps1 [-WhatIf]
 
 param([switch]$WhatIf)
 
 $ErrorActionPreference = "Stop"
+$MetaRoot = Split-Path $PSScriptRoot -Parent
+$Www = Split-Path $MetaRoot -Parent
 
 function Flatten-Repo {
   param(
@@ -49,14 +51,14 @@ function Remove-Duplicate {
   Write-Host "removed duplicate: $Path" -ForegroundColor DarkGray
 }
 
-Write-Host "=== Flatten local MetaRepo paths ===" -ForegroundColor Cyan
+Write-Host "=== Flatten local MetaRepo paths (workspace=$Www) ===" -ForegroundColor Cyan
 
-Flatten-Repo -OrgRoot "D:\www\dataluminary" -NestedName "DataLuminary-Platform"
-Flatten-Repo -OrgRoot "D:\www\blockyedu" -NestedName "VibeEdu"
+Flatten-Repo -OrgRoot (Join-Path $Www "dataluminary") -NestedName "DataLuminary-Platform"
+Flatten-Repo -OrgRoot (Join-Path $Www "blockyedu") -NestedName "VibeEdu"
 
-Remove-Duplicate "D:\www\DataLuminary\DataLuminary-Platform"
-Remove-Duplicate "D:\www\BlockyEdu\VibeEdu"
-Remove-Duplicate "D:\www\DataLuminary"
-Remove-Duplicate "D:\www\BlockyEdu"
+Remove-Duplicate (Join-Path $Www "DataLuminary\DataLuminary-Platform")
+Remove-Duplicate (Join-Path $Www "BlockyEdu\VibeEdu")
+Remove-Duplicate (Join-Path $Www "DataLuminary")
+Remove-Duplicate (Join-Path $Www "BlockyEdu")
 
 Write-Host "Done." -ForegroundColor Green

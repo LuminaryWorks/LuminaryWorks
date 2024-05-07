@@ -19,4 +19,5 @@ clone_if_missing identity identity
 clone_if_missing shared shared
 
 echo ""
-echo "Done. Next: pnpm bootstrap"
+echo "▶ Running pnpm bootstrap (install + services)…"
+node scripts/bootstrap.mjs

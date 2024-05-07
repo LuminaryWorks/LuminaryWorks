@@ -24,7 +24,7 @@
 | 品牌 | 中文名 | 官网 | GitHub | 角色 |
 |------|--------|------|--------|------|
 | [DataLuminary](https://dataluminary.dev) | 数据明鉴 | [dataluminary.dev](https://dataluminary.dev) | [dataluminary/DataLuminary-Platform](https://github.com/dataluminary/DataLuminary-Platform) | 看 — AI 数据洞察 |
-| [BlockyEdu](https://blockyedu.com) | 智码工坊 | [blockyedu.com](https://blockyedu.com) | [blockyedu/VibeEdu](https://github.com/blockyedu/VibeEdu) | 学 — AI 编程教育 |
+| [BlockyEdu](https://blockyedu.com) | 智码工坊 | [blockyedu.com](https://blockyedu.com) | [blockyedu/VibeEdu](https://github.com/blockyedu/VibeEdu) | 学+创 — AI 全民创造 + VibeLearn 企业大学私有化 |
 | [DoerFlow](https://doerflow.dev) | 智工网 | [doerflow.dev](https://doerflow.dev) | [doerflow/VibeAgent](https://github.com/doerflow/VibeAgent) | 赚 — Agent 价值网络 |
 | [VistaCast](https://vistacast.dev) | 视界云遥 | [vistacast.dev](https://vistacast.dev) | [VistaCast/vistacast](https://github.com/VistaCast/vistacast) | 视 — AI 摄像头云监控 |
 | [VistaRemote](https://remote.vistacast.dev) | 视界远程 | [remote.vistacast.dev](https://remote.vistacast.dev) | [VistaRemote/vibeCode](https://github.com/VistaRemote/vibeCode) | 控 — WebRTC 远程桌面 |

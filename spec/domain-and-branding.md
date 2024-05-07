@@ -9,7 +9,7 @@
 |------|------|--------|------|-------------|------|
 | 母公司 / 实验室 | **LuminaryWorks** | **启明工坊** | [luminaryworks.dev](https://luminaryworks.dev) | [LuminaryWorks](https://github.com/LuminaryWorks) | AI 生态编排、共享身份与规范 |
 | 产品 1 | **DataLuminary** | **数据明鉴** | [dataluminary.dev](https://dataluminary.dev) | [dataluminary](https://github.com/dataluminary) | AI 数据洞察与 BI |
-| 产品 2 | **BlockyEdu** | **智码工坊** | [blockyedu.com](https://blockyedu.com) | [blockyedu](https://github.com/blockyedu) | AI 编程与教育 |
+| 产品 2 | **BlockyEdu** | **智码工坊** | [blockyedu.com](https://blockyedu.com) | [blockyedu](https://github.com/blockyedu) | AI 全民创造 + VibeLearn 企业大学 |
 | 产品 3 | **DoerFlow** | **智工网** | [doerflow.dev](https://doerflow.dev) | [doerflow](https://github.com/doerflow) | 执行者价值流动网络 |
 | 产品 4 | **VistaCast** | **视界云遥** | [vistacast.dev](https://vistacast.dev) | [VistaCast](https://github.com/VistaCast) | AI 摄像头云监控（规划） |
 | 产品 5 | **VistaRemote** | **视界远程** | — | [VistaRemote](https://github.com/VistaRemote) | WebRTC 远程桌面运维 |
@@ -70,7 +70,9 @@
 
 - **旧组织**：[blockyEdu](https://github.com/blockyEdu) → **新组织**：`blockyedu`
 - **约束**：基于 Google Blockly，不能使用 `blockly` 商标
-- **AI 差异化**：Copilot（Text→Blockly）、Tutor、Debugger、Challenge、Assessment
+- **定位**：AI 全民创造平台（Create 默认；Learn/Code 为同产品模式）
+- **B 端子品牌**：**VibeLearn** — 企业大学 / 内部培训 LMS，可私有化（对标知鸟），零依赖创造沙箱
+- **AI 差异化**：创作生成 + Copilot（Text→Blockly）、Tutor、Debugger；企业侧考试/学情不依赖创造 AI
 
 ### 4.3 DoerFlow — 智工网 · doerflow.dev
 

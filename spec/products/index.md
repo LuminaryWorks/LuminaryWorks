@@ -19,7 +19,7 @@ LuminaryWorks（**启明工坊**）生态采用 **House of Brands**：六个产�
 ## 价值链闭环
 
 ```text
-         学（智码工坊）──► 连（万物智脑）──► 看（数据明鉴）
+      学+创（智码工坊）──► 连（万物智脑）──► 看（数据明鉴）
                                     │
           视（视界云遥 VistaCast）──┤  控（视界远程 VistaRemote）
                                     └──► 赚（智工网）
@@ -28,7 +28,7 @@ LuminaryWorks（**启明工坊**）生态采用 **House of Brands**：六个产�
 | # | 品牌 | 中文名 | GitHub | 生态角色 | 规划文档 | 编码优先级 |
 |---|------|--------|--------|----------|----------|------------|
 | 1 | **DataLuminary** | 数据明鉴 | [dataluminary/DataLuminary-Platform](https://github.com/dataluminary/DataLuminary-Platform) | 看 — AI 数据洞察 | [dataluminary.md](./dataluminary.md) | **P0** |
-| 2 | **BlockyEdu** | 智码工坊 | [blockyedu/VibeEdu](https://github.com/blockyedu/VibeEdu) | 学 — AI 编程教育 | [blockyedu.md](./blockyedu.md) | **P0** |
+| 2 | **BlockyEdu** | 智码工坊 | [blockyedu/VibeEdu](https://github.com/blockyedu/VibeEdu) | 学+创 — AI 全民创造 + VibeLearn 企业大学私有化 | [blockyedu.md](./blockyedu.md) | **P0** |
 | 3 | **DoerFlow** | 智工网 | [doerflow/VibeAgent](https://github.com/doerflow/VibeAgent) | 赚 — 执行者价值网络 | [doerflow.md](./doerflow.md) | P1 |
 | 4 | **VistaCast** | 视界云遥 | [VistaCast/vistacast](https://github.com/VistaCast/vistacast) | 视 — AI 摄像头 | [vistacast.md](./vistacast.md) | **文档先行** |
 | 5 | **VistaRemote** | 视界远程 | [VistaRemote/vibeCode](https://github.com/VistaRemote/vibeCode) | 控 — 远程桌面 | [vistaremote.md](./vistaremote.md) | ✅ |

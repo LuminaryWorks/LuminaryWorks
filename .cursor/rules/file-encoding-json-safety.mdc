@@ -5,12 +5,31 @@ alwaysApply: true
 
 # File encoding & JSON safety (LuminaryWorks ecosystem)
 
-## Encoding
+## Encoding (hard requirements)
 
 - **Always UTF-8 without BOM** for `.json`, `.md`, `.mdc`, locale/message files, and `package.json`.
-- **Never** use Windows PowerShell `Set-Content -Encoding UTF8` or `Out-File -Encoding utf8` on source files (writes UTF-8 BOM and can corrupt Unicode).
-- **Never** re-save UTF-8 text as GBK/ANSI or read UTF-8 as a legacy code page (causes `鈥?`, `锟`, `杩愯惀` mojibake).
+- **Never** use Windows PowerShell `Set-Content -Encoding UTF8` / `Out-File -Encoding utf8` / `>` redirection on source files (writes UTF-8 BOM and can destroy CJK).
+- **Never** pipe Chinese/Markdown through PowerShell as default string I/O (`Get-Content` / `Set-Content` without `-AsByteStream`), or re-save UTF-8 as GBK/ANSI / system code page.
+- **Never** do scope/string renames (`@luminary` → `@luminaryworks`, license sweeps, etc.) via shell regex that rewrites whole `.md` trees — that is how CJK became `??` / `�` in `shared/PUBLISH.md`, `MIGRATION.md`, `docs/org-packages-setup.md`.
 - Prefer **Node.js** (`fs.readFileSync` / `fs.writeFileSync` with `{ encoding: 'utf8' }`) or editors that default to UTF-8 no BOM.
+
+## Pre-flight check after editing CJK / Markdown
+
+After any edit to files that contain Chinese (or other non-ASCII), **verify with Node before finishing**:
+
+```js
+const t = require('fs').readFileSync(path, 'utf8');
+if (t.includes('\uFFFD') || /\?{2,}/.test(t)) throw new Error('mojibake');
+```
+
+Reject and restore if you see: `??` runs replacing Chinese, `�` / U+FFFD, or mojibake like `鈥?` / `锟` / `杩愯惀`.
+
+## Repair procedure
+
+1. Find last clean commit: `git log -p -- <file>` until CJK is intact (no `??` / U+FFFD).
+2. `git show <good-rev>:<file>` → write via Node UTF-8 no BOM.
+3. Re-apply only intentional ASCII-safe edits (scope rename, links) in Node — **never** re-save through PowerShell.
+4. Do **not** “fix” by guessing Chinese from `??`; recover from git or rewrite from a known-good source.
 
 ## JSON edits
 
@@ -22,7 +41,7 @@ alwaysApply: true
 ## Markdown & i18n
 
 - Preserve punctuation: `—`, `·`, `→`, CJK, and emoji must remain valid Unicode.
-- If a file already shows mojibake, **restore from git** (`git checkout HEAD -- <file>`) then re-apply the minimal text diff.
+- `.editorconfig` already sets `charset = utf-8`; do not override with legacy encodings.
 
 ## Bulk changes
 
@@ -32,9 +51,10 @@ alwaysApply: true
 ## Examples
 
 ```powershell
-# BAD — adds BOM, may corrupt JSON
-Set-Content file.json $content -Encoding UTF8 -NoNewline
+# BAD — BOM + possible CJK loss
+Set-Content file.md $content -Encoding UTF8
+(Get-Content a.md) -replace '@luminary/','@luminaryworks/' | Set-Content a.md
 
 # GOOD — Node, UTF-8 no BOM
-node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json','utf8')); p.license='Polyform-Noncommercial-1.0.0'; fs.writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');"
+node -e "const fs=require('fs'); let t=fs.readFileSync('a.md','utf8'); t=t.replaceAll('@luminary/','@luminaryworks/'); if(t.includes('\uFFFD')||t.includes('??')) throw new Error('mojibake'); fs.writeFileSync('a.md', t);"
 ```

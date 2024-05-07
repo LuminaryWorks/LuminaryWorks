@@ -2,13 +2,15 @@
 # Usage: .\scripts\verify-org-migration.ps1
 
 $ErrorActionPreference = "Continue"
+$MetaRoot = Split-Path $PSScriptRoot -Parent
+$Www = Split-Path $MetaRoot -Parent
 
 $expected = @(
-  @{ Target = "dataluminary"; RemotePath = "D:\www\dataluminary"; Repo = "DataLuminary-Platform" },
-  @{ Target = "blockyedu";    RemotePath = "D:\www\blockyedu";    Repo = "VibeEdu" },
-  @{ Target = "doerflow";     RemotePath = "D:\www\doerflow";     Repo = "VibeAgent" },
-  @{ Target = "VistaRemote";  RemotePath = "D:\www\vistaremote";  Repo = "vibeCode" },
-  @{ Target = "syncrobrain";  RemotePath = "D:\www\syncrobrain";  Repo = "LuminaryIoTChain" }
+  @{ Target = "dataluminary"; RemotePath = (Join-Path $Www "dataluminary"); Repo = "DataLuminary-Platform" },
+  @{ Target = "blockyedu";    RemotePath = (Join-Path $Www "blockyedu");    Repo = "VibeEdu" },
+  @{ Target = "doerflow";     RemotePath = (Join-Path $Www "doerflow");     Repo = "VibeAgent" },
+  @{ Target = "VistaRemote";  RemotePath = (Join-Path $Www "vistaremote");  Repo = "vibeCode" },
+  @{ Target = "syncrobrain";  RemotePath = (Join-Path $Www "syncrobrain");  Repo = "LuminaryIoTChain" }
 )
 
 function Find-GitRoot([string]$Start) {
@@ -19,7 +21,7 @@ function Find-GitRoot([string]$Start) {
   return $null
 }
 
-Write-Host "=== Org migration verification ===" -ForegroundColor Cyan
+Write-Host "=== Org migration verification (workspace=$Www) ===" -ForegroundColor Cyan
 $allOk = $true
 
 foreach ($e in $expected) {
@@ -40,7 +42,7 @@ foreach ($e in $expected) {
   Write-Host ("{0,-14} org={1,-5} remote={2,-5} path={3,-5}  {4}" -f $e.Target, $(if($orgOk){"yes"}else{"no"}), $(if($remoteOk){"yes"}else{"no"}), $(if($pathOk){"yes"}else{"no"}), $status)
 }
 
-Write-Host "[INFO] VistaCast (D:\www\vistacast) — docs/spec MetaRepo VistaCast/vistacast" -ForegroundColor DarkGray
+Write-Host "[INFO] VistaCast ($(Join-Path $Www 'vistacast')) — docs/spec MetaRepo VistaCast/vistacast" -ForegroundColor DarkGray
 Write-Host ""
 if ($allOk) {
   Write-Host "All verified." -ForegroundColor Green

@@ -26,8 +26,8 @@
 
 | 品牌 | 组织 | 产品 | 本地路径 |
 |------|------|------|----------|
-| VistaCast | [VistaCast](https://github.com/VistaCast) | AI 摄像头云监控 | `D:\www\vistacast` · [VistaCast/vistacast](https://github.com/VistaCast/vistacast) |
-| VistaRemote | [VistaRemote](https://github.com/VistaRemote) | WebRTC 远程桌面 | `D:\www\vistaremote` |
+| VistaCast | [VistaCast](https://github.com/VistaCast) | AI 摄像头云监控 | `../vistacast` · [VistaCast/vistacast](https://github.com/VistaCast/vistacast) |
+| VistaRemote | [VistaRemote](https://github.com/VistaRemote) | WebRTC 远程桌面 | `../vistaremote` |
 
 远程桌面代码维护在 **VistaRemote** 组织；VistaCast 为新产品线，编码排在 DataLuminary、BlockyEdu 之后。详见 [products/vistacast.md](./products/vistacast.md)、[products/vistaremote.md](./products/vistaremote.md)。
 
@@ -118,7 +118,7 @@ git remote set-url origin git@github.com:doerflow/platform.git
 
 ### 3.1 批量查找旧 URL 引用
 
-在本地工作区根目录（如 `D:\www`）：
+在本地工作区根目录（`{workspace}/`，如 `C:\www` / `D:\www` / `~/www`）：
 
 ```powershell
 # PowerShell — 查找仍引用旧组织的文件

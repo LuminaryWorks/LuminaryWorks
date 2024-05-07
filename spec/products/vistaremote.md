@@ -1,7 +1,7 @@
 # VistaRemote 产品规划 · 视界远程
 
 > **品牌**：VistaRemote · **组织**：[github.com/VistaRemote](https://github.com/VistaRemote)  
-> **本地路径**：`D:\www\vistaremote`  
+> **本地路径**：`../vistaremote`（相对本仓）  
 > **实现状态**：✅ 已有 WebRTC 远程桌面代码基线
 
 ## 1. 定位
@@ -13,6 +13,7 @@
 | 独立价值 | 私有化远程运维、会话录制、AI 摘要，可脱离 IoT 部署 |
 | 生态角色 | **控** — 人工触达现场、远程调试与审计 |
 | 受众 | 工控运维、IT 服务商、远程客服、私有化部署客户 |
+| 品牌主色 | `#1677ff`（对齐 [shared/brand](../../shared/brand/)；Logo SVG `#0078FF` 同源） |
 
 与 **[VistaCast](./vistacast.md)**（AI 摄像头云监控）**并存**：VistaRemote 不做固定摄像头 AI 分析；VistaCast 不做远程桌面会话。
 
@@ -75,6 +76,6 @@ WebRTC · NestJS · TypeORM · PostgreSQL · React / Electron / RN · Redis
 
 ## 7. 相关文档
 
-- 实现仓：`D:\www\vistaremote\spec\`
+- 实现仓：`../vistaremote/spec/`
 - 生态：[domain-and-branding.md §4.5](../domain-and-branding.md#45-vistaremote--vistaremote-组织)
 - 权益：[subscription-and-entitlement.md](../subscription-and-entitlement.md)

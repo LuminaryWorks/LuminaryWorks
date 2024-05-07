@@ -3,7 +3,7 @@
 > **组织**：[github.com/VistaCast](https://github.com/VistaCast) · **MetaRepo**：[VistaCast/vistacast](https://github.com/VistaCast/vistacast) · **域名**：[vistacast.dev](https://vistacast.dev)  
 > **Slogan**：AI Visual Autopilot — 把线下店铺变成数字化数据流。  
 > **实现状态**：📋 **D0 规划 / 文档阶段**（M1 编码排在 DataLuminary、BlockyEdu P0 之后）  
-> **详细 spec**：`D:\www\vistacast\spec\` · [GitHub](https://github.com/VistaCast/vistacast/tree/main/spec)
+> **详细 spec**：`../vistacast/spec/` · [GitHub](https://github.com/VistaCast/vistacast/tree/main/spec)
 
 ## 1. 定位
 

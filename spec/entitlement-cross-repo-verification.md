@@ -18,19 +18,19 @@ Several **rollout defects were fixed** during this pass (see §5). Remaining ite
 
 | Root | Branch (status) | Rollout-related WIP |
 |------|-----------------|---------------------|
-| `D:\www\LuminaryWorks` | `master` | `services/entitlement`, specs, scripts |
-| `D:\www\LuminaryWorks\shared` | nested `master` | `packages/entitlement-client`, `notification` |
-| `D:\www\dataluminary\DataTalk` | `feat/permission` | entitlement module + migrations |
-| `D:\www\dataluminary\DataView` | `feat/permission` | membership UI / 402 UX |
-| `D:\www\blockyedu\edu-server` | `main` (ahead 1) | entitlement module |
-| `D:\www\blockyedu\server` | `feat/standalone-deploy-profile` | entitlement gates on code/AI |
-| `D:\www\blockyedu\edu-app-web` | `feat/deploy-profile-standalone` | Next membership UX |
-| `D:\www\blockyedu\code-app-web` | `feat/deploy-profile-standalone` | membership store / 402 |
-| `D:\www\vistaremote\shared` | `main` | billing catalog / error-map |
-| `D:\www\vistaremote\server` | `main` | central billing adapter |
-| `D:\www\vistaremote\web` | `main` | client/admin entitlement UX |
-| `D:\www\vistaremote\desktop` | `main` | entitlements client |
-| `D:\www\vistaremote\mobile` | `main` | entitlements client |
+| `LuminaryWorks/` | `master` | `services/entitlement`, specs, scripts |
+| `LuminaryWorks/shared/` | nested `master` | `packages/entitlement-client`, `notification` |
+| `dataluminary/DataTalk/` | `feat/permission` | entitlement module + migrations |
+| `dataluminary/DataView/` | `feat/permission` | membership UI / 402 UX |
+| `blockyedu/edu-server/` | `main` (ahead 1) | entitlement module |
+| `blockyedu/server/` | `feat/standalone-deploy-profile` | entitlement gates on code/AI |
+| `blockyedu/edu-app-web/` | `feat/deploy-profile-standalone` | Next membership UX |
+| `blockyedu/code-app-web/` | `feat/deploy-profile-standalone` | membership store / 402 |
+| `vistaremote/shared/` | `main` | billing catalog / error-map |
+| `vistaremote/server/` | `main` | central billing adapter |
+| `vistaremote/web/` | `main` | client/admin entitlement UX |
+| `vistaremote/desktop/` | `main` | entitlements client |
+| `vistaremote/mobile/` | `main` | entitlements client |
 
 ---
 

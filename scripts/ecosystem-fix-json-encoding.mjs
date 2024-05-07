@@ -6,26 +6,33 @@
  * - Applies Polyform-NC license string replacements (DataLuminary website only)
  *
  * Usage:
- *   node scripts/ecosystem-fix-json-encoding.mjs --strip-bom --roots D:/www/LuminaryWorks
+ *   node scripts/ecosystem-fix-json-encoding.mjs --strip-bom --roots ../LuminaryWorks
  *   node scripts/ecosystem-fix-json-encoding.mjs --fix-dataluminary-website
  *   node scripts/ecosystem-fix-json-encoding.mjs --fix-doerflow-licenses
  *   node scripts/ecosystem-fix-json-encoding.mjs --verify
+ *
+ * Default roots resolve from this MetaRepo → sibling workspace ({workspace}/).
  */
 
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const metaRoot = path.resolve(__dirname, "..");
+const www = path.resolve(metaRoot, "..");
 
 const DEFAULT_ROOTS = [
-  "D:/www/LuminaryWorks",
-  "D:/www/LuminaryWorks/docs",
-  "D:/www/dataluminary",
-  "D:/www/dataluminary/website",
-  "D:/www/blockyedu",
-  "D:/www/doerflow",
-  "D:/www/vistacast",
-  "D:/www/vistaremote",
-  "D:/www/syncrobrain",
+  path.join(www, "LuminaryWorks"),
+  path.join(www, "LuminaryWorks", "docs"),
+  path.join(www, "dataluminary"),
+  path.join(www, "dataluminary", "website"),
+  path.join(www, "blockyedu"),
+  path.join(www, "doerflow"),
+  path.join(www, "vistacast"),
+  path.join(www, "vistaremote"),
+  path.join(www, "syncrobrain"),
 ];
 
 const SKIP =
@@ -129,7 +136,7 @@ function stripBomInRoots(roots) {
 }
 
 function fixDataluminaryWebsite() {
-  const repo = "D:/www/dataluminary/website";
+  const repo = path.join(www, "dataluminary", "website");
   console.log("Restoring scripts/ and messages/ from git HEAD...");
   execSync("git checkout HEAD -- scripts messages", { cwd: repo, stdio: "inherit" });
 
@@ -178,17 +185,17 @@ function setLicenseField(pkgPath, license) {
 
 function fixDoerflowLicenses() {
   const repos = [
-    "D:/www/doerflow/repos/admin",
-    "D:/www/doerflow/repos/api",
-    "D:/www/doerflow/repos/contracts",
-    "D:/www/doerflow/repos/docs",
-    "D:/www/doerflow/repos/p2p",
-    "D:/www/doerflow/repos/shared",
-    "D:/www/doerflow/repos/wallet",
-    "D:/www/doerflow/repos/web",
-    "D:/www/doerflow/repos/worker",
-    "D:/www/doerflow/repos/site",
-  ];
+    "admin",
+    "api",
+    "contracts",
+    "docs",
+    "p2p",
+    "shared",
+    "wallet",
+    "web",
+    "worker",
+    "site",
+  ].map((name) => path.join(www, "doerflow", "repos", name));
   for (const repo of repos) {
     const pkgPath = path.join(repo, "package.json");
     if (!fs.existsSync(pkgPath)) continue;

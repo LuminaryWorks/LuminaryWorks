@@ -14,8 +14,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path $PSScriptRoot -Parent
+$Www = Split-Path $Root -Parent
 
-Write-Host "=== LuminaryWorks migrate-all ===" -ForegroundColor Cyan
+Write-Host "=== LuminaryWorks migrate-all (workspace=$Www) ===" -ForegroundColor Cyan
 
 if ($WhatIf) {
   if (-not $RemotesOnly) {
@@ -33,7 +34,7 @@ if (-not $RemotesOnly) {
 & "$PSScriptRoot\update-git-remotes.ps1"
 
 # DoerFlow 子仓
-$doerRoot = "D:\www\doerflow\repos"
+$doerRoot = Join-Path $Www "doerflow\repos"
 if (Test-Path $doerRoot) {
   Get-ChildItem $doerRoot -Directory | ForEach-Object {
     $name = $_.Name
@@ -46,11 +47,12 @@ if (Test-Path $doerRoot) {
 }
 
 # VistaRemote 子仓（远程桌面 MetaRepo）
-$manifest = "D:\www\vistaremote\.meta\manifest.json"
+$vrRoot = Join-Path $Www "vistaremote"
+$manifest = Join-Path $vrRoot ".meta\manifest.json"
 if (Test-Path $manifest) {
   $m = Get-Content $manifest -Raw -Encoding UTF8 | ConvertFrom-Json
   foreach ($prop in $m.projects.PSObject.Properties) {
-    $path = Join-Path "D:\www\vistaremote" $prop.Value.path
+    $path = Join-Path $vrRoot $prop.Value.path
     if (Test-Path "$path\.git") {
       $remote = $prop.Value.remote
       git -C $path remote set-url origin $remote 2>$null

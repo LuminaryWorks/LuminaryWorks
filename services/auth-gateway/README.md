@@ -60,5 +60,9 @@ IDP_ISSUER=http://localhost:3010/oidc
 
 - Proxies OIDC discovery, authorize, token, JWKS, userinfo
 - Rewrites `issuer` in discovery JSON to the gateway URL
+- Proxies Logto **Experience API** at `{gateway}/api/experience/*` (Headless password / MFA UI in product SPAs)
+- CORS for local product origins (`AUTH_GATEWAY_CORS_ORIGINS`)
 
-Not yet: Experience API branding proxy, bot detection, per-product rate limits (planned).
+Product Headless clients should set `VITE_AUTH_GATEWAY_URL` (Experience base is derived automatically) or `VITE_AUTH_EXPERIENCE_URL`.
+
+Still planned: per-product branding injection, bot detection, rate limits.

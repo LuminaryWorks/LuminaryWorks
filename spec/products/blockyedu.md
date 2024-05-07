@@ -1,64 +1,92 @@
 # BlockyEdu 产品规划 · 智码工坊
 
 > **中文名**：智码工坊 · **域名**：[blockyedu.com](https://blockyedu.com) · **组织**：[github.com/blockyedu](https://github.com/blockyedu)  
-> **旧名**：VibeEdu / blockyEdu
+> **旧名**：VibeEdu / blockyEdu  
+> **权威蓝图（实现仓）**：[blockyedu/VibeEdu `docs/roadmap/ai-creation-platform-blueprint.md`](https://github.com/blockyedu/VibeEdu)
 
 ## 1. 定位
 
-**AI 时代的可视化编程教育平台。**
+**AI 全民创造平台（Create 默认）。**
 
-基于 Google Blockly（品牌名 BlockyEdu，非 blockly），结合 Monaco 专业编码与 AI 辅导，覆盖从积木到代码到硬件的完整学习闭环。
+用户用自然语言、积木或代码，把想法变成可预览、可发布、可履约的作品（Artifact）。原有 Blockly / Monaco / AI 辅导与课程能力保留为同一产品中的 **Learn / Code** 模式；企业 **VibeLearn** 仍可独立部署为 LMS。不拆第二套 C 端品牌。
 
 | 维度 | 说明 |
 |------|------|
-| 独立价值 | 院校 / 培训机构可单独部署 LMS + 编程实验 |
-| 生态角色 | **学** — 培养 IoT、数据、Agent 工程师 |
-| 受众 | K12~成人学习者、教师、硬件教具合作方 |
+| 独立价值 | 创造平台（Web / 小程序 / 标准玩具）可单独交付；**VibeLearn** 可对企业私有化交付内部培训（对标知鸟） |
+| 生态角色 | **学 + 创** — 产出可发布作品；也可单独交付企业大学 |
+| 受众 | 创作者、K12~成人学习者、教师、家长、**企业培训管理员**、硬件教具合作方 |
+| 主循环（创造） | Idea → Build → Preview → Validate → Publish / Order |
+| 主循环（企业大学） | 组织/SSO → 必修指派 → 学习 → 考试 → 证书 → 学情 |
 
 ## 2. 产品模块
 
-### 2.1 编程平台（Blockly + Monaco）
+### 2.1 创造平台（默认）
 
-| AI 能力 | 说明 |
+| 能力 | 说明 |
+|------|------|
+| **统一 Artifact** | `web` / `miniprogram` / `toy` / `exercise` 共用账户与作品库 |
+| **三屏一助手** | 资源 · Design/Blockly/Monaco · 实时预览 + AI |
+| **安全预览** | 作品预览独立 origin；控制台运行仅用于脚本练习 |
+| **Web 发布** | 静态站 / 落地页；平台托管与版本回滚 |
+| **微信小程序** | 工程生成、预览码、上传/审核状态（不承诺无条件一键过审） |
+| **智能玩具** | 标准主控 + 模块 SKU、数字孪生、BOM/DFM、限定履约 |
+
+### 2.2 Learn / Code（同产品模式）
+
+| AI / 编辑能力 | 说明 |
 |---------|------|
-| **AI Copilot** | Text → Blockly，自然语言生成积木 |
+| **AI Copilot** | NL → 积木 / 结构化作品片段（经 schema 校验后写入） |
 | **AI Tutor** | 选中 for/if 等块，解释等价代码与概念 |
 | **AI Debugger** | 分析运行错误，可视化调试指引 |
-| **AI Challenge** | 编程挑战与自动评定 |
-| **AI Assessment** | 学习报告与路径建议 |
+| **Blockly + Monaco** | 积木与专业代码路径保留，不可逆转换需确认 |
 
-### 2.2 教育平台
+### 2.3 教育平台（VibeLearn · 企业私有化）
 
-- **课程学习**：视频、PDF；PDF 上传 → AI 学习报告
-- **教学平台**：一对一 / 一对多课堂、信令与 ICE
-- **学习社区**：讨论与作品展示
+- **对标知鸟**：企业大学 / 内部培训，可私有化或专属云部署
+- **SKU**：Standard（组织/SSO/课程/考试/证书）→ Professional（必修/地图/报表/品牌）→ Live（+ media）→ 可选 +Code（编程考试桥接）
+- **课程学习**：视频、PDF；必修指派；作业可绑定 Artifact（full 模式）
+- **考试 / 证书 / 学情**：闭环可验收
+- **教学直播**：Live 包可选 media-platform
+- **企业独立部署**：`edu-standalone` / `deploy/edu`，**零依赖**创造沙箱与编程 IDE
+- 蓝图：BlockyEdu MetaRepo `docs/roadmap/vibelearn-enterprise-lms-blueprint.md`；规格 `spec/edu-platform-standalone.md`
 
-### 2.3 IoT 实验
+### 2.4 IoT / 玩具边界
 
-- ESPHome / MQTT / ThingsBoard 实验课
-- 与 SyncroBrain 设备接入形成「学 → 连」路径
+- 数字孪生与订单在 BlockyEdu；真机连接 / OTA 走 SyncroBrain
+- ESPHome / MQTT / ThingsBoard 实验课形成「学/创 → 连」路径
+- 首期不做任意定制制造；不承诺任意 Web CSS → LVGL
 
 ## 3. 兄弟产品集成
 
 | 目标 | 场景 |
 |------|------|
-| SyncroBrain | 设备编程实验、固件模板 |
-| DataLuminary | 数据分析课程 |
+| SyncroBrain | 真机 / OTA；设备编程实验、固件模板 |
+| DataLuminary | 创作漏斗与学情分析；**VibeLearn** 企业培训报表；数据分析课程 |
 | DoerFlow | Agent / 智能合约课程 |
 | VistaRemote | WebRTC 远程运维实验 |
 | VistaCast | 安防与客流分析实训（规划） |
 
 ## 4. 技术栈
 
-React、Zustand、Blockly、Monaco · NestJS、TypeORM、Redis、Kafka · WebSocket
+- 创造前端：`code-app-web`（Rsbuild + React + Blockly + Monaco）
+- 教育前端：`edu-app-web`（Next.js）
+- 双后端：`server`（创造/编程）+ `edu-server`（LMS）
+- AI：ai-bridge → ai-engine；Preview Host 独立 origin
 
 ## 5. 里程碑（产品向）
 
+权威版本见 BlockyEdu MetaRepo `docs/roadmap/version-iteration-plan.md`：
+
 | 阶段 | 目标 |
 |------|------|
-| M1 | 编程工作台 + 课程 LMS |
-| M2 | AI Copilot / Tutor / Debugger GA |
-| M3 | SyncroBrain 联合实验包 |
+| V0.2 | 创造底座：Artifact + 安全预览 |
+| V0.3 | Web Publish |
+| V0.4 | Learn 融合（作业提交 Artifact） |
+| V0.5 | 微信小程序 Beta |
+| V0.6–V0.7 | 玩具数字孪生 → 限定 SKU 制造试点 |
+| V1.0 | 创造平台 GA |
+
+企业大学私有化并行轨道（EL）见 MetaRepo `docs/roadmap/vibelearn-enterprise-lms-blueprint.md` 与 `project-milestones.md` §8；**不**被创造 V0.x 阻塞。
 
 ## 6. 身份 · 权益 · 资源权限
 
@@ -67,8 +95,8 @@ React、Zustand、Blockly、Monaco · NestJS、TypeORM、Redis、Kafka · WebSoc
 | 层 | BlockyEdu 要点 |
 |----|----------------|
 | 身份 | 统一 Logto `sub`；`edu-app-web` / `code-app-web` 在 OIDC 未稳时可保留 legacy 登录开关 |
-| 权益 | 迁移 `memberTier` / `code_pro` 等为 feature code；ToC Trial 每用户每产品一次；Pro / Ultra / 企业 seat |
-| 资源 | 课程、班级、作业、workspace 仍由角色 + Casbin 控制；**禁止**用 role 名推断会员档 |
+| 权益 | 迁移 `memberTier` / `code_pro` 等为 feature code；ToC Trial 每用户每产品一次；Pro / Ultra / 企业 seat；规划 `create.preview.*` / `create.publish.*` 等 |
+| 资源 | 课程、班级、作业、workspace / Artifact 仍由角色 + Casbin 控制；**禁止**用 role 名推断会员档 |
 | 迁移 | account membership / wallet → 中央 subscription/order/grant；双读比对后再停本地会员主写 |
 
 ### 6.1 产品接线（已落地）
@@ -79,12 +107,8 @@ React、Zustand、Blockly、Monaco · NestJS、TypeORM、Redis、Kafka · WebSoc
 | `server` | 同上；`code.execute.pro` / `ai.copilot` / `ai.tutor` 以 `@RequireEntitlement` 门禁；RBAC `code_pro` 保留作本地事实 |
 | `edu-app-web` / `code-app-web` | 权益状态来自 membership API；Trial 倒计时；402 → 升级 UX；legacy + OIDC 并存 |
 
-Feature codes：`code.execute.pro`、`ai.copilot`、`ai.tutor`、`student.limit`（配额；创建学员 API 到位后再 consume）。
-
-迁移脚本：`pnpm migrate:legacy-membership`（`--dry-run` 默认；`--apply` 写中央）。
-
 ## 7. 相关文档
 
-- 实现仓：`spec/product-spec.md`、`spec/ai-platform-spec.md`
-- 生态：[domain-and-branding.md §4.2](../domain-and-branding.md#42-blockyedu--blockyeducom)
-- 权益：[subscription-and-entitlement.md](../subscription-and-entitlement.md)
+- 文档站产品页：[docs/docs/products/blockyedu.md](../../docs/docs/products/blockyedu.md)
+- 实现仓蓝图：`blockyedu` → `docs/roadmap/ai-creation-platform-blueprint.md`
+- 实现仓规格：`blockyedu` → `spec/product-spec.md` · `spec/create-platform-spec.md`

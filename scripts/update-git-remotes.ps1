@@ -4,31 +4,33 @@
 param([switch]$WhatIf)
 
 $ErrorActionPreference = "Stop"
+$MetaRoot = Split-Path $PSScriptRoot -Parent
+$Www = Split-Path $MetaRoot -Parent
 
-# Phase C 本地路径（见 spec/local-paths.md）
+# Phase C 本地路径（见 spec/local-paths.md）— 相对 {workspace}/
 $metaRepos = @(
   @{
-    Path   = "D:\www\dataluminary"
+    Path   = (Join-Path $Www "dataluminary")
     NewOrg = "dataluminary"
     Repo   = "DataLuminary-Platform"
   },
   @{
-    Path   = "D:\www\blockyedu"
+    Path   = (Join-Path $Www "blockyedu")
     NewOrg = "blockyedu"
     Repo   = "VibeEdu"
   },
   @{
-    Path   = "D:\www\doerflow"
+    Path   = (Join-Path $Www "doerflow")
     NewOrg = "doerflow"
     Repo   = "VibeAgent"
   },
   @{
-    Path   = "D:\www\vistaremote"
+    Path   = (Join-Path $Www "vistaremote")
     NewOrg = "VistaRemote"
     Repo   = "vibeCode"
   },
   @{
-    Path   = "D:\www\syncrobrain"
+    Path   = (Join-Path $Www "syncrobrain")
     NewOrg = "syncrobrain"
     Repo   = "LuminaryIoTChain"
   }
@@ -77,16 +79,15 @@ function Set-RemoteIfNeeded {
   Write-Host "OK: $gitRoot -> $NewUrl" -ForegroundColor Green
 }
 
-Write-Host "=== Update git remotes ===" -ForegroundColor Cyan
+Write-Host "=== Update git remotes (workspace=$Www) ===" -ForegroundColor Cyan
 
 foreach ($m in $metaRepos) {
   $url = "git@github.com:$($m.NewOrg)/$($m.Repo).git"
   Set-RemoteIfNeeded -RepoPath $m.Path -NewUrl $url
 }
 
-$lwRoot = Split-Path $PSScriptRoot -Parent
 foreach ($sub in @("docs", "identity", "shared")) {
-  $p = Join-Path $lwRoot $sub
+  $p = Join-Path $MetaRoot $sub
   if (Test-Path "$p\.git") {
     Set-RemoteIfNeeded -RepoPath $p -NewUrl "git@github.com:LuminaryWorks/$sub.git"
   }

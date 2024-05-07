@@ -22,10 +22,15 @@ const [repo, action] = process.argv.slice(2);
 const map = {
   identity: {
     bootstrap: isWin ? "powershell -ExecutionPolicy Bypass -File ./bootstrap.ps1" : "bash ./bootstrap.sh",
-    down: "docker compose down",
+    // stop 保留容器 → Docker Desktop 下次启动仍会 unless-stopped 自启
+    down: "docker compose stop",
+    stop: "docker compose stop",
+    // 真正拆掉栈（需再次 id:up 才恢复自启）
+    destroy: "docker compose down",
     register: "node scripts/register-apps.mjs",
     sync: "node scripts/sync-client-ids.mjs",
     "seed-user": "node scripts/seed-dev-user.mjs",
+    ps: "docker compose ps",
   },
   shared: { build: "pnpm build", check: "pnpm check" },
   docs: { dev: "pnpm dev", build: "pnpm build" },
