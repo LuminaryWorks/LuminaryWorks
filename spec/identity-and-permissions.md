@@ -1,6 +1,6 @@
 # LuminaryWorks 身份与权限体系（Identity & Authorization）
 
-> **状态**：Accepted · **决策日**：2024-04-24 · **修订**：2024-04-28（插入商业权益层边界）  
+> **状态**：Accepted · **决策日**：2024-04-24 · **修订**：2024-05-08（`HeadlessLoginPanel.showSocialConnectors`）  
 > **关联**：[ecosystem-refactoring.md](./ecosystem-refactoring.md) · [subscription-and-entitlement.md](./subscription-and-entitlement.md) · [identity 仓](https://github.com/LuminaryWorks/identity) · 开发者文档 [unified-login](https://github.com/LuminaryWorks/docs)
 
 ## 0. 决策摘要（TL;DR）
@@ -111,6 +111,19 @@ Product SPA  →  Luminary Auth SDK (@luminaryworks/auth-react)
 ### 3.3 多品牌
 
 每个产品独立登录前端（或同一 Passport 按 `client_id` 切换品牌）：Logo、主色、文案、可选登录方式均可不同；认证逻辑复用 Experience API。
+
+### 3.4 社交登录开关（管理后台）
+
+`@luminaryworks/auth-react` 的 `HeadlessLoginPanel` 默认展示 IdP 已启用的 **Experience social connectors**（Google / GitHub 等）。
+
+| 场景 | 配置 |
+|------|------|
+| 面向终端用户的产品登录 | 默认 `showSocialConnectors`（或不传，等价 `true`） |
+| 管理后台 / 内部控制台 | **`showSocialConnectors={false}`** — 不拉取、不渲染社交按钮 |
+
+等价写法：`socialProviders={[]}`。企业 SSO（SAML / 企业 OIDC）在 IdP Connector 配置，**不**由该 prop 控制。
+
+实现与文案约定见开发文档 [unified-login §社交登录可关](https://github.com/LuminaryWorks/docs/blob/main/docs/develop/unified-login.md)。
 
 ## 4. Casbin 产品权限
 
