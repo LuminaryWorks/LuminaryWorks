@@ -70,7 +70,7 @@ GitHub 支持组织 rename，旧 URL 会自动重定向。
 
 - 目标名若已被占用，须用方式二（新建组织 + 转移仓库）
 - Rename 后更新本地 remote（见 §3）
-- 检查 GitHub Packages、`@scope` npm 包、CI secrets 中的组织名
+- 检查 GitHub Packages（仅产品自有 `@vistaremote` 等仍走 GH Packages 时）、npmjs `@luminaryworks` 公开包、CI secrets 中的组织名
 
 ### 2.2 方式二：新建组织 + Transfer
 
@@ -141,7 +141,7 @@ Get-ChildItem -Recurse -Include *.md,*.json,*.yaml,*.yml,*.ts,*.tsx,*.mjs,*.ps1,
 - [ ] LuminaryWorks `spec/products/*.md` 链接正确
 - [ ] CI workflow 中 `GITHUB_REPOSITORY`、Packages scope 已更新
 - [ ] `identity` 应用注册回调 URL（若含 GitHub Pages 域名）已更新
-- [ ] npm / pnpm `publishConfig.registry` 与 package scope 已核对
+- [x] npm / pnpm `publishConfig.registry` 与 package scope 已核对（`@luminaryworks/*` → npmjs 公开包）
 
 ## 5. LuminaryWorks 生态仓（无需 rename）
 

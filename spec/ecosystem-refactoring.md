@@ -70,7 +70,7 @@ github.com/LuminaryWorks/
 | 阶段 | 内容 | 出口标准 | 风险控制 |
 |------|------|----------|----------|
 | **LW-S0** | 本规格 + 组织结构 + docs/identity/scripts 骨架 | 文档与脚手架就位 | 不动现有 `file:` 引用 |
-| **LW-S1** | `shared` 工作区建立，`@luminary/*` 源码迁入并发布（GitHub Packages） | `shared` CI 构建/发布通过 | DataLuminary `packages/` 暂保留为镜像 |
+| **LW-S1** | `shared` 工作区建立，`@luminary/*` 源码迁入并发布（现为 npmjs 公开包） | `shared` CI 构建/发布通过 | DataLuminary `packages/` 暂保留为镜像 |
 | **LW-S2** | 5 消费方依赖切换：`file:` → `^x.y.z` | 5 仓 CI 绿；删除相对路径 | 一仓一 PR，逐个验证 |
 | **LW-S3** | 删除 DataLuminary `packages/`，`tooling` preset 发包 | 单一来源；无重复 | 打 tag 备份 |
 | **LW-S4** | `contracts` 仓抽取 PAL/事件 schema | 合同单一来源 | 生成器回填类型 |

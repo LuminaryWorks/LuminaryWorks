@@ -11,7 +11,7 @@ const metaRoot = path.resolve(__dirname, "..");
 const sharedRoot = path.join(metaRoot, "shared");
 
 const VERSIONS = {
-  "@luminaryworks/auth-core": "^0.2.1",
+  "@luminaryworks/auth-core": "^0.2.2",
   "@luminaryworks/auth-react": "^0.3.0",
   "@luminaryworks/auth-dev-proxy": "^0.1.0",
   "@luminaryworks/pal": "^0.2.0",
@@ -25,8 +25,7 @@ const RENAME = [
   ["@luminary/pal", "@luminaryworks/pal"],
 ];
 
-const NPMRC = `@luminaryworks:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=\${NODE_AUTH_TOKEN}
+const NPMRC = `@luminaryworks:registry=https://registry.npmjs.org
 `;
 
 const PACKAGE_JSON_TARGETS = [
@@ -88,7 +87,7 @@ function renameText(text) {
 
 function updateSharedPackages() {
   const bumps = {
-    "auth-core": { name: "@luminaryworks/auth-core", version: "0.2.1" },
+    "auth-core": { name: "@luminaryworks/auth-core", version: "0.2.2" },
     "auth-react": { name: "@luminaryworks/auth-react", version: "0.3.0" },
     "auth-dev-proxy": {
       name: "@luminaryworks/auth-dev-proxy",

@@ -76,7 +76,7 @@ LuminaryWorks/                  # 本仓：叙事 + 标准 + 编排脚本
 | [identity](https://github.com/LuminaryWorks/identity) | Logto + PG + Redis + 应用注册脚本 |
 | [shared](https://github.com/LuminaryWorks/shared) | `@luminaryworks/auth-core`、`auth-react`、`pal`、`notification`、`entitlement-client`、`tooling` |
 | `services/entitlement` | 中央订阅/权益服务（NestJS + PostgreSQL；见 `pnpm ent:*`） |
-| `@luminaryworks/entitlement-client` | 产品侧客户端；测试/CI 用 GitHub Packages 版本（`^0.1.0`）。改 shared 源码后先发版，或本机 `pnpm.overrides` + `pnpm ent:client:sync` |
+| `@luminaryworks/entitlement-client` | 产品侧客户端；测试/CI 用 npmjs 公开包（`^0.1.0`）。改 shared 源码后先发版，或本机 `pnpm.overrides` + `pnpm ent:client:sync` |
 
 DoerFlow 采用特殊无试用策略：平台只展示 Pro / Ultra / Enterprise。其 Logto 平台会话与非托管钱包/SIWE 是独立状态；平台套餐控制托管 API 与配额，Gas、Escrow 和协议费仍走链上协议经济。统一错误语义为 401 身份、402 权益、403 资源 ACL。
 
