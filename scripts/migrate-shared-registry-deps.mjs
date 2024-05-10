@@ -25,9 +25,6 @@ const RENAME = [
   ["@luminary/pal", "@luminaryworks/pal"],
 ];
 
-const NPMRC = `@luminaryworks:registry=https://registry.npmjs.org
-`;
-
 const PACKAGE_JSON_TARGETS = [
   "C:/www/dataluminary/DataTalk/package.json",
   "C:/www/dataluminary/DataView/package.json",
@@ -197,17 +194,6 @@ function updatePackageJson(file) {
     console.log(`package.json → ${file}`);
   }
 
-  const npmrcPath = path.join(path.dirname(file), ".npmrc");
-  if (!fs.existsSync(npmrcPath)) {
-    writeUtf8(npmrcPath, NPMRC);
-    console.log(`+ .npmrc ${npmrcPath}`);
-  } else {
-    const cur = fs.readFileSync(npmrcPath, "utf8");
-    if (!cur.includes("@luminaryworks:registry")) {
-      writeUtf8(npmrcPath, `${cur.trimEnd()}\n${NPMRC}`);
-      console.log(`~ .npmrc ${npmrcPath}`);
-    }
-  }
 }
 
 function walkFiles(root, out = []) {
