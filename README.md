@@ -14,24 +14,26 @@
 
 | # | 品牌 | 中文名 | 域名 | GitHub | 一句话 |
 |---|------|--------|------|--------|--------|
-| 1 | **DataLuminary** | 数据明鉴 | [dataluminary.dev](https://dataluminary.dev) | [dataluminary/DataLuminary-Platform](https://github.com/dataluminary/DataLuminary-Platform) | AI 数据洞察 — BI、DataTalk 大屏 |
-| 2 | **BlockyEdu** | 智码工坊 | [blockyedu.com](https://blockyedu.com) | [blockyedu/VibeEdu](https://github.com/blockyedu/VibeEdu) | AI 全民创造 + VibeLearn 企业大学私有化 |
-| 3 | **DoerFlow** | 智工网 | [doerflow.dev](https://doerflow.dev) | [doerflow/VibeAgent](https://github.com/doerflow/VibeAgent) | 执行者价值网络 — Agent/链上结算 |
-| 4 | **VistaCast** | 视界云遥 | [vistacast.dev](https://vistacast.dev) | [VistaCast/vistacast](https://github.com/VistaCast/vistacast) | AI 摄像头云监控（**文档先行**） |
-| 5 | **VistaRemote** | 视界远程 | [remote.vistacast.dev](https://remote.vistacast.dev) | [VistaRemote/vibeCode](https://github.com/VistaRemote/vibeCode) | WebRTC 远程桌面 + AI 录制 |
-| 6 | **SyncroBrain** | 万物智脑 | [syncrobrain.com](https://syncrobrain.com) | [syncrobrain/LuminaryIoTChain](https://github.com/syncrobrain/LuminaryIoTChain) | 连接设备的 AI OS |
+| 1 | **DataLuminary** | 数据明鉴 | [dataluminary.dev](https://dataluminary.dev) | [DataLuminary/DataLuminary](https://github.com/DataLuminary/DataLuminary) | AI 数据洞察 — BI、DataTalk 大屏 |
+| 2 | **BlockyEdu** | 智码工坊 | [blockyedu.com](https://blockyedu.com) | [BlockyEdu/BlockyEdu](https://github.com/BlockyEdu/BlockyEdu) | AI 全民创造 + VibeLearn 企业大学私有化 |
+| 3 | **DoerFlow** | 智工网 | [doerflow.dev](https://doerflow.dev) | [DoerFlow/DoerFlow](https://github.com/DoerFlow/DoerFlow) | 执行者价值网络 — Agent/链上结算 |
+| 4 | **VistaCast** | 视界云遥 | [vistacast.dev](https://vistacast.dev) | [VistaCast/VistaCast](https://github.com/VistaCast/VistaCast) | AI 摄像头云监控（**文档先行**） |
+| 5 | **VistaRemote** | 视界远程 | [remote.vistacast.dev](https://remote.vistacast.dev) | [VistaRemote/VistaRemote](https://github.com/VistaRemote/VistaRemote) | WebRTC 远程桌面 + AI 录制 |
+| 6 | **SyncroBrain** | 万物智脑 | [syncrobrain.com](https://syncrobrain.com) | [SyncroBrain/SyncroBrain](https://github.com/SyncroBrain/SyncroBrain) | 连接设备的 AI OS |
 
-本地路径（Phase C）：本仓与六产品仓**并列**于同一工作区根目录（可为 `C:\www`、`D:\www`、`~/www` 等，不硬编码盘符）：
+本地路径：本仓与六产品仓**并列**于同一工作区根目录。目录名为 **PascalCase**（macOS / Linux 区分大小写；Windows 不区分）。路径由脚本相对本仓解析，不写死 `D:\www` / `C:\www`。
+
+工作区可以是任意父目录，例如 `C:\www`、`D:\www`、`~/www`、`/home/you/www`：
 
 ```text
 {workspace}/
 ├── LuminaryWorks/           # 启明工坊 MetaRepo（本仓）
-├── dataluminary/            # 数据明鉴
-├── blockyedu/               # 智码工坊
-├── doerflow/                # 智工网
-├── vistacast/               # 视界云遥（规划 spec）
-├── vistaremote/             # 视界远程（远程桌面实现）
-└── syncrobrain/             # 万物智脑
+├── DataLuminary/            # 数据明鉴
+├── BlockyEdu/               # 智码工坊
+├── DoerFlow/                # 智工网
+├── VistaCast/               # 视界云遥（规划 spec）
+├── VistaRemote/             # 视界远程（远程桌面实现）
+└── SyncroBrain/             # 万物智脑
 ```
 
 > GitHub 组织 rename 与 `git remote` 更新见 [spec/github-org-migration.md](./spec/github-org-migration.md)。

@@ -6,25 +6,19 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const www = path.resolve(__dirname, "..", "..");
+import { metaRoot, productDir } from "./lib/workspace.mjs";
 
 const ENGINE = ">=24.0.0";
 const NVMRC = "24\n";
 
 /** Roots to walk (MetaRepos + known nested Node packages). */
 const roots = [
-  path.join(www, "LuminaryWorks"),
-  path.join(www, "LuminaryWorks", "shared"),
-  path.join(www, "LuminaryWorks", "services", "entitlement"),
-  path.join(www, "dataluminary"),
-  path.join(www, "blockyedu"),
-  path.join(www, "doerflow"),
-  path.join(www, "vistaremote"),
-  path.join(www, "vistacast"),
-  path.join(www, "syncrobrain"),
+  metaRoot,
+  path.join(metaRoot, "shared"),
+  path.join(metaRoot, "services", "entitlement"),
+  ...["DataLuminary", "BlockyEdu", "DoerFlow", "VistaRemote", "VistaCast", "SyncroBrain"].map(
+    (d) => productDir(d),
+  ),
 ];
 
 const skipDirNames = new Set([
@@ -116,8 +110,8 @@ for (const root of roots) {
 
 // Also lock identity/docs if present under LuminaryWorks
 for (const extra of [
-  path.join(www, "LuminaryWorks", "identity"),
-  path.join(www, "LuminaryWorks", "docs"),
+  path.join(metaRoot, "identity"),
+  path.join(metaRoot, "docs"),
 ]) {
   if (fs.existsSync(extra)) {
     ensureNodeVersionFiles(extra);

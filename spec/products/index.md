@@ -27,23 +27,23 @@ LuminaryWorks（**启明工坊**）生态采用 **House of Brands**：六个产�
 
 | # | 品牌 | 中文名 | GitHub | 生态角色 | 规划文档 | 编码优先级 |
 |---|------|--------|--------|----------|----------|------------|
-| 1 | **DataLuminary** | 数据明鉴 | [dataluminary/DataLuminary-Platform](https://github.com/dataluminary/DataLuminary-Platform) | 看 — AI 数据洞察 | [dataluminary.md](./dataluminary.md) | **P0** |
-| 2 | **BlockyEdu** | 智码工坊 | [blockyedu/VibeEdu](https://github.com/blockyedu/VibeEdu) | 学+创 — AI 全民创造 + VibeLearn 企业大学私有化 | [blockyedu.md](./blockyedu.md) | **P0** |
-| 3 | **DoerFlow** | 智工网 | [doerflow/VibeAgent](https://github.com/doerflow/VibeAgent) | 赚 — 执行者价值网络 | [doerflow.md](./doerflow.md) | P1 |
-| 4 | **VistaCast** | 视界云遥 | [VistaCast/vistacast](https://github.com/VistaCast/vistacast) | 视 — AI 摄像头 | [vistacast.md](./vistacast.md) | **文档先行** |
-| 5 | **VistaRemote** | 视界远程 | [VistaRemote/vibeCode](https://github.com/VistaRemote/vibeCode) | 控 — 远程桌面 | [vistaremote.md](./vistaremote.md) | ✅ |
-| 6 | **SyncroBrain** | 万物智脑 | [syncrobrain/LuminaryIoTChain](https://github.com/syncrobrain/LuminaryIoTChain) | 连 — 设备 AI OS | [syncrobrain.md](./syncrobrain.md) | P1 |
+| 1 | **DataLuminary** | 数据明鉴 | [DataLuminary/DataLuminary](https://github.com/DataLuminary/DataLuminary) | 看 — AI 数据洞察 | [dataluminary.md](./dataluminary.md) | **P0** |
+| 2 | **BlockyEdu** | 智码工坊 | [BlockyEdu/BlockyEdu](https://github.com/BlockyEdu/BlockyEdu) | 学+创 — AI 全民创造 + VibeLearn 企业大学私有化 | [blockyedu.md](./blockyedu.md) | **P0** |
+| 3 | **DoerFlow** | 智工网 | [DoerFlow/DoerFlow](https://github.com/DoerFlow/DoerFlow) | 赚 — 执行者价值网络 | [doerflow.md](./doerflow.md) | P1 |
+| 4 | **VistaCast** | 视界云遥 | [VistaCast/VistaCast](https://github.com/VistaCast/VistaCast) | 视 — AI 摄像头 | [vistacast.md](./vistacast.md) | **文档先行** |
+| 5 | **VistaRemote** | 视界远程 | [VistaRemote/VistaRemote](https://github.com/VistaRemote/VistaRemote) | 控 — 远程桌面 | [vistaremote.md](./vistaremote.md) | ✅ |
+| 6 | **SyncroBrain** | 万物智脑 | [SyncroBrain/SyncroBrain](https://github.com/SyncroBrain/SyncroBrain) | 连 — 设备 AI OS | [syncrobrain.md](./syncrobrain.md) | P1 |
 
 ## 各产品域规格（实现仓）
 
 | 产品 | 中文名 | 主规格路径 |
 |------|--------|------------|
-| DataLuminary | 数据明鉴 | `dataluminary/DataLuminary-Platform/spec/` |
-| BlockyEdu | 智码工坊 | `blockyedu/VibeEdu/spec/` |
-| DoerFlow | 智工网 | `doerflow/VibeAgent/spec/` |
-| VistaCast | 视界云遥 | [VistaCast/vistacast](https://github.com/VistaCast/vistacast) `spec/` |
-| VistaRemote | 视界远程 | `vistaremote/spec/` |
-| SyncroBrain | 万物智脑 | `syncrobrain/LuminaryIoTChain/spec/` |
+| DataLuminary | 数据明鉴 | `DataLuminary/spec/` |
+| BlockyEdu | 智码工坊 | `BlockyEdu/spec/` |
+| DoerFlow | 智工网 | `DoerFlow/spec/` |
+| VistaCast | 视界云遥 | [VistaCast/VistaCast](https://github.com/VistaCast/VistaCast) `spec/` |
+| VistaRemote | 视界远程 | `VistaRemote/spec/` |
+| SyncroBrain | 万物智脑 | `SyncroBrain/spec/` |
 
 ## VistaCast vs VistaRemote
 

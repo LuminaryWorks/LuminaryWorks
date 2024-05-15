@@ -17,22 +17,11 @@
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const metaRoot = path.resolve(__dirname, "..");
-const www = path.resolve(metaRoot, "..");
+import { ecosystemRoots, resolveWorkspacePath } from "./lib/workspace.mjs";
 
 const DEFAULT_ROOTS = [
-  path.join(www, "LuminaryWorks"),
-  path.join(www, "LuminaryWorks", "docs"),
-  path.join(www, "dataluminary"),
-  path.join(www, "dataluminary", "website"),
-  path.join(www, "blockyedu"),
-  path.join(www, "doerflow"),
-  path.join(www, "vistacast"),
-  path.join(www, "vistaremote"),
-  path.join(www, "syncrobrain"),
+  ...ecosystemRoots(),
+  resolveWorkspacePath("DataLuminary", "website"),
 ];
 
 const SKIP =
@@ -136,7 +125,7 @@ function stripBomInRoots(roots) {
 }
 
 function fixDataluminaryWebsite() {
-  const repo = path.join(www, "dataluminary", "website");
+  const repo = resolveWorkspacePath("DataLuminary", "website");
   console.log("Restoring scripts/ and messages/ from git HEAD...");
   execSync("git checkout HEAD -- scripts messages", { cwd: repo, stdio: "inherit" });
 
@@ -195,7 +184,7 @@ function fixDoerflowLicenses() {
     "web",
     "worker",
     "site",
-  ].map((name) => path.join(www, "doerflow", "repos", name));
+  ].map((name) => resolveWorkspacePath("DoerFlow", "repos", name));
   for (const repo of repos) {
     const pkgPath = path.join(repo, "package.json");
     if (!fs.existsSync(pkgPath)) continue;

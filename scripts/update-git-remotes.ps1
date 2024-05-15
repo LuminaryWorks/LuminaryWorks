@@ -1,44 +1,15 @@
-# LuminaryWorks — 批量更新本地 git remote（组织 rename 后执行）
+# LuminaryWorks — 批量更新本地 git remote
 # Usage: .\scripts\update-git-remotes.ps1 [-WhatIf]
+#        pwsh scripts/update-git-remotes.ps1
 
 param([switch]$WhatIf)
 
 $ErrorActionPreference = "Stop"
-$MetaRoot = Split-Path $PSScriptRoot -Parent
-$Www = Split-Path $MetaRoot -Parent
-
-# Phase C 本地路径（见 spec/local-paths.md）— 相对 {workspace}/
-$metaRepos = @(
-  @{
-    Path   = (Join-Path $Www "dataluminary")
-    NewOrg = "dataluminary"
-    Repo   = "DataLuminary-Platform"
-  },
-  @{
-    Path   = (Join-Path $Www "blockyedu")
-    NewOrg = "blockyedu"
-    Repo   = "VibeEdu"
-  },
-  @{
-    Path   = (Join-Path $Www "doerflow")
-    NewOrg = "doerflow"
-    Repo   = "VibeAgent"
-  },
-  @{
-    Path   = (Join-Path $Www "vistaremote")
-    NewOrg = "VistaRemote"
-    Repo   = "vibeCode"
-  },
-  @{
-    Path   = (Join-Path $Www "syncrobrain")
-    NewOrg = "syncrobrain"
-    Repo   = "LuminaryIoTChain"
-  }
-)
+. "$PSScriptRoot\lib\workspace.ps1"
 
 function Find-GitRoot {
   param([string]$Start)
-  if (Test-Path "$Start\.git") { return $Start }
+  if (Test-Path (Join-Path $Start ".git")) { return $Start }
   $children = Get-ChildItem $Start -Directory -ErrorAction SilentlyContinue |
     Where-Object { Test-Path (Join-Path $_.FullName ".git") }
   if ($children.Count -eq 1) { return $children[0].FullName }
@@ -63,7 +34,7 @@ function Set-RemoteIfNeeded {
   }
 
   $current = git -C $gitRoot remote get-url origin 2>$null
-  if ([string]::Equals($current, $NewUrl, [StringComparison]::Ordinal)) {
+  if ($current -and ($current -ieq $NewUrl)) {
     Write-Host "= unchanged: $gitRoot"
     return
   }
@@ -79,17 +50,38 @@ function Set-RemoteIfNeeded {
   Write-Host "OK: $gitRoot -> $NewUrl" -ForegroundColor Green
 }
 
-Write-Host "=== Update git remotes (workspace=$Www) ===" -ForegroundColor Cyan
+Write-Host "=== Update git remotes (workspace=$script:LwWorkspaceRoot) ===" -ForegroundColor Cyan
 
-foreach ($m in $metaRepos) {
-  $url = "git@github.com:$($m.NewOrg)/$($m.Repo).git"
-  Set-RemoteIfNeeded -RepoPath $m.Path -NewUrl $url
+foreach ($m in $script:LwProductRepos) {
+  $url = "git@github.com:$($m.Org)/$($m.Repo).git"
+  Set-RemoteIfNeeded -RepoPath (Get-ProductDir $m.Dir) -NewUrl $url
 }
 
 foreach ($sub in @("docs", "identity", "shared")) {
-  $p = Join-Path $MetaRoot $sub
-  if (Test-Path "$p\.git") {
+  $p = Join-Path $script:LwMetaRoot $sub
+  if (Test-Path (Join-Path $p ".git")) {
     Set-RemoteIfNeeded -RepoPath $p -NewUrl "git@github.com:LuminaryWorks/$sub.git"
+  }
+}
+
+$doerRoot = Join-Path (Get-ProductDir "DoerFlow") "repos"
+if (Test-Path $doerRoot) {
+  Get-ChildItem $doerRoot -Directory | ForEach-Object {
+    if (Test-Path (Join-Path $_.FullName ".git")) {
+      Set-RemoteIfNeeded -RepoPath $_.FullName -NewUrl "git@github.com:DoerFlow/$($_.Name).git"
+    }
+  }
+}
+
+$vrRoot = Get-ProductDir "VistaRemote"
+$manifest = Join-Path $vrRoot ".meta/manifest.json"
+if (Test-Path $manifest) {
+  $m = Get-Content $manifest -Raw -Encoding UTF8 | ConvertFrom-Json
+  foreach ($prop in $m.projects.PSObject.Properties) {
+    $path = Join-Path $vrRoot $prop.Value.path
+    if ($prop.Value.remote) {
+      Set-RemoteIfNeeded -RepoPath $path -NewUrl $prop.Value.remote
+    }
   }
 }
 

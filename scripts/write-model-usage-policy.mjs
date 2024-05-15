@@ -1,10 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const metaRoot = path.resolve(__dirname, '..')
-const www = path.resolve(metaRoot, '..')
+import { resolveWorkspacePath } from './lib/workspace.mjs'
 
 const content = `---
 description: Restrict high-cost Cursor models — execution must use Grok 4.5 / Composer 2.5 only
@@ -46,39 +42,39 @@ Do **not** use any other model for those tasks unless the **user explicitly name
 Applies to LuminaryWorks MetaRepo and all ecosystem products: DataLuminary, BlockyEdu, DoerFlow, VistaRemote, VistaCast, SyncroBrain (and their nested repos).
 `
 
-/** Relative to workspace root (sibling of LuminaryWorks). */
+/** Segments under {workspace}/ (PascalCase dirs; resolved case-insensitively). */
 const relativeTargets = [
-  'LuminaryWorks/.cursor/rules/model-usage-policy.mdc',
-  'dataluminary/.cursor/rules/model-usage-policy.mdc',
-  'dataluminary/DataTalk/.cursor/rules/model-usage-policy.mdc',
-  'dataluminary/DataView/.cursor/rules/model-usage-policy.mdc',
-  'blockyedu/.cursor/rules/model-usage-policy.mdc',
-  'blockyedu/edu-server/.cursor/rules/model-usage-policy.mdc',
-  'blockyedu/server/.cursor/rules/model-usage-policy.mdc',
-  'blockyedu/edu-app-web/.cursor/rules/model-usage-policy.mdc',
-  'blockyedu/code-app-web/.cursor/rules/model-usage-policy.mdc',
-  'doerflow/.cursor/rules/model-usage-policy.mdc',
-  'doerflow/repos/api/.cursor/rules/model-usage-policy.mdc',
-  'doerflow/repos/web/.cursor/rules/model-usage-policy.mdc',
-  'doerflow/repos/admin/.cursor/rules/model-usage-policy.mdc',
-  'doerflow/repos/wallet/.cursor/rules/model-usage-policy.mdc',
-  'doerflow/repos/worker/.cursor/rules/model-usage-policy.mdc',
-  'vistaremote/.cursor/rules/model-usage-policy.mdc',
-  'vistaremote/server/.cursor/rules/model-usage-policy.mdc',
-  'vistaremote/web/.cursor/rules/model-usage-policy.mdc',
-  'vistaremote/shared/.cursor/rules/model-usage-policy.mdc',
-  'vistacast/.cursor/rules/model-usage-policy.mdc',
-  'syncrobrain/.cursor/rules/model-usage-policy.mdc',
+  ['LuminaryWorks', '.cursor/rules/model-usage-policy.mdc'],
+  ['DataLuminary', '.cursor/rules/model-usage-policy.mdc'],
+  ['DataLuminary', 'DataTalk', '.cursor/rules/model-usage-policy.mdc'],
+  ['DataLuminary', 'DataView', '.cursor/rules/model-usage-policy.mdc'],
+  ['BlockyEdu', '.cursor/rules/model-usage-policy.mdc'],
+  ['BlockyEdu', 'edu-server', '.cursor/rules/model-usage-policy.mdc'],
+  ['BlockyEdu', 'server', '.cursor/rules/model-usage-policy.mdc'],
+  ['BlockyEdu', 'edu-app-web', '.cursor/rules/model-usage-policy.mdc'],
+  ['BlockyEdu', 'code-app-web', '.cursor/rules/model-usage-policy.mdc'],
+  ['DoerFlow', '.cursor/rules/model-usage-policy.mdc'],
+  ['DoerFlow', 'repos', 'api', '.cursor/rules/model-usage-policy.mdc'],
+  ['DoerFlow', 'repos', 'web', '.cursor/rules/model-usage-policy.mdc'],
+  ['DoerFlow', 'repos', 'admin', '.cursor/rules/model-usage-policy.mdc'],
+  ['DoerFlow', 'repos', 'wallet', '.cursor/rules/model-usage-policy.mdc'],
+  ['DoerFlow', 'repos', 'worker', '.cursor/rules/model-usage-policy.mdc'],
+  ['VistaRemote', '.cursor/rules/model-usage-policy.mdc'],
+  ['VistaRemote', 'server', '.cursor/rules/model-usage-policy.mdc'],
+  ['VistaRemote', 'web', '.cursor/rules/model-usage-policy.mdc'],
+  ['VistaRemote', 'shared', '.cursor/rules/model-usage-policy.mdc'],
+  ['VistaCast', '.cursor/rules/model-usage-policy.mdc'],
+  ['SyncroBrain', '.cursor/rules/model-usage-policy.mdc'],
 ]
 
-const targets = relativeTargets.map((rel) => path.join(www, rel))
+const targets = relativeTargets.map((segs) => resolveWorkspacePath(...segs))
 
 for (const file of targets) {
   fs.mkdirSync(path.dirname(file), { recursive: true })
   fs.writeFileSync(file, content, { encoding: 'utf8' })
 }
 
-console.log(`wrote ${targets.length} files (www=${www})`)
+console.log(`wrote ${targets.length} files`)
 for (const file of targets) {
   const buf = fs.readFileSync(file)
   const bom = buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf

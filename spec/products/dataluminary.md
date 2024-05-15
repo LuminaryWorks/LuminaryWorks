@@ -1,7 +1,7 @@
 # DataLuminary 产品规划 · 数据明鉴
 
-> **中文名**：数据明鉴 · **域名**：[dataluminary.dev](https://dataluminary.dev) · **组织**：[github.com/dataluminary](https://github.com/dataluminary)  
-> **旧名**：DataLuminary / DataLuminary-Platform
+> **中文名**：数据明鉴 · **域名**：[dataluminary.dev](https://dataluminary.dev) · **组织**：[github.com/DataLuminary](https://github.com/DataLuminary)  
+> **MetaRepo**：[DataLuminary/DataLuminary](https://github.com/DataLuminary/DataLuminary) · **旧仓名**：DataLuminary-Platform
 
 ## 1. 定位
 

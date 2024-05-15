@@ -15,35 +15,35 @@ $script:DocsSites = @(
     Brand   = "DataLuminary"
     Chinese = "数据明鉴"
     Domain  = "dataluminary.dev"
-    Org     = "dataluminary"
+    Org     = "DataLuminary"
     Tagline = "AI data insight and business intelligence"
   },
   @{
     Brand   = "BlockyEdu"
     Chinese = "智码工坊"
     Domain  = "blockyedu.com"
-    Org     = "blockyedu"
+    Org     = "BlockyEdu"
     Tagline = "AI-powered programming education with Blockly"
   },
   @{
     Brand   = "DoerFlow"
     Chinese = "智工网"
     Domain  = "doerflow.dev"
-    Org     = "doerflow"
+    Org     = "DoerFlow"
     Tagline = "The liquidity protocol for autonomous agents"
   },
   @{
     Brand   = "VistaCast"
     Chinese = "视界云遥"
     Domain  = "vistacast.dev"
-    Org     = "vistacast"
+    Org     = "VistaCast"
     Tagline = "AI-powered visual intelligence, streamed"
   },
   @{
     Brand   = "SyncroBrain"
     Chinese = "万物智脑"
     Domain  = "syncrobrain.com"
-    Org     = "syncrobrain"
+    Org     = "SyncroBrain"
     Tagline = "An AI-native operating system for connected devices"
   }
 )

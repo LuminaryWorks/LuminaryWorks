@@ -27,7 +27,8 @@
     "ent:dev": "node scripts/run.mjs entitlement dev",
     "ent:client:sync": "node scripts/sync-entitlement-client.mjs",
     "ent:client:build": "pnpm --dir shared/packages/entitlement-client run build",
-    "lock:node24": "node scripts/lock-node24-ecosystem.mjs"
+    "lock:node24": "node scripts/lock-node24-ecosystem.mjs",
+    "verify:migration": "node scripts/verify-migration.mjs"
   },
   "engines": {
     "node": ">=24.0.0"

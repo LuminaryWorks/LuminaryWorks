@@ -1,9 +1,9 @@
 # VistaCast 产品规划 · 视界云遥
 
-> **组织**：[github.com/VistaCast](https://github.com/VistaCast) · **MetaRepo**：[VistaCast/vistacast](https://github.com/VistaCast/vistacast) · **域名**：[vistacast.dev](https://vistacast.dev)  
+> **组织**：[github.com/VistaCast](https://github.com/VistaCast) · **MetaRepo**：[VistaCast/VistaCast](https://github.com/VistaCast/VistaCast) · **域名**：[vistacast.dev](https://vistacast.dev)  
 > **Slogan**：AI Visual Autopilot — 把线下店铺变成数字化数据流。  
 > **实现状态**：📋 **D0 规划 / 文档阶段**（M1 编码排在 DataLuminary、BlockyEdu P0 之后）  
-> **详细 spec**：`../vistacast/spec/` · [GitHub](https://github.com/VistaCast/vistacast/tree/main/spec)
+> **详细 spec**：`../VistaCast/spec/` · [GitHub](https://github.com/VistaCast/VistaCast/tree/main/spec)
 
 ## 1. 定位
 
@@ -28,7 +28,7 @@
 | GTM | D0 设计伙伴 → M1 试点 5 站 → M2 可复制商业化 |
 | 关键风险 | AI 误报、隐私合规、ONVIF 兼容性 |
 
-完整分析：[VistaCast/spec/strategic-analysis.md](https://github.com/VistaCast/vistacast/blob/main/spec/strategic-analysis.md)
+完整分析：[VistaCast/spec/strategic-analysis.md](https://github.com/VistaCast/VistaCast/blob/main/spec/strategic-analysis.md)
 
 ## 3. 目标场景
 
@@ -48,7 +48,7 @@
 | **M2** | Sentinel | 规则 + 异常 GA | 规则引擎、跌倒/打架/烟雾、Webhook/MQTT |
 | **M3** | Nexus | 生态集成 | Re-ID β、DataLuminary 模板、SyncroBrain 联动 |
 
-完整 FR/US：[product-roadmap.md](https://github.com/VistaCast/vistacast/blob/main/spec/product-roadmap.md)
+完整 FR/US：[product-roadmap.md](https://github.com/VistaCast/VistaCast/blob/main/spec/product-roadmap.md)
 
 ### M1 核心功能（摘要）
 
@@ -71,7 +71,7 @@
 
 NestJS + Fastify + TypeORM + PostgreSQL · ONVIF/RTSP · WebSocket · Rsbuild + React · `@luminaryworks/auth-core`
 
-工作流：**Spec → artifacts/contracts → repos/**（见 [SDD spec](https://github.com/VistaCast/vistacast/blob/main/spec/spec-driven-development-spec.md)）
+工作流：**Spec → artifacts/contracts → repos/**（见 [SDD spec](https://github.com/VistaCast/VistaCast/blob/main/spec/spec-driven-development-spec.md)）
 
 ## 7. 兄弟产品集成
 
@@ -93,8 +93,8 @@ NestJS + Fastify + TypeORM + PostgreSQL · ONVIF/RTSP · WebSocket · Rsbuild + 
 
 | 文档 | 路径 |
 |------|------|
-| 产品 spec 仓 | [VistaCast/vistacast/spec](https://github.com/VistaCast/vistacast/tree/main/spec) |
-| 路线图 | [ROADMAP.md](https://github.com/VistaCast/vistacast/blob/main/ROADMAP.md) |
-| 实现状态 | [implementation-status.md](https://github.com/VistaCast/vistacast/blob/main/spec/implementation-status.md) |
+| 产品 spec 仓 | [VistaCast/VistaCast/spec](https://github.com/VistaCast/VistaCast/tree/main/spec) |
+| 路线图 | [ROADMAP.md](https://github.com/VistaCast/VistaCast/blob/main/ROADMAP.md) |
+| 实现状态 | [implementation-status.md](https://github.com/VistaCast/VistaCast/blob/main/spec/implementation-status.md) |
 | 兄弟产品 | [vistaremote.md](./vistaremote.md) |
 | 品牌 | [domain-and-branding.md §4.4](../domain-and-branding.md) |

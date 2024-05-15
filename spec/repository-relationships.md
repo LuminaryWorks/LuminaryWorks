@@ -10,12 +10,12 @@
 | [LuminaryWorks/docs](https://github.com/LuminaryWorks/docs) | — | — | 共享 | RsPress 对外宣传 + 开发者门户 |
 | [LuminaryWorks/identity](https://github.com/LuminaryWorks/identity) | — | — | 共享 | Logto 统一登录授权 Docker 服务 |
 | [LuminaryWorks/shared](https://github.com/LuminaryWorks/shared) | — | — | 共享 | `@luminary/*` pnpm 工作区 |
-| [dataluminary/DataLuminary-Platform](https://github.com/dataluminary/DataLuminary-Platform) | 数据明鉴 | dataluminary.dev | 产品 | DataLuminary — BI / DataTalk |
-| [blockyedu/VibeEdu](https://github.com/blockyedu/VibeEdu) | 智码工坊 | blockyedu.com | 产品 | BlockyEdu — AI 全民创造 + VibeLearn 企业大学 |
-| [doerflow/VibeAgent](https://github.com/doerflow/VibeAgent) | 智工网 | doerflow.dev | 产品 | DoerFlow — 执行者价值网络 |
-| [VistaCast/vistacast](https://github.com/VistaCast/vistacast) | 视界云遥 | vistacast.dev | 产品 | VistaCast — AI 摄像头云监控（规划 spec） |
-| [VistaRemote/vibeCode](https://github.com/VistaRemote/vibeCode) | 视界远程 | — | 产品 | VistaRemote — WebRTC 远程桌面 |
-| [syncrobrain/LuminaryIoTChain](https://github.com/syncrobrain/LuminaryIoTChain) | 万物智脑 | syncrobrain.com | 产品 | SyncroBrain — 设备 AI OS |
+| [DataLuminary/DataLuminary](https://github.com/DataLuminary/DataLuminary) | 数据明鉴 | dataluminary.dev | 产品 | DataLuminary — BI / DataTalk |
+| [BlockyEdu/BlockyEdu](https://github.com/BlockyEdu/BlockyEdu) | 智码工坊 | blockyedu.com | 产品 | BlockyEdu — AI 全民创造 + VibeLearn 企业大学 |
+| [DoerFlow/DoerFlow](https://github.com/DoerFlow/DoerFlow) | 智工网 | doerflow.dev | 产品 | DoerFlow — 执行者价值网络 |
+| [VistaCast/VistaCast](https://github.com/VistaCast/VistaCast) | 视界云遥 | vistacast.dev | 产品 | VistaCast — AI 摄像头云监控（规划 spec） |
+| [VistaRemote/VistaRemote](https://github.com/VistaRemote/VistaRemote) | 视界远程 | — | 产品 | VistaRemote — WebRTC 远程桌面 |
+| [SyncroBrain/SyncroBrain](https://github.com/SyncroBrain/SyncroBrain) | 万物智脑 | syncrobrain.com | 产品 | SyncroBrain — 设备 AI OS |
 
 ### 1.1 VistaCast 与 VistaRemote
 
@@ -35,12 +35,12 @@
 ```text
 {workspace}/
 ├── LuminaryWorks/
-├── dataluminary/
-├── blockyedu/
-├── doerflow/
-├── vistacast/               # VistaCast 规划 spec
-├── vistaremote/             # VistaRemote 远程桌面
-└── syncrobrain/
+├── DataLuminary/
+├── BlockyEdu/
+├── DoerFlow/
+├── VistaCast/               # VistaCast 规划 spec
+├── VistaRemote/             # VistaRemote 远程桌面
+└── SyncroBrain/
 ```
 
 初始化：`./init.sh` 或 `.\init.ps1` → `pnpm bootstrap`
@@ -79,8 +79,8 @@ LuminaryWorks/shared (@luminary/*)
 | 域名 / 品牌 / 组织迁移 | **LuminaryWorks/LuminaryWorks** `spec/` |
 | 六产品规划摘要 | **LuminaryWorks/LuminaryWorks** `spec/products/` |
 | 生态叙事 / 开发者门户 | **LuminaryWorks/docs** |
-| VistaCast 规划 spec | `../vistacast/spec/` + `spec/products/vistacast.md` |
-| VistaRemote 实现 spec | `../vistaremote/spec/` + `spec/products/vistaremote.md` |
+| VistaCast 规划 spec | `../VistaCast/spec/` + `spec/products/vistacast.md` |
+| VistaRemote 实现 spec | `../VistaRemote/spec/` + `spec/products/vistaremote.md` |
 | 各产品域规格 | 各产品 `spec/` |
 
 详见 [migration-matrix.md](./migration-matrix.md)。

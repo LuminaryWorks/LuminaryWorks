@@ -1,7 +1,8 @@
 # GitHub 组织与仓库迁移手册 (v1.0)
 
-> **状态**：Ready · **前置**：[domain-and-branding.md](./domain-and-branding.md)  
-> **范围**：将 GitHub 组织名与主域名对齐，并更新所有文档与本地 `git remote`。
+> **状态**：Phase A 已完成（2024-04）· **前置**：[domain-and-branding.md](./domain-and-branding.md)  
+> **现行命名**：[local-paths.md](./local-paths.md) — GitHub 组织 / MetaRepo / 本地目录均为 PascalCase（`DataLuminary/DataLuminary` 等）。GitHub URL 大小写等价。  
+> **范围**（历史）：将 GitHub 组织名与主域名对齐，并更新所有文档与本地 `git remote`。
 
 ## 1. 迁移矩阵
 
@@ -13,6 +14,8 @@
 | 3 | AgentSkillMesh | **doerflow** | VibeAgent → platform（可选） | doerflow.dev |
 | 4 | VistaRemote | **vistacast** | vibeCode → platform（可选） | vistacast.dev |
 | 5 | LuminaryIoTChain | **syncrobrain** | LuminaryIoTChain → platform（可选） | syncrobrain.com |
+
+> **现行**：GitHub 组织显示名、MetaRepo 名、本地目录均为 PascalCase（见 [local-paths.md](./local-paths.md)）。上表「目标组织」列为历史 slug；`dataluminary` 与 `DataLuminary` 在 GitHub 上等价。
 
 **阶段建议**：
 
@@ -26,29 +29,28 @@
 
 | 品牌 | 组织 | 产品 | 本地路径 |
 |------|------|------|----------|
-| VistaCast | [VistaCast](https://github.com/VistaCast) | AI 摄像头云监控 | `../vistacast` · [VistaCast/vistacast](https://github.com/VistaCast/vistacast) |
-| VistaRemote | [VistaRemote](https://github.com/VistaRemote) | WebRTC 远程桌面 | `../vistaremote` |
+| VistaCast | [VistaCast](https://github.com/VistaCast) | AI 摄像头云监控 | `../VistaCast` · [VistaCast/VistaCast](https://github.com/VistaCast/VistaCast) |
+| VistaRemote | [VistaRemote](https://github.com/VistaRemote) | WebRTC 远程桌面 | `../VistaRemote` |
 
 远程桌面代码维护在 **VistaRemote** 组织；VistaCast 为新产品线，编码排在 DataLuminary、BlockyEdu 之后。详见 [products/vistacast.md](./products/vistacast.md)、[products/vistaremote.md](./products/vistaremote.md)。
 
-## 2. GitHub 组织操作（Phase A）
+## 2. GitHub 组织操作（Phase A · 已完成）
 
-**自动化脚本**（推荐，需先 `gh auth login`）：
+组织 rename 一次性脚本已删除（`rename-github-orgs.ps1/.sh`）。日常只核验 local remote 与路径：
 
-```powershell
-# LuminaryWorks 根目录
-.\scripts\rename-github-orgs.ps1          # 交互确认后 rename
-.\scripts\rename-github-orgs.ps1 -WhatIf  # 仅预览
-.\scripts\update-git-remotes.ps1          # rename 后更新本地 origin
+```bash
+pnpm verify:migration
+# 需要时批量改 origin：
+pwsh scripts/update-git-remotes.ps1
 ```
 
-Bash：`./scripts/rename-github-orgs.sh`
+Windows / macOS / Linux 均可用 Node：`node scripts/verify-migration.mjs`。
 
-**若 `gh auth status` 无 `admin:org` scope**（API rename 会静默失败）：
+**若仍需在 GitHub 网页改组织名**（须 Organization Owner）：
 
 1. 执行 `gh auth refresh -h github.com -s admin:org` 并在浏览器完成设备码授权  
-2. **或** 运行 `.\scripts\open-org-rename-pages.ps1` 在浏览器手动改组织名  
-3. 完成后运行 `.\scripts\verify-migration.ps1` 确认
+2. 打开各组织 Settings → Profile → Change organization name  
+3. 完成后运行 `pnpm verify:migration` 确认
 
 手动改组织名入口（须 Organization Owner）：
 
@@ -118,7 +120,7 @@ git remote set-url origin git@github.com:doerflow/platform.git
 
 ### 3.1 批量查找旧 URL 引用
 
-在本地工作区根目录（`{workspace}/`，如 `C:\www` / `D:\www` / `~/www`）：
+在本地工作区根目录（本仓上一级 `{workspace}/`，路径由脚本解析，不写死盘符）：
 
 ```powershell
 # PowerShell — 查找仍引用旧组织的文件
@@ -164,10 +166,11 @@ Get-ChildItem -Recurse -Include *.md,*.json,*.yaml,*.yml,*.ts,*.tsx,*.mjs,*.ps1,
 
 | 组织 | Phase A | local remote | 文档 | 备注 |
 |------|---------|--------------|------|------|
-| dataluminary | ✅ 2024-04 | ✅ | ✅ | 数据明鉴；GitHub 显示 DataLuminary（大小写等价） |
-| blockyedu | ✅ 2024-04 | ✅ | ✅ | 智码工坊 |
-| doerflow | ✅ 2024-04 | ✅ | ✅ | 智工网 |
-| vistacast | ✅ 2024-04 | ✅ | ✅ | 视界云遥 |
-| syncrobrain | ✅ 2024-04 | ✅ | ✅ | 万物智脑 |
+| DataLuminary | ✅ 2024-04 | ✅ | ✅ | MetaRepo `DataLuminary/DataLuminary`；本地 `DataLuminary/` |
+| BlockyEdu | ✅ 2024-04 | ✅ | ✅ | MetaRepo `BlockyEdu/BlockyEdu` |
+| DoerFlow | ✅ 2024-04 | ✅ | ✅ | MetaRepo `DoerFlow/DoerFlow` |
+| VistaCast | ✅ 2024-04 | ✅ | ✅ | 视界云遥；与 VistaRemote **并存** |
+| VistaRemote | ✅ 2024-04 | ✅ | ✅ | 远程桌面；MetaRepo `VistaRemote/VistaRemote` |
+| SyncroBrain | ✅ 2024-04 | ✅ | ✅ | MetaRepo `SyncroBrain/SyncroBrain` |
 
 Phase A 已于 2024-04 完成。

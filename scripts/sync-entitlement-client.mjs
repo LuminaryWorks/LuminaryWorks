@@ -9,18 +9,16 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { metaRoot, resolveWorkspacePath } from "./lib/workspace.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(__dirname, "..");
-const pkgDir = path.join(root, "shared", "packages", "entitlement-client");
+const pkgDir = path.join(metaRoot, "shared", "packages", "entitlement-client");
 
 const consumers = [
-  path.join(root, "..", "dataluminary", "DataTalk"),
-  path.join(root, "..", "blockyedu", "edu-server"),
-  path.join(root, "..", "blockyedu", "server"),
-  path.join(root, "..", "vistaremote", "server"),
-  path.join(root, "..", "doerflow", "repos", "api"),
+  resolveWorkspacePath("DataLuminary", "DataTalk"),
+  resolveWorkspacePath("BlockyEdu", "edu-server"),
+  resolveWorkspacePath("BlockyEdu", "server"),
+  resolveWorkspacePath("VistaRemote", "server"),
+  resolveWorkspacePath("DoerFlow", "repos", "api"),
 ];
 
 function run(cmd, args, cwd) {

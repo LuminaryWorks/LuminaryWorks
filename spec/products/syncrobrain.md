@@ -1,7 +1,7 @@
 # SyncroBrain 产品规划 · 万物智脑
 
-> **中文名**：万物智脑 · **域名**：[syncrobrain.com](https://syncrobrain.com) · **组织**：[github.com/syncrobrain](https://github.com/syncrobrain)  
-> **旧名**：LuminaryIoTChain  
+> **中文名**：万物智脑 · **域名**：[syncrobrain.com](https://syncrobrain.com) · **组织**：[github.com/SyncroBrain](https://github.com/SyncroBrain)  
+> **MetaRepo**：[SyncroBrain/SyncroBrain](https://github.com/SyncroBrain/SyncroBrain) · **旧名**：LuminaryIoTChain  
 > **Slogan**：An AI-native operating system for connected devices.
 
 ## 1. 定位

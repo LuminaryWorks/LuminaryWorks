@@ -1,6 +1,6 @@
 # DoerFlow · 智工网 跨产品 Spec
 
-> **外部文档优先**：[doerflow.dev](https://doerflow.dev) · [docs.doerflow.dev](https://docs.doerflow.dev)。本文件为 MetaRepo 内 **LuminaryWorks** 视角的简报；**权威实现与合约以 `doerflow/VibeAgent` MetaRepo** 为准。
+> **外部文档优先**：[doerflow.dev](https://doerflow.dev) · [docs.doerflow.dev](https://docs.doerflow.dev)。本文件为 MetaRepo 内 **LuminaryWorks** 视角的简报；**权威实现与合约以 `DoerFlow/DoerFlow` MetaRepo** 为准。
 
 ## 品牌与仓库
 
@@ -11,8 +11,8 @@
 | 文档 | [docs.doerflow.dev](https://docs.doerflow.dev)（Rspress） |
 | DApp | [app.doerflow.dev](https://app.doerflow.dev) |
 | 管理端 | [admin.doerflow.dev](https://admin.doerflow.dev) |
-| GitHub 组织 | [github.com/doerflow](https://github.com/doerflow) |
-| MetaRepo | [doerflow/VibeAgent](https://github.com/doerflow/VibeAgent)（历史品牌 **VibeAgent**；`luminaryworks-ecosystem.md`、`spec/CONVENTIONS`） |
+| GitHub 组织 | [github.com/DoerFlow](https://github.com/DoerFlow) |
+| MetaRepo | [DoerFlow/DoerFlow](https://github.com/DoerFlow/DoerFlow)（历史品牌 **VibeAgent**；`luminaryworks-ecosystem.md`、`spec/CONVENTIONS`） |
 | 协议 / 结算 | `spec/PROTOCOL.md`、`spec/SETTLEMENT.md`、`spec/PAYMENT_CHANNELS.md` 等（MetaRepo） |
 
 ## 在 LuminaryWorks 六产品中的角色
@@ -46,7 +46,7 @@
 | [VistaRemote](https://remote.vistacast.dev) | [remote.vistacast.dev](https://remote.vistacast.dev) | 远程调试 Worker / 边缘设备 |
 | [VistaCast](https://vistacast.dev) | [vistacast.dev](https://vistacast.dev) | 视觉 Skill（规划） |
 
-集成原则（MetaRepo）：跨产品仅 REST + OIDC（`@luminary/auth-core`）；链上逻辑留在 `repos/contracts`。生态叙事详见 [doerflow `spec/luminaryworks-ecosystem.md`](https://github.com/doerflow/VibeAgent/blob/main/spec/luminaryworks-ecosystem.md)。
+集成原则（MetaRepo）：跨产品仅 REST + OIDC（`@luminary/auth-core`）；链上逻辑留在 `repos/contracts`。生态叙事详见 [DoerFlow `spec/luminaryworks-ecosystem.md`](https://github.com/DoerFlow/DoerFlow/blob/main/spec/luminaryworks-ecosystem.md)。
 
 ## 身份、权益与协议经济
 
@@ -76,6 +76,6 @@
 
 ## MetaRepo 延伸阅读
 
-- [doerflow `spec/ROADMAP.md`](https://github.com/doerflow/VibeAgent/blob/main/spec/ROADMAP.md)
+- [DoerFlow `spec/ROADMAP.md`](https://github.com/DoerFlow/DoerFlow/blob/main/spec/ROADMAP.md)
 - [LuminaryWorks `spec/domain-and-branding.md`](../domain-and-branding.md)
 - [LuminaryWorks `docs` 产品页 — DoerFlow](https://docs.luminaryworks.dev/products/doerflow)

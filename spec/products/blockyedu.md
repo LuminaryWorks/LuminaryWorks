@@ -1,8 +1,8 @@
 # BlockyEdu 产品规划 · 智码工坊
 
-> **中文名**：智码工坊 · **域名**：[blockyedu.com](https://blockyedu.com) · **组织**：[github.com/blockyedu](https://github.com/blockyedu)  
+> **中文名**：智码工坊 · **域名**：[blockyedu.com](https://blockyedu.com) · **组织**：[github.com/BlockyEdu](https://github.com/BlockyEdu)  
 > **旧名**：VibeEdu / blockyEdu  
-> **权威蓝图（实现仓）**：[blockyedu/VibeEdu `docs/roadmap/ai-creation-platform-blueprint.md`](https://github.com/blockyedu/VibeEdu)
+> **权威蓝图（实现仓）**：[BlockyEdu/BlockyEdu `docs/roadmap/ai-creation-platform-blueprint.md`](https://github.com/BlockyEdu/BlockyEdu)
 
 ## 1. 定位
 
