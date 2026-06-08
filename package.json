@@ -1,0 +1,13 @@
+{
+  "name": "@luminaryworks/meta",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LuminaryWorks ecosystem MetaRepo — orchestration scripts for identity, shared libs and docs",
+  "scripts": {
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "id:up": "node scripts/run.mjs identity bootstrap",
+    "id:down": "node scripts/run.mjs identity down",
+    "shared:build": "node scripts/run.mjs shared build",
+    "docs:dev": "node scripts/run.mjs docs dev"
+  }
+}
