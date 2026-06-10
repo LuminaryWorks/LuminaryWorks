@@ -1,4 +1,8 @@
-# LuminaryWorks
+<p align="center">
+  <img src="assets/logo.png" alt="LuminaryWorks" width="128" />
+</p>
+
+<h1 align="center">LuminaryWorks</h1>
 
 **AI 原生开源生态** — 五个可独立部署的产品，通过标准协议与共享服务互相成长。
 
