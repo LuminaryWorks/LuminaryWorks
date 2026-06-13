@@ -2,50 +2,58 @@
   <img src="assets/logo.png" alt="LuminaryWorks" width="128" />
 </p>
 
-<h1 align="center">LuminaryWorks</h1>
+<h1 align="center">LuminaryWorks · 启明工坊</h1>
 
-**AI 原生开源生态** — 五个可独立部署的产品，通过标准协议与共享服务互相成长。
+**AI 原生开源生态** — 六个可独立部署的产品，通过标准协议与共享服务互相成长。
 
 > **组织**：[github.com/LuminaryWorks](https://github.com/orgs/LuminaryWorks/repositories)  
+> **域名**：[luminaryworks.dev](https://luminaryworks.dev) · **中文名**：启明工坊  
 > **原则**：业务完全隔离 · 身份与规范统一 · 按需集成、不强制耦合
 
-## 五项目一览
+## 六项目一览
 
-| # | 产品 | 组织 / 仓库 | 一句话 |
-|---|------|-------------|--------|
-| 1 | **DataLuminary** | [DataLuminary/DataLuminary-Platform](https://github.com/DataLuminary/DataLuminary-Platform) | AI 数据洞察 — BI、DataTalk 大屏、分析 |
-| 2 | **VibeEdu** | [BlockyEdu/VibeEdu](https://github.com/BlockyEdu/VibeEdu) | AI 教育 — 课程、编程实验、工程师培养 |
-| 3 | **VibeAgent** | [AgentSkillMesh/VibeAgent](https://github.com/AgentSkillMesh/VibeAgent) | AI Agent 链上交易市场 |
-| 4 | **VistaRemote** | [VistaRemote/vibeCode](https://github.com/VistaRemote/vibeCode) | AI 远程监控 — WebRTC 桌面、录制与洞察 |
-| 5 | **LuminaryIoTChain** | [LuminaryIoTChain/LuminaryIoTChain](https://github.com/LuminaryIoTChain/LuminaryIoTChain) | AI 物联网 PaaS — 设备、EMQX、ThingsBoard |
+| # | 品牌 | 中文名 | 域名 | GitHub | 一句话 |
+|---|------|--------|------|--------|--------|
+| 1 | **DataLuminary** | 数据明鉴 | [dataluminary.dev](https://dataluminary.dev) | [dataluminary/DataLuminary-Platform](https://github.com/dataluminary/DataLuminary-Platform) | AI 数据洞察 — BI、DataTalk 大屏 |
+| 2 | **BlockyEdu** | 智码工坊 | [blockyedu.com](https://blockyedu.com) | [blockyedu/VibeEdu](https://github.com/blockyedu/VibeEdu) | AI 教育 — Blockly 编程与课程 |
+| 3 | **DoerFlow** | 智工网 | [doerflow.dev](https://doerflow.dev) | [doerflow/VibeAgent](https://github.com/doerflow/VibeAgent) | 执行者价值网络 — Agent/链上结算 |
+| 4 | **VistaCast** | 视界云遥 | [vistacast.dev](https://vistacast.dev) | [VistaCast/vistacast](https://github.com/VistaCast/vistacast) | AI 摄像头云监控（**文档先行**） |
+| 5 | **VistaRemote** | 视界远程 | — | [VistaRemote/vibeCode](https://github.com/VistaRemote/vibeCode) | WebRTC 远程桌面 + AI 录制 |
+| 6 | **SyncroBrain** | 万物智脑 | [syncrobrain.com](https://syncrobrain.com) | [syncrobrain/LuminaryIoTChain](https://github.com/syncrobrain/LuminaryIoTChain) | 连接设备的 AI OS |
 
-本地路径（开发机参考）：
+本地路径（Phase C）：
 
 ```text
-D:\www\DataLuminary\DataLuminary-Platform
-D:\www\BlockyEdu\VibeEdu
-D:\www\AgentSkillMesh\VibeAgent
-D:\www\VistaRemote
-D:\www\LuminaryIoTChain
+D:\www\LuminaryWorks\           # 启明工坊 MetaRepo
+D:\www\dataluminary\            # 数据明鉴
+D:\www\blockyedu\               # 智码工坊
+D:\www\doerflow\                # 智工网
+D:\www\vistacast\               # 视界云遥（规划 spec）
+D:\www\vistaremote\             # 视界远程（远程桌面实现）
+D:\www\syncrobrain\             # 万物智脑
 ```
+
+> GitHub 组织 rename 与 `git remote` 更新见 [spec/github-org-migration.md](./spec/github-org-migration.md)。
 
 ## AI 生态叙事
 
-五个项目回答同一条价值链的不同环节：
+六个项目回答同一条价值链的不同环节：
 
 ```text
-         学（VibeEdu）──► 做（LuminaryIoT / VistaRemote）──► 析（DataLuminary）
+         学（智码工坊）──► 连（万物智脑）──► 看（数据明鉴）
                                     │
-                                    └──► 赚（VibeAgent 链上 AI 市场）
+          视（视界云遥 VistaCast）──┤  控（视界远程 VistaRemote）
+                                    └──► 赚（智工网 DoerFlow）
 ```
 
-- **学**：VibeEdu 用 AI 辅导工程师掌握 IoT、数据、Agent 开发  
-- **连**：LuminaryIoTChain 让硬件厂商低成本接入云端（开源替代涂鸦类闭源 PaaS）  
-- **看**：DataLuminary DataTalk 将设备遥测、业务数据变为可决策的大屏  
-- **控**：VistaRemote 对设备/桌面远程运维，WebRTC + AI 录制分析  
-- **赚**：VibeAgent 让 AI 能力与设备算力在链上交易、分成  
+- **学**：智码工坊 BlockyEdu — AI 编程与课程  
+- **连**：万物智脑 SyncroBrain — 开源 IoT PaaS  
+- **看**：数据明鉴 DataLuminary — 数据洞察与大屏  
+- **视**：视界云遥 VistaCast — AI 摄像头云监控（规划，文档先行）  
+- **控**：视界远程 VistaRemote — WebRTC 远程桌面运维  
+- **赚**：智工网 DoerFlow — Agent 与人类 Doer 价值网络  
 
-**每个产品可单独卖给客户**；组合后形成「从人才培养 → 设备上线 → 数据洞察 → 远程运维 → AI 变现」的闭环。
+**每个产品可单独卖给客户**；组合后形成完整 AI 基础设施闭环。
 
 详见文档站 [LuminaryWorks/docs](https://github.com/LuminaryWorks/docs)。
 
@@ -79,7 +87,10 @@ pnpm docs:dev      # 本地预览文档站
 
 | 文档 | 说明 |
 |------|------|
-| [spec/ecosystem-refactoring.md](./spec/ecosystem-refactoring.md) | **生态重构规格**：共享能力收敛、迁移里程碑、SDD |
+| [spec/domain-and-branding.md](./spec/domain-and-branding.md) | **域名与品牌决策**（六产品 + VistaCast/VistaRemote 并存） |
+| [spec/github-org-migration.md](./spec/github-org-migration.md) | **GitHub 组织迁移**与 remote 更新 |
+| [spec/products/](./spec/products/index.md) | **六产品规划**摘要 |
+| [spec/ecosystem-refactoring.md](./spec/ecosystem-refactoring.md) | 生态重构：共享能力收敛、迁移里程碑 |
 | [spec/repository-relationships.md](./spec/repository-relationships.md) | 仓库关系与集成矩阵 |
 | [docs 站点](https://github.com/LuminaryWorks/docs) | 生态叙事 / 架构 / 产品 / 开发者指南 |
 
@@ -98,13 +109,14 @@ pnpm docs:dev      # 本地预览文档站
 每个产品仓库内均有 **`ecosystem` 文档**（可独立阅读，也可回到本页）：
 
 - DataLuminary → `spec/ecosystem.md`
-- VibeEdu → `spec/luminaryworks-ecosystem.md`
-- VibeAgent → `spec/ECOSYSTEM.md`
-- VistaRemote → `docs/luminaryworks-ecosystem.md`
-- LuminaryIoTChain → `spec/ecosystem.md`
+- BlockyEdu → `spec/luminaryworks-ecosystem.md`
+- DoerFlow → `spec/luminaryworks-ecosystem.md`
+- VistaCast → `spec/`（规划，见 LuminaryWorks `spec/products/vistacast.md`）
+- VistaRemote → `spec/luminaryworks-ecosystem.md`
+- SyncroBrain → `spec/ecosystem.md`
 
 ## 许可与独立性
 
-- 各产品保留**独立 Git 组织、独立发版、独立 LICENSE**
+- 各产品保留**独立 Git 组织、独立域名、独立发版、独立 LICENSE**
 - LuminaryWorks 仅维护**叙事、标准、共享库**，不替代各产品 MetaRepo 治理
 - 跨产品集成一律 **HTTP / OIDC / MQTT / 事件**，禁止运行时跨仓 import
