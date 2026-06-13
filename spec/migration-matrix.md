@@ -1,7 +1,8 @@
 # 五项目共享能力迁移矩阵
 
 > 架构师视角：哪些留在产品仓、哪些收敛到 [LuminaryWorks](https://github.com/LuminaryWorks)。  
-> 执行手册见 [ecosystem-refactoring.md](./ecosystem-refactoring.md) · 包迁移见 [shared/MIGRATION.md](https://github.com/LuminaryWorks/shared/blob/main/MIGRATION.md)。
+> 执行手册见 [ecosystem-refactoring.md](./ecosystem-refactoring.md) · 包迁移见 [shared/MIGRATION.md](https://github.com/LuminaryWorks/shared/blob/main/MIGRATION.md)。  
+> **品牌名**见 [domain-and-branding.md](./domain-and-branding.md)。
 
 ## 判定标准
 
@@ -14,7 +15,7 @@
 
 ## 矩阵
 
-| 能力 | DataLuminary | VibeEdu | VibeAgent | VistaRemote | IoTChain | 判定 | 目标仓 | 阶段 |
+| 能力 | DataLuminary | BlockyEdu | DoerFlow | VistaCast | SyncroBrain | 判定 | 目标仓 | 阶段 |
 |------|:---:|:---:|:---:|:---:|:---:|------|--------|------|
 | OIDC JWKS 验签 | ✅ | ✅ | ✅ | ✅ | ✅ | **共享** | `shared/auth-core` | LW-S1 |
 | OIDC SPA 客户端 | ✅ | ✅ | ✅ | ✅ | ✅ | **共享** | `shared/auth-react` | LW-S1 |
@@ -23,11 +24,11 @@
 | Logto compose | 宿主 | 消费 | 消费 | 消费 | 消费 | **共享** | `identity` | ✅ S0 |
 | 生态文档 RsPress | — | — | — | — | — | **共享** | `docs` | ✅ S0 |
 | PAL 合同 YAML | 宿主 | 消费 | 消费 | 消费 | 消费 | **共享** | `contracts`（规划） | LW-S4 |
-| DataTalk / BI | ✅ | — | — | — | 嵌入 | **私有** | DataLuminary | — |
-| 课程 / 考试 | — | ✅ | — | — | — | **私有** | VibeEdu | — |
-| 链上合约 | — | — | ✅ | — | — | **私有** | VibeAgent | — |
-| WebRTC 信令 | — | — | — | ✅ | — | **私有** | VistaRemote | — |
-| EMQX / ThingsBoard | — | — | — | — | ✅ | **私有** | LuminaryIoTChain | — |
+| DataTalk / BI | ✅ | — | — | — | 嵌入 | **私有** | dataluminary | — |
+| 课程 / 考试 | — | ✅ | — | — | — | **私有** | blockyedu | — |
+| 链上合约 | — | — | ✅ | — | — | **私有** | doerflow | — |
+| WebRTC 信令 | — | — | — | ✅ | — | **私有** | vistacast | — |
+| EMQX / ThingsBoard | — | — | — | — | ✅ | **私有** | syncrobrain | — |
 | media-platform | — | ✅ | — | 复用? | 摄像头 | **候选** | 评估 P3 | — |
 | Notify / File | 分散 | 分散 | 分散 | 分散 | 分散 | **候选** | 抽象接口 P3 | — |
 
@@ -36,9 +37,9 @@
 | 消费方 | 包 | 当前 | 目标 |
 |--------|-----|------|------|
 | DataTalk | auth-core | `file:../packages/...` | `@luminary/auth-core@^0.2` |
-| VibeEdu server | auth-core | file: | 版本号 |
-| VibeAgent api | auth-core | file: | 版本号 |
-| VistaRemote server | auth-core | file: | 版本号 |
+| BlockyEdu server | auth-core | file: | 版本号 |
+| DoerFlow api | auth-core | file: | 版本号 |
+| VistaCast server | auth-core | file: | 版本号 |
 | iot-gateway | auth-core | file: | 版本号 |
 | DataView 等 SPA | auth-react | 复制 idp 模式 | `@luminary/auth-react` |
 

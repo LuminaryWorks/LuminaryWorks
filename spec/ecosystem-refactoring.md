@@ -11,7 +11,8 @@
 | D2 | **统一登录授权独立 Docker 服务** | `LuminaryWorks/identity`（Logto + PG + Redis + 注册脚本） |
 | D3 | **共享包迁出 DataLuminary** → `LuminaryWorks/shared` pnpm 工作区 | `@luminary/auth-core`、`auth-react`、`pal`、`tooling` |
 | D4 | **一键初始化脚本**，开发者 `bootstrap` 即可拉起 identity + 构建共享库 | `LuminaryWorks/scripts/bootstrap.*` |
-| D5 | **LuminaryWorks 作为编排 MetaRepo**，子仓为独立 Git（不做 submodule） | 沿用 DataLuminary/VibeEdu 模式 |
+| D5 | **LuminaryWorks 作为编排 MetaRepo**，子仓为独立 Git（不做 submodule） | 沿用 DataLuminary/BlockyEdu 模式 |
+| D6 | **五产品 GitHub 组织与域名对齐** | 见 [domain-and-branding.md](./domain-and-branding.md)、[github-org-migration.md](./github-org-migration.md) |
 
 ## 1. 现状问题（Why）
 
@@ -53,11 +54,12 @@ D:\www\LuminaryWorks\          # 根 MetaRepo
 | PAL 合同 `pal.v1.yaml` | DataLuminary `spec/contracts/` | **共享**（暂留，后移 contracts 仓） | `LuminaryWorks/contracts`（P2） |
 | 统一登录状态页 | DataLuminary `spec/` | **共享叙事** | 链接化到 docs 站 |
 | BI / DataTalk | DataLuminary | **产品私有** | 留在 DataLuminary |
-| 课程 / 实验 | VibeEdu | **产品私有** | 留在 VibeEdu |
-| 链上合约 / Agent | VibeAgent | **产品私有** | 留在 VibeAgent |
+| 课程 / 实验 | BlockyEdu | **产品私有** | 留在 blockyedu |
+| 链上合约 / Agent | DoerFlow | **产品私有** | 留在 doerflow |
 | WebRTC 信令 / 录制 | VistaRemote | **产品私有** | 留在 VistaRemote |
-| EMQX / ThingsBoard 编排 | LuminaryIoTChain | **产品私有** | 留在 LuminaryIoTChain |
-| 媒体网关 media-platform | VibeEdu | **候选共享**（IoT 摄像头/Remote 复用） | 评估，暂留 VibeEdu |
+| ONVIF / 摄像头 AI | VistaCast | **产品私有** | 规划，vistacast |
+| EMQX / ThingsBoard 编排 | SyncroBrain | **产品私有** | 留在 syncrobrain |
+| 媒体网关 media-platform | BlockyEdu | **候选共享**（IoT 摄像头/VistaCast 复用） | 评估，暂留 blockyedu |
 | 文件服务 / Notify | 各产品分散 | **候选共享** | 抽象接口 P3 |
 
 **判定原则**：无业务域逻辑 + 被 ≥2 产品消费 + 契约稳定 → 收敛到 LuminaryWorks；否则留在产品仓。

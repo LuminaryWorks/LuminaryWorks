@@ -1,0 +1,13 @@
+node_modules
+.idea/
+.vscode/
+.git
+.husky
+.test.html
+.test.js
+.test.tsx
+.test.md
+.vscode
+**/dist
+**/coverage
+**/.env*
