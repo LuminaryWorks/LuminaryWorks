@@ -35,6 +35,8 @@
 | File | 分散 | 分散 | 分散 | 分散 | 分散 | **候选** | 抽象接口 P3 | — |
 | 订阅 / 权益（Trial·Pro·Ultra·企业·License） | 待接入 | 本地 memberTier 等 | **接入中：无 Trial；双身份客户端 + membership/402** | — | — | **共享服务** | `services/entitlement` + `shared/entitlement-client` | LW-ENT |
 | 资源 ACL（Casbin） | ✅ / 规划 | ✅ / 规划 | 规划 | 规划 | 规划 | **产品私有** | 各产品 PermissionService | 与 IAM 规范一致 |
+| LLM / embed / BYOK vault | DataInsight 适配 | 直连多厂商 | — | 规划 | 规划 | **共享网关** | 后期 `services/ai-platform` + `shared/ai-client` | LW-AI |
+| 领域智能（问数 / 教辅 / 录制 / CV / 链上） | DataTalk DataInsight | BlockyEdu prompts | ChainSkill | ONNX/CV | 规则/遥测 | **产品私有** | 各产品 orchestrator | 与 [ai-platform.md](./ai-platform.md) 一致 |
 
 ## 消费方依赖切换（LW-S2）
 
@@ -68,6 +70,17 @@ DataLuminary 旧 compose **保留至 LW-S2**，标注 deprecated，避免破坏�
 | 各产品自建 Trial 字段 | 每用户每产品一次 7 天 Trial；`ENTITLEMENT_MODE=shadow_read` → `enforce` |
 
 权威契约与错误码：[subscription-and-entitlement.md](./subscription-and-entitlement.md)。矩阵列暂以五产品表展示；VistaRemote 作为第六产品线在权益规范中单列接入。
+
+## AI 平台迁移（规划 LW-AI）
+
+| 来源 | 目标 |
+|------|------|
+| DataTalk 本地 BYOK 适配器 | 同一 `@luminaryworks/ai-client` 契约；设 `LUMINARY_AI_BASE_URL` 后切中央网关 |
+| BlockyEdu 直连 Gemini / Doubao / DeepSeek | `ai-bridge` → ai-client；不新建平行 `ai-engine` |
+| VistaRemote `@vistaremote/ai` 直持 SaaS key | 适配器 + 默认私有 Ollama/vLLM；组织显式开启才出网 |
+| 各产品自建 token 计费 | [ai-metering.md](./ai-metering.md) 用量事件；托管额度后置 |
+
+权威边界：[ai-platform.md](./ai-platform.md)。**禁止** 在产品仓另造语义不同的 Provider/Vault。
 
 ## 团队 SDD 义务
 

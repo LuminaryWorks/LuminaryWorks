@@ -32,15 +32,16 @@ Follow MetaRepo spec: `LuminaryWorks/spec/identity-and-permissions.md`.
 
 ## Implementation checklist
 
-### A. Backend (NestJS)
+### A. Backend (NestJS + Fastify)
 
-1. Add deps: `@luminaryworks/auth-core`, `casbin`, adapter (e.g. `typeorm-adapter` or file adapter for MVP).
-2. Register `LuminaryAuthModule` + global `LuminaryJwtAuthGuard`.
-3. Add `CasbinModule` / `PermissionService`:
+1. HTTP adapter: **`@nestjs/platform-fastify` only** — never `@nestjs/platform-express` / Express.
+2. Add deps: `@luminaryworks/auth-core`, `casbin`, adapter (e.g. `typeorm-adapter` or file adapter for MVP).
+3. Register `LuminaryAuthModule` + global `LuminaryJwtAuthGuard`.
+4. Add `CasbinModule` / `PermissionService`:
    - Model: request `sub, obj, act`; policy `p, sub, obj, act`; optional `g, _, _` for RBAC.
    - `enforce(userKey, resourceKey, action)` and `batchPermissions(userKey, resourceKey, actions[])`.
-4. Replace ad-hoc RBAC checks gradually: controllers keep `@RequirePermission`; implementation delegates to Casbin.
-5. Webhook (optional P2): Logto user disable → clear local cache / disable user.
+5. Replace ad-hoc RBAC checks gradually: controllers keep `@RequirePermission`; implementation delegates to Casbin.
+6. Webhook (optional P2): Logto user disable → clear local cache / disable user.
 
 Env:
 

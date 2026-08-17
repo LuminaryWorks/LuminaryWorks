@@ -61,7 +61,7 @@
 | 钱包链接 | 平台 JWT + 新鲜 SIWE 证明；UI 显示链接状态但不能把链接当作密钥托管 |
 | 资源授权 | admin/web 控件消费 API `permissions`；不使用 mock role 或 Logto claim 授予资源操作 |
 
-商业边界：Pro/Ultra/Enterprise 控制托管平台能力（`agent.publish`、`skill.register`、`task.publish`、API/任务配额等）；Gas、Escrow、协议费、Skill/任务链上按次价格仍由协议路径收取，购买平台套餐不免除也不替代协议费用。
+商业边界：Pro/Ultra/Enterprise 控制托管平台能力（`agent.publish`、`skill.register`、`task.publish`、API/任务配额等）；Gas、Escrow、协议费、Skill/任务链上按次价格仍由协议路径收取，购买平台套餐不免除也不替代协议费用。预留 `ai.strategy.run` 仅表示可选策略推理，**未实现**；ChainSkill 不是中央 AiTool。
 
 错误和降级：`401` 要求平台登录；`402 ENTITLEMENT_*` 进入稳定升级/配额流程；`403` 表示 Casbin 资源拒绝。公开 marketplace 与直接链签名保持可用。rollout 为 `off` → `shadow_read` → 小范围 `enforce` → 全量，并保留快速回滚开关。
 

@@ -12,11 +12,12 @@ const sharedRoot = path.join(metaRoot, "shared");
 
 const VERSIONS = {
   "@luminaryworks/auth-core": "^0.2.2",
-  "@luminaryworks/auth-react": "^0.3.0",
+  "@luminaryworks/auth-react": "^0.3.1",
   "@luminaryworks/auth-dev-proxy": "^0.1.0",
   "@luminaryworks/pal": "^0.2.0",
   "@luminaryworks/entitlement-client": "^0.1.0",
   "@luminaryworks/notification": "^0.1.0",
+  "@vistaremote/shared": "^0.1.0",
 };
 
 const RENAME = [
@@ -39,6 +40,14 @@ const PACKAGE_JSON_TARGETS = [
   "C:/www/vistaremote/server/package.json",
   "C:/www/vistaremote/web/apps/admin/package.json",
   "C:/www/vistaremote/web/apps/client/package.json",
+  "C:/www/vistaremote/mobile/package.json",
+  "C:/www/vistaremote/ai/package.json",
+  path.join(metaRoot, "../VistaRemote/desktop/package.json"),
+  path.join(metaRoot, "../VistaRemote/server/package.json"),
+  path.join(metaRoot, "../VistaRemote/web/apps/admin/package.json"),
+  path.join(metaRoot, "../VistaRemote/web/apps/client/package.json"),
+  path.join(metaRoot, "../VistaRemote/mobile/package.json"),
+  path.join(metaRoot, "../VistaRemote/ai/package.json"),
   "C:/www/syncrobrain/iot-gateway/package.json",
   path.join(metaRoot, "services/entitlement/package.json"),
 ];
@@ -47,7 +56,7 @@ const SOURCE_ROOTS = [
   "C:/www/dataluminary",
   "C:/www/blockyedu",
   "C:/www/doerflow",
-  "C:/www/vistaremote",
+  path.join(metaRoot, "../VistaRemote"),
   "C:/www/syncrobrain",
   sharedRoot,
   path.join(metaRoot, "services"),

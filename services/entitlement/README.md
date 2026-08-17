@@ -1,6 +1,6 @@
 # LuminaryWorks Entitlement Service
 
-Central subscription / entitlement control plane (NestJS + PostgreSQL).
+Central subscription / entitlement control plane (NestJS + Fastify + PostgreSQL).
 
 Authoritative contract: [`spec/subscription-and-entitlement.md`](../../spec/subscription-and-entitlement.md).
 

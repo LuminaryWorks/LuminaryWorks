@@ -1,0 +1,32 @@
+---
+description: NestJS HTTP adapter must be Fastify — never Express
+alwaysApply: true
+---
+
+# NestJS + Fastify (LuminaryWorks ecosystem)
+
+All NestJS HTTP services in the LuminaryWorks ecosystem use **`@nestjs/platform-fastify`**. Do **not** use Express.
+
+## Required
+
+- Bootstrap with `FastifyAdapter` + `NestFastifyApplication`.
+- Dependencies: `@nestjs/platform-fastify`, `fastify` (pin to the version expected by the Nest platform package when types conflict).
+- OpenAPI / Swagger UI on Fastify: install `@fastify/static` (do **not** add `swagger-ui-express`).
+- Prefer Fastify plugins / hooks (`app.register`, content-type parsers) over Express-style `app.use` middleware.
+- Raw body (e.g. webhook HMAC): custom Fastify `addContentTypeParser` / hooks — Nest's Express-only `rawBody: true` is forbidden.
+
+## Forbidden
+
+- `@nestjs/platform-express`
+- `NestExpressApplication` / `ExpressAdapter`
+- `express`, `@types/express`, `swagger-ui-express` as Nest HTTP stack deps
+- Copy-pasting Express middleware patterns into new NestJS services
+
+## Reference
+
+- DataTalk: `DataTalk/src/main.ts` (`FastifyAdapter`)
+- Entitlement: `LuminaryWorks/services/entitlement/src/main.ts`
+
+## Scope
+
+Applies to LuminaryWorks MetaRepo and all ecosystem products: DataLuminary, BlockyEdu, DoerFlow, VistaRemote, VistaCast, SyncroBrain (and their nested NestJS repos).

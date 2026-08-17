@@ -67,6 +67,7 @@ LuminaryWorks/shared (@luminary/*)
 | 任意 SPA → identity | OIDC PKCE | 登录 |
 | 任意 API → auth-core | JWKS | 验签 |
 | 任意 API → PAL | guard | 权限 |
+| 任意产品 orchestrator → AI Platform | `@luminaryworks/ai-client` | LLM / embed / BYOK vault / metering |
 | SyncroBrain 控制台 → DataLuminary | iframe + JWT | 大屏 |
 | VistaCast 告警 → VistaRemote | 事件 / 深链 | 人工远程介入 |
 | VistaCast / VistaRemote → DataLuminary | REST / 导出 | 报表大屏 |
@@ -82,5 +83,7 @@ LuminaryWorks/shared (@luminary/*)
 | VistaCast 规划 spec | `../VistaCast/spec/` + `spec/products/vistacast.md` |
 | VistaRemote 实现 spec | `../VistaRemote/spec/` + `spec/products/vistaremote.md` |
 | 各产品域规格 | 各产品 `spec/` |
+| AI 网关 / Vault / 计量 | **LuminaryWorks/LuminaryWorks** `spec/ai-*.md`；实现仓后期独立服务 |
+| 产品领域智能（DataInsight / 教辅 / 录制摘要） | 各产品仓，见 [ai-product-integration.md](./ai-product-integration.md) |
 
 详见 [migration-matrix.md](./migration-matrix.md)。

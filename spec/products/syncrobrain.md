@@ -22,7 +22,7 @@
 | 连接 | MQTT（EMQX）、高并发同步（Syncro） |
 | 边缘 | 规则引擎、边缘推理 |
 | 数据 | 时序、数字孪生 |
-| AI | 推理编排、Agent 接入 |
+| AI | 产品内规则 / 遥测；LLM 走中央 AI Platform，不自建 IoT LLM 栈 |
 | 商业 | DoerFlow 链上结算、DataLuminary 大屏 |
 
 ## 3. 与涂鸦（Tuya）差异

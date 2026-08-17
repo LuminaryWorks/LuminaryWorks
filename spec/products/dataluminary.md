@@ -29,11 +29,13 @@ AI 原生数据洞察平台：低代码 / 无代码 BI、DataTalk 可视化大�
 - **DataTalk**：大屏编排、实时刷新、iframe 嵌入（如 IoT 控制台）
 - Less-code / No-code 拖拽配置
 
-### 2.3 AI 增强
+### 2.3 AI 增强（DataInsight）
 
-- 自然语言 → 图表 / 报告 / 图表配置
-- 异常检测与摘要（与 SyncroBrain 时序、VistaCast 视频 AI、VistaRemote 录制摘要联动）
-- 一键生成分析叙事
+- **一个**统一 AI 对话框：Copilot 配置与数据洞察是同一编排器的两种能力，不是两套服务。
+- 逻辑名 DataInsight，物理位置 `DataTalk/src/modules/ai/`。
+- 自然语言问数、可解释洞察、ChartIntent → 原生图表 / 仪表盘。
+- 模型调用走 LuminaryWorks AI Platform 契约（本地 BYOK 适配器可先落地）。
+- 异常检测与摘要可与 SyncroBrain 时序、VistaCast 视频 AI、VistaRemote 录制摘要联动（HTTP，不跨仓 import）。
 
 ## 3. 兄弟产品集成
 
@@ -56,7 +58,7 @@ React、Ant Design、Sass · NestJS、TypeORM、PostgreSQL · VibeCode Spec-Driv
 | 阶段 | 目标 |
 |------|------|
 | M1 | DataView + DataTalk 核心闭环，独立商用 |
-| M2 | AI 报告 / 图表生成 GA |
+| M2 | AI 报告 / 图表生成 GA（见产品仓 `plan/ai-insights-roadmap.md`） |
 | M3 | SyncroBrain / DoerFlow 标准数据集模板 |
 
 ## 6. 身份 · 权益 · 资源权限

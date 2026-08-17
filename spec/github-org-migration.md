@@ -72,7 +72,7 @@ GitHub 支持组织 rename，旧 URL 会自动重定向。
 
 - 目标名若已被占用，须用方式二（新建组织 + 转移仓库）
 - Rename 后更新本地 remote（见 §3）
-- 检查 GitHub Packages（仅产品自有 `@vistaremote` 等仍走 GH Packages 时）、npmjs `@luminaryworks` 公开包、CI secrets 中的组织名
+- 检查 GitHub Packages（**`@vistaremote/*` 已迁至 npmjs 公开包**，与 `@luminaryworks/*` 相同）、npmjs 组织 Trusted Publisher、CI secrets 中的组织名
 
 ### 2.2 方式二：新建组织 + Transfer
 

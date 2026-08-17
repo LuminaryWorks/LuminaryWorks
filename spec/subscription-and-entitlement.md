@@ -1,7 +1,7 @@
 # LuminaryWorks 订阅与权益体系（Subscription & Entitlement）
 
 > **状态**：Accepted · **决策日**：2024-04-28 · **冻结实现契约**  
-> **关联**：[identity-and-permissions.md](./identity-and-permissions.md) · [migration-matrix.md](./migration-matrix.md) · [notification-service.md](./notification-service.md) · [products/index.md](./products/index.md)  
+> **关联**：[identity-and-permissions.md](./identity-and-permissions.md) · [migration-matrix.md](./migration-matrix.md) · [notification-service.md](./notification-service.md) · [ai-platform.md](./ai-platform.md) · [products/index.md](./products/index.md)  
 > **草案来源**：`LuminaryWorks_Identity_Entitlement_Design.md`（设计输入）；`test.md` 中若干主张已被本规范**显式否决**（见 §0.2），不以 `test.md` 为权威。
 
 ## 0. 决策摘要（TL;DR）
