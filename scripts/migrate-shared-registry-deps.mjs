@@ -4,10 +4,12 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import {
+  ecosystemRoots,
+  metaRoot,
+  resolveWorkspacePath,
+} from "./lib/workspace.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const metaRoot = path.resolve(__dirname, "..");
 const sharedRoot = path.join(metaRoot, "shared");
 
 const VERSIONS = {
@@ -27,39 +29,27 @@ const RENAME = [
 ];
 
 const PACKAGE_JSON_TARGETS = [
-  "C:/www/dataluminary/DataTalk/package.json",
-  "C:/www/dataluminary/DataView/package.json",
-  "C:/www/blockyedu/code-app-web/package.json",
-  "C:/www/blockyedu/edu-app-web/package.json",
-  "C:/www/blockyedu/edu-server/package.json",
-  "C:/www/blockyedu/server/package.json",
-  "C:/www/doerflow/repos/admin/package.json",
-  "C:/www/doerflow/repos/api/package.json",
-  "C:/www/doerflow/repos/web/package.json",
-  "C:/www/vistaremote/desktop/package.json",
-  "C:/www/vistaremote/server/package.json",
-  "C:/www/vistaremote/web/apps/admin/package.json",
-  "C:/www/vistaremote/web/apps/client/package.json",
-  "C:/www/vistaremote/mobile/package.json",
-  "C:/www/vistaremote/ai/package.json",
-  path.join(metaRoot, "../VistaRemote/desktop/package.json"),
-  path.join(metaRoot, "../VistaRemote/server/package.json"),
-  path.join(metaRoot, "../VistaRemote/web/apps/admin/package.json"),
-  path.join(metaRoot, "../VistaRemote/web/apps/client/package.json"),
-  path.join(metaRoot, "../VistaRemote/mobile/package.json"),
-  path.join(metaRoot, "../VistaRemote/ai/package.json"),
-  "C:/www/syncrobrain/iot-gateway/package.json",
+  resolveWorkspacePath("DataLuminary", "DataTalk", "package.json"),
+  resolveWorkspacePath("DataLuminary", "DataView", "package.json"),
+  resolveWorkspacePath("BlockyEdu", "code-app-web", "package.json"),
+  resolveWorkspacePath("BlockyEdu", "edu-app-web", "package.json"),
+  resolveWorkspacePath("BlockyEdu", "edu-server", "package.json"),
+  resolveWorkspacePath("BlockyEdu", "server", "package.json"),
+  resolveWorkspacePath("DoerFlow", "repos", "admin", "package.json"),
+  resolveWorkspacePath("DoerFlow", "repos", "api", "package.json"),
+  resolveWorkspacePath("DoerFlow", "repos", "web", "package.json"),
+  resolveWorkspacePath("VistaRemote", "desktop", "package.json"),
+  resolveWorkspacePath("VistaRemote", "server", "package.json"),
+  resolveWorkspacePath("VistaRemote", "web", "apps", "admin", "package.json"),
+  resolveWorkspacePath("VistaRemote", "web", "apps", "client", "package.json"),
+  resolveWorkspacePath("VistaRemote", "mobile", "package.json"),
+  resolveWorkspacePath("VistaRemote", "ai", "package.json"),
+  resolveWorkspacePath("SyncroBrain", "iot-gateway", "package.json"),
   path.join(metaRoot, "services/entitlement/package.json"),
 ];
 
 const SOURCE_ROOTS = [
-  "C:/www/dataluminary",
-  "C:/www/blockyedu",
-  "C:/www/doerflow",
-  path.join(metaRoot, "../VistaRemote"),
-  "C:/www/syncrobrain",
-  sharedRoot,
-  path.join(metaRoot, "services"),
+  ...ecosystemRoots(),
   path.join(metaRoot, ".cursor"),
   path.join(metaRoot, "spec"),
   path.join(metaRoot, "README.md"),
