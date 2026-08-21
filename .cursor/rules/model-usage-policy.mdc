@@ -1,37 +1,70 @@
 ---
-description: Restrict high-cost Cursor models — execution must use Grok 4.5 / Composer 2.5 only
+description: Default Grok/Composer for routine execution; pause and recommend models when capacity may be insufficient
 alwaysApply: true
 ---
 
 # Model usage policy (LuminaryWorks ecosystem)
 
-## Allowed execution models (default)
+## Default execution models (routine work)
 
-For **implementation, coding, docs edits, tests, verification, debugging, migrations, refactors, and subagents/tasks**:
+For **basic / routine** implementation — small features, straightforward bug fixes, docs edits, tests, lint, smoke verification, mechanical refactors, and Task/subagents of similar scope:
 
 1. **Primary:** Cursor Grok 4.5 High Fast (`cursor-grok-4.5-high-fast`)
 2. **Fallback:** Composer 2.5 (`composer-2.5-fast`)
 
-Do **not** use any other model for those tasks unless the **user explicitly names** that model in the current conversation (e.g. "用 GPT-5.6 实现" / "use Claude Opus for this").
+Do **not** quietly switch to GPT / Claude / Other Models API for routine work without the user choosing that model.
 
-## When other models are allowed
+## Capacity gate (before coding)
 
-- **Planning only** (Plan mode / architecture / rollout design before Accept): other models (e.g. GPT-5.6 Sol Medium, Claude Opus) may be used.
-- After a plan is **Accepted**, switch execution to Grok 4.5 or Composer 2.5 immediately.
-- Spawning Task/subagents for code/test/verify: pass only `cursor-grok-4.5-high-fast` or `composer-2.5-fast` unless the user named another model.
+**Before starting execution**, judge whether Grok 4.5 High Fast is a good fit for *this* coding task.
 
-## Hard stops
+### Proceed on default path when
 
-- If this session is a high-cost model (GPT / Claude / Other Models API) and the user asked for **implementation or verification** without explicitly authorizing that model: **stop coding**, tell the user to switch to **Grok 4.5 High Fast** (or Composer 2.5), and do not continue burning Other Models quota.
-- Never "quietly" continue expensive execution just because the chat was planned on GPT/Claude.
-- Docs, specs, tests, lint fixes, and smoke verification count as **execution**, not planning.
+- Scope is local and well-bounded (one service, few files, clear fix)
+- No cross-cutting architecture / auth / data-model redesign
+- Bug is localized (known root cause, mechanical patch)
+- Work is verification, docs, tests, or follow-the-existing-pattern implementation
+
+### Pause and recommend when capacity may be insufficient
+
+Stop coding (do not burn a weaker default if a stronger model is likely better) and ask the user to pick a model when any of these apply:
+
+- Architecture, multi-service contracts, auth/ACL, or schema migrations with irreversible trade-offs
+- Deep root-cause debugging across layers with unclear failure modes
+- Large refactors / redesigns where design quality matters more than speed
+- Prior Grok/Composer attempts on the same problem already failed or produced weak designs
+- The agent judges another available model (e.g. GPT-5.6, Claude Opus) is clearly better for the task
+
+**Pause response must:**
+
+1. State briefly why the default may not be best
+2. Recommend 2–3 concrete models with one-line trade-offs (cost / reasoning / speed)
+3. Wait for the user to name the model (or say “仍用 Grok / Composer”)
+4. Only then execute with the chosen model
+
+Never auto-upgrade to a high-cost model without an explicit user choice in the current conversation.
+
+## Planning vs execution
+
+- **Planning only** (Plan mode / architecture / rollout design before Accept): any suitable model may be used.
+- After a plan is **Accepted**, re-run the capacity gate above — do not assume “always Grok.”
+- Subagents for routine code/test/verify: default `cursor-grok-4.5-high-fast` or `composer-2.5-fast`; if the parent task already chose another model, pass that model through.
+
+## Hard stops (quota)
+
+- If this session is already on a high-cost model (GPT / Claude / Other Models API) and the user asked for **routine** implementation without authorizing that model: **stop**, recommend switching to **Grok 4.5 High Fast** (or Composer 2.5), and do not continue burning Other Models quota on trivial work.
+- If the user already chose a high-cost model for a capacity-gated task, that choice authorizes execution for **this request only**.
+- Never "quietly" continue expensive execution just because planning happened on GPT/Claude.
+- Docs, specs, tests, lint fixes, and smoke verification count as **execution**, not planning — but still use the capacity gate when the change is architectural.
 
 ## Examples
 
 - User: "规划 DoerFlow 接入" → planning model OK.
-- User: "Implement the plan" / "落地" / "验证" → **Grok 4.5 or Composer 2.5 only**.
-- User: "用 GPT-5.6 写这个修复" → that model allowed **for this request only**.
-- Subagent for product integration → model: `cursor-grok-4.5-high-fast` (or `composer-2.5-fast`).
+- User: "给这个接口加字段校验" → routine → Grok / Composer.
+- User: "重构跨产品 auth 与 entitlement 契约" → pause → recommend models → wait for choice.
+- User: "Implement the plan" after a multi-service redesign → capacity gate; if non-trivial, pause and recommend.
+- User: "用 GPT-5.6 写这个修复" → that model allowed for this request only.
+- User after pause: "用 Claude Opus" / "仍用 Grok" → execute accordingly.
 
 ## Scope
 

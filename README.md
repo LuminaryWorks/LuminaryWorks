@@ -117,14 +117,16 @@ pnpm auth:gateway  # Auth Gateway :3010（需 identity 已起）
 ```
 
 
-## Cursor 模型策略（强制）
+## Cursor 模型策略
 
-开发 / 测试 / 验证 / 写文档 / 落地实现默认只用：
+**常规执行**（小改动、明确 bug 修复、文档、测试、验证）默认：
 
 1. **Cursor Grok 4.5 High Fast**
 2. **Composer 2.5**（备选）
 
-**仅规划**（Plan mode）可用 GPT / Claude 等 Other Models。计划 Accept 后必须切回 Grok 4.5 或 Composer 2.5；未在对话中明确点名高消耗模型时，不得用其执行代码或验证。
+编码前做能力判断：若任务涉及架构改动、跨服务契约、深层排查等，Grok 4.5 可能不是最优选时，**暂停执行**，推荐 2–3 个模型及取舍，由你点名后再落地。不得在未点名时自动升到 GPT / Claude 等高消耗模型。
+
+**仅规划**（Plan mode）可用任意合适模型。计划 Accept 后仍走上述能力门禁，不默认死锁 Grok。
 
 规则文件：各仓 `.cursor/rules/model-usage-policy.mdc`（`alwaysApply: true`）。重同步：`node scripts/write-model-usage-policy.mjs`。
 
