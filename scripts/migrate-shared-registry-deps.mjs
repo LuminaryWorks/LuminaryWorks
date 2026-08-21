@@ -13,12 +13,12 @@ import {
 const sharedRoot = path.join(metaRoot, "shared");
 
 const VERSIONS = {
-  "@luminaryworks/auth-core": "^0.2.2",
-  "@luminaryworks/auth-react": "^0.3.1",
-  "@luminaryworks/auth-dev-proxy": "^0.1.0",
-  "@luminaryworks/pal": "^0.2.0",
-  "@luminaryworks/entitlement-client": "^0.1.0",
-  "@luminaryworks/notification": "^0.1.0",
+  "@luminaryworks/auth-core": "^0.2.3",
+  "@luminaryworks/auth-react": "^0.4.1",
+  "@luminaryworks/auth-dev-proxy": "^0.2.1",
+  "@luminaryworks/pal": "^0.3.0",
+  "@luminaryworks/entitlement-client": "^0.2.0",
+  "@luminaryworks/notification": "^0.2.0",
   "@vistaremote/shared": "^0.1.0",
 };
 
@@ -83,20 +83,20 @@ function renameText(text) {
 
 function updateSharedPackages() {
   const bumps = {
-    "auth-core": { name: "@luminaryworks/auth-core", version: "0.2.2" },
-    "auth-react": { name: "@luminaryworks/auth-react", version: "0.3.0" },
+    "auth-core": { name: "@luminaryworks/auth-core", version: "0.2.3" },
+    "auth-react": { name: "@luminaryworks/auth-react", version: "0.4.1" },
     "auth-dev-proxy": {
       name: "@luminaryworks/auth-dev-proxy",
-      version: "0.1.0",
+      version: "0.2.1",
     },
-    pal: { name: "@luminaryworks/pal", version: "0.2.0" },
+    pal: { name: "@luminaryworks/pal", version: "0.3.0" },
     "entitlement-client": {
       name: "@luminaryworks/entitlement-client",
-      version: "0.1.0",
+      version: "0.2.0",
     },
     notification: {
       name: "@luminaryworks/notification",
-      version: "0.1.0",
+      version: "0.2.0",
     },
   };
 

@@ -12,8 +12,8 @@ importers:
         specifier: ^10.1.2
         version: 10.1.3
       '@luminaryworks/notification':
-        specifier: file:../../shared/packages/notification
-        version: file:../../shared/packages/notification(uwvfe232uc6dhiv4ns5at2zeeu)
+        specifier: ^0.2.0
+        version: 0.2.0(uwvfe232uc6dhiv4ns5at2zeeu)
       '@nestjs/common':
         specifier: ^11.1.28
         version: 11.2.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -727,8 +727,8 @@ packages:
     resolution: {integrity: sha512-9I2Zn6+NJLfaGoz9jN3lpwDgAYvfGeNYdbAIjJOqzs4Tpc+VU3Jqq4IofSUBKajiDS8k9fZIg18/z13mpk1bsA==}
     engines: {node: '>=8'}
 
-  '@luminaryworks/notification@file:../../shared/packages/notification':
-    resolution: {directory: ../../shared/packages/notification, type: directory}
+  '@luminaryworks/notification@0.2.0':
+    resolution: {integrity: sha512-OzC22azQ4uC5GzxCAMjymDdD8kCuACSgmZIOfjokzhkmH3kdbupZcPdnC7s7/EU2U+07//Az55HamjY1B9i6aA==}
     engines: {node: '>=24.0.0'}
     peerDependencies:
       '@nestjs/common': ^10.0.0 || ^11.0.0
@@ -4635,7 +4635,7 @@ snapshots:
 
   '@lukeed/ms@2.0.2': {}
 
-  '@luminaryworks/notification@file:../../shared/packages/notification(uwvfe232uc6dhiv4ns5at2zeeu)':
+  '@luminaryworks/notification@0.2.0(uwvfe232uc6dhiv4ns5at2zeeu)':
     dependencies:
       '@nestjs-modules/mailer': 2.3.7(rldktpugrqlqcpexen2peuur4i)
       '@nestjs/common': 11.2.1(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)
