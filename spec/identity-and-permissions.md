@@ -1,29 +1,29 @@
 # LuminaryWorks 身份与权限体系（Identity & Authorization）
 
-> **状态**：Accepted · **决策日**：2024-04-24 · **修订**：2024-05-08（`HeadlessLoginPanel.showSocialConnectors`）  
+> **状态**：Accepted · **决策日**：2024-04-24 · **修订**：2026-08-21（Luminary IAM Adapter）
 > **关联**：[ecosystem-refactoring.md](./ecosystem-refactoring.md) · [subscription-and-entitlement.md](./subscription-and-entitlement.md) · [identity 仓](https://github.com/LuminaryWorks/identity) · 开发者文档 [unified-login](https://github.com/LuminaryWorks/docs)
 
 ## 0. 决策摘要（TL;DR）
 
 | # | 决策 | 落地 |
 |---|------|------|
-| D-IAM-1 | **Logto** 作为全生态唯一 IdP（OIDC） | `LuminaryWorks/identity` Docker 服务 |
-| D-IAM-2 | 登录 UI 采用 **Experience API（Headless）**，各产品自建品牌登录页 | Passport / 产品登录 SPA，不 fork Logto 体验层 |
-| D-IAM-3 | **认证与授权解耦**：Logto 只管身份与产品准入；业务资源权限由各产品自管 | AuthN ≠ AuthZ |
+| D-IAM-1 | 产品统一依赖 **Luminary IAM Adapter**；Logto 是当前 SaaS / 默认 IdP | 标准 OIDC runtime + 可插拔 provider adapter |
+| D-IAM-2 | 登录 UI 采用可插拔 **Login Experience Adapter**；Logto 默认走 Experience API（Headless） | 产品品牌登录 SPA，不 fork IdP 体验层 |
+| D-IAM-3 | **认证与授权解耦**：当前 IdP 只管身份与产品准入；业务资源权限由各产品自管 | AuthN ≠ AuthZ |
 | D-IAM-4 | 产品资源权限引擎采用 **Casbin**（`node-casbin`），NestJS 集成 | 各产品本地 PermissionService |
 | D-IAM-5 | 远期规模化（类 PowerBI）可迁 **OpenFGA**；现阶段 Casbin 足够 | 模型保持 `sub / obj / act` |
-| D-IAM-6 | **商业套餐 / 配额 / License** 不由 Logto 或 Casbin 承载 | 见 [subscription-and-entitlement.md](./subscription-and-entitlement.md) |
+| D-IAM-6 | **商业套餐 / 配额 / License** 不由 IAM Provider 或 Casbin 承载 | 见 [subscription-and-entitlement.md](./subscription-and-entitlement.md) |
 
 核心原则：**身份统一，权限解耦；品牌独立，体验一致。商业权益中央化，资源 ACL 产品私有。**
 
 ## 1. 架构分层
 
-检查顺序（产品 API 强制）：**Logto AuthN → Entitlement（商业能力）→ Casbin（资源 ACL）**。  
+检查顺序（产品 API 强制）：**IAM Adapter AuthN → Entitlement（商业能力）→ Casbin（资源 ACL）**。
 商业权益契约以 [subscription-and-entitlement.md](./subscription-and-entitlement.md) 为唯一权威；本文只定义身份与**资源**权限边界。
 
 | 层级 | 负责模块 | 核心能力 | 实现载体 |
 | --- | --- | --- | --- |
-| 统一身份层 | 全局用户管理 | 认证、SSO、租户/组织、产品准入 | Logto（中心 / 私有化） |
+| 统一身份层 | 全局用户管理 | 认证、SSO、租户/组织、产品准入 | Luminary IAM Adapter（默认 Logto / 企业 OIDC） |
 | 商业权益层 | 跨产品订阅与配额 | Trial / Pro / Ultra / 企业 seat / 私有 License / 联合会员 | 中央 Entitlement 服务（非 JWT） |
 | 产品权限层 | 各产品独立权限 | 角色、资源 ACL、数据范围 | Casbin + 产品 PermissionService |
 | 数据隔离层 | 各产品业务库 | 租户隔离、行级过滤 | `tenant_id` + 拦截器 |
@@ -31,7 +31,7 @@
 ```text
 +-----------------------------------------------------------------------------------+
 |                         LuminaryWorks 统一身份层                                   |
-|                    Logto (IdP / OIDC) + Experience API                             |
+|            Luminary IAM Adapter (OIDC runtime + Login Experience Adapter)          |
 |  Users · Credentials · Enterprise SSO · Organizations · App Access                 |
 +-----------------------------------------------------------------------------------+
                                         |
@@ -47,31 +47,44 @@
 [DataLuminary]  [BlockyEdu]         [DoerFlow]         [VistaCast]         [VistaRemote/SyncroBrain]
 -------------------------------------------------------------------------------------
 各产品 Casbin 权限引擎 (RBAC / ABAC / ACL)
-  - 映射 Logto `sub` → 本地 `user_id` / profile
+  - 映射外部身份键 `issuer + sub` → 本地 `user_id` / profile
   - Roles / Permissions / Resource Domains 产品私有
   - 不把商业 feature 塞进 Casbin matcher，也不从 JWT 读取
 ```
 
-1. **AuthN（Who you are）**：Logto 统一。密码 / 验证码 / 社交 / 企业 SAML·OIDC SSO 均由 Logto 校验并签发 JWT。
+1. **AuthN（Who you are）**：Luminary IAM Adapter 统一。密码 / 验证码 / 社交 / 企业 SAML·OIDC SSO 由当前 IdP 校验并签发 JWT；Logto 是默认实现。
 2. **Entitlement（What you paid for）**：中央服务。Trial / 订阅 / 配额 / seat / 签名 License；**禁止**写入 Access Token。
 3. **AuthZ（What resource you may touch）**：各产品 Casbin。BI 仪表盘、设备通道、课程班级等模型差异大，禁止塞进统一 IAM 或权益表。
 
-## 2. Logto 边界
+## 2. Luminary IAM Adapter 边界
 
 **管**：账号、登录方式、企业租户归属、可访问产品列表、平台级角色、账号生命周期。  
 **不管**：产品内按钮/菜单、业务数据可见范围、具体资源操作权限、**商业套餐 / Trial / 配额 / License**（归 Entitlement）。
 
-在 Logto 为 **6 产品 + 主门户** 各建独立 Application（`client_id`），独立回调/登出地址；登录任一应用后访问其他应用可免登（生态 SSO）。
+当前在 Logto 为 **6 产品 + 主门户** 各建独立 Application（`client_id`），独立回调/登出地址；登录任一应用后访问其他应用可免登（生态 SSO）。
 
-统一账户模型：全局主键为 Logto `sub`；各产品维护本地 profile（`externalUserId` / `logtoSub` 映射），会员事实由中央 Entitlement 提供，而非各产品自建平行会员主库。
+统一账户模型：外部身份键为标准 OIDC `issuer + sub`；各产品维护本地 profile 与本地 `user_id` 映射。现有 `logtoSub` 字段可作为兼容名称保留，但不得继续假设脱离 issuer 后 `sub` 全局唯一。会员事实由中央 Entitlement 提供，而非各产品自建平行会员主库。
 
-## 3. 登录页方案：Experience API（Headless）
+### 2.1 三层 Adapter
+
+| 边界 | 职责 | 可用位置 |
+| --- | --- | --- |
+| `RuntimeIdentityProvider` | discovery、JWKS 验签、UserInfo、claims → `LuminaryPrincipal` | 产品后端 / Auth Gateway |
+| `LoginExperienceAdapter` | Hosted Redirect 或厂商 Headless 登录能力 | 产品 SPA |
+| `IdentityManagementProvider` | 创建、禁用、邀请、组织与角色管理 | **仅中央 identity 运维层** |
+
+产品统一消费 `LuminaryPrincipal`：`subject`、`issuer`、`email`、`name`、`organizationId`、`roles`、`appAccess`。Provider 必须显式声明 capability；不支持的管理能力返回 `IDENTITY_CAPABILITY_UNSUPPORTED`，禁止空操作或猜测厂商语义。
+
+Management API 的 M2M 凭据不得进入产品仓、浏览器或 `@luminaryworks/auth-react`。当前 Logto Management API 只允许 `identity/scripts` 及未来中央 IAM 后台使用。
+
+## 3. 登录页方案：Login Experience Adapter
 
 | 方案 | 结论 |
 | --- | --- |
 | 直接改 Logto 源码 | 升级冲突，不采用为默认路径 |
 | Logto 官方 UI 定制 | 可作过渡，品牌深度不足 |
-| **Experience API Headless** | **长期默认**：自研登录 UI + 官方认证状态机 |
+| **Logto Experience API Headless** | **当前默认**：自研登录 UI + 官方认证状态机 |
+| Hosted Redirect | 企业 OIDC 或不提供 Headless API 的 IdP 默认路径 |
 | 自研完整 IAM | 禁止 |
 
 ### 3.1 Experience API vs Management API
@@ -82,7 +95,7 @@
 | 调用端 | 浏览器（经 Auth Gateway 或官方 SDK） | **仅后端**，不可暴露前端 |
 | 流程 | 官方封装状态机 | 原子 API，流程自管 |
 
-**Headless 登录 99% 场景只用 Experience API。**
+当前 Logto Headless 登录只用 Experience API；其他 IdP 通过各自的 Login Experience Adapter 或标准 Hosted Redirect 接入。
 
 ### 3.2 推荐调用链（禁止产品直连 Logto Experience）
 
@@ -149,7 +162,7 @@ Controller → JwtAuth → EntitlementGuard(feature?) → Service → 查资源 
 
 ```text
                  LuminaryWorks IAM
-                      Logto
+            IAM Adapter（默认 Logto）
        用户登录 / SSO / Token / Organization
                       |
                  JWT Access Token（身份 + 准入）
@@ -167,7 +180,7 @@ Controller → JwtAuth → EntitlementGuard(feature?) → Service → 查资源 
 
 ## 5. Token 与平台准入
 
-Access Token **仅**携带身份与准入，不塞业务资源 ACL，**也不塞商业 entitlements / plan / quota**（禁止 Logto `custom_data` 资产标签进 Token）：
+Access Token **仅**携带身份与准入，不塞业务资源 ACL，**也不塞商业 entitlements / plan / quota**（禁止 IdP 自定义 claims 承载商业资产标签）：
 
 ```json
 {
@@ -181,7 +194,7 @@ Access Token **仅**携带身份与准入，不塞业务资源 ACL，**也不塞
 }
 ```
 
-平台级粗粒度（Logto）：超级管理员 / 运营 / 企业管理员 / 普通成员（能否进产品）。  
+平台级粗粒度（IAM Provider）：超级管理员 / 运营 / 企业管理员 / 普通成员（能否进产品）。
 商业能力（Entitlement）：Trial / Pro / Ultra / 企业 seat / License。  
 产品级资源细粒度（Casbin）：资源 · 数据范围（按钮显隐的 `permissions` JSON）。
 

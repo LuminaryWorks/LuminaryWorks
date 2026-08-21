@@ -1,28 +1,29 @@
 ---
 name: product-auth-implementation
 description: >-
-  Implements LuminaryWorks product login (Logto OIDC + Experience API Headless)
+  Implements LuminaryWorks product login (IAM Adapter + OIDC / Logto Experience)
   and resource authorization (Casbin) for NestJS + React SPAs. Use when wiring
   unified login, OIDC, JWT guards, Casbin ACL, permissions JSON on resources,
   or when the user asks to integrate Logto/Casbin into a product repo.
 ---
 
-# Product Auth Implementation (Logto + Casbin)
+# Product Auth Implementation (Luminary IAM Adapter + Casbin)
 
 Follow MetaRepo spec: `LuminaryWorks/spec/identity-and-permissions.md`.
 
 ## Non-negotiables
 
-1. **AuthN = Logto only.** Do not invent product-local password stores for SaaS/private Logto modes.
-2. **AuthZ = product Casbin.** Never put dashboard/device/course ACL into JWT or Logto roles.
-3. **Login UI = Experience API / OIDC PKCE Headless.** Do not fork Logto `packages/experience` as the default path. Do not call Management API from the browser.
-4. Use shared packages when available:
+1. **AuthN = Luminary IAM Adapter.** Logto is the current default provider; enterprise/private deployments may use standard external OIDC. Do not invent product-local password stores for production OIDC modes.
+2. **AuthZ = product Casbin.** Never put dashboard/device/course ACL into JWT or IdP roles.
+3. **Login UI = Login Experience Adapter + OIDC PKCE.** Logto uses Experience API Headless; providers without Headless APIs use Hosted Redirect. Do not fork IdP login source as the default path.
+4. **Management API is central-only.** Never put M2M credentials or an Identity Management client in a product backend or browser.
+5. Use shared packages when available:
    - Backend: `@luminaryworks/auth-core` (JWKS verify + `LuminaryJwtAuthGuard`)
    - Frontend: `@luminaryworks/auth-react` (OIDC PKCE + `HeadlessLoginPanel`)
    - Dev proxy: `@luminaryworks/auth-dev-proxy` (same-origin `/oidc` + `/api/experience`)
    - Optional: `@luminaryworks/pal` as abstraction over Casbin adapter
-5. Map Logto `sub` → local `user_id` on first authenticated request (upsert).
-6. List/detail APIs return `permissions: { view, edit, delete, ... }` computed by Casbin.
+6. Map external identity key `issuer + sub` → local `user_id` on first authenticated request (upsert). Existing `logtoSub` columns are compatibility names, not globally unique identities.
+7. List/detail APIs return `permissions: { view, edit, delete, ... }` computed by Casbin.
 
 ## Preconditions
 
@@ -36,12 +37,12 @@ Follow MetaRepo spec: `LuminaryWorks/spec/identity-and-permissions.md`.
 
 1. HTTP adapter: **`@nestjs/platform-fastify` only** — never `@nestjs/platform-express` / Express.
 2. Add deps: `@luminaryworks/auth-core`, `casbin`, adapter (e.g. `typeorm-adapter` or file adapter for MVP).
-3. Register `LuminaryAuthModule` + global `LuminaryJwtAuthGuard`.
+3. Register `LuminaryAuthModule` + global `LuminaryJwtAuthGuard`; consume normalized `LuminaryPrincipal` instead of provider-specific claims.
 4. Add `CasbinModule` / `PermissionService`:
    - Model: request `sub, obj, act`; policy `p, sub, obj, act`; optional `g, _, _` for RBAC.
    - `enforce(userKey, resourceKey, action)` and `batchPermissions(userKey, resourceKey, actions[])`.
 5. Replace ad-hoc RBAC checks gradually: controllers keep `@RequirePermission`; implementation delegates to Casbin.
-6. Webhook (optional P2): Logto user disable → clear local cache / disable user.
+6. Webhook (optional P2): IAM Provider user disable → clear local cache / disable user.
 
 Env:
 
@@ -53,8 +54,8 @@ IDP_MODE=logto
 
 ### B. Frontend (React SPA)
 
-1. Use `@luminaryworks/auth-react`: `HeadlessLoginPanel` (default `mode="redirect"`) + `readIdpConfigFromEnv` / product `lib/idp.ts` with **static** `import.meta.env.KEY` / `process.env.NEXT_PUBLIC_*` reads (bundlers do not inline dynamic env maps).
-2. **Login UI = product-branded Headless.** Local password only behind `VITE_ALLOW_LOCAL_LOGIN` / `NEXT_PUBLIC_ALLOW_LOCAL_LOGIN` (dev). Production: `false`.
+1. Use `@luminaryworks/auth-react`: `HeadlessLoginPanel` + the configured `LoginExperienceAdapter` (default Logto) + `readIdpConfigFromEnv` / product `lib/idp.ts` with **static** `import.meta.env.KEY` / `process.env.NEXT_PUBLIC_*` reads (bundlers do not inline dynamic env maps).
+2. **Login UI = product-branded adapter UI.** Logto defaults to Headless; providers without a supported Headless adapter use Hosted Redirect. Local product passwords stay behind `VITE_ALLOW_LOCAL_LOGIN` / `NEXT_PUBLIC_ALLOW_LOCAL_LOGIN` (dev). Production: `false`.
 3. **Social connectors:** default `showSocialConnectors={true}` (loads Google/GitHub/… from IdP). For **admin / internal consoles**, set **`showSocialConnectors={false}`** (or `socialProviders={[]}`) so Experience social buttons are not fetched or shown. End-user product login keeps social on unless product policy says otherwise. Enterprise SSO stays on the IdP — this prop only hides social connector UI.
 4. Routes: path `/auth/callback` (history fallback) even if the app uses HashRouter — mount callback before the hash router when `pathname === /auth/callback`.
 5. **Same-origin IdP proxy (local default):** `@luminaryworks/auth-dev-proxy`
@@ -81,7 +82,7 @@ VITE_IDP_REDIRECT_URI=http://localhost:<spa-port>/auth/callback
 VITE_ALLOW_LOCAL_LOGIN=false
 ```
 
-Private / enterprise: point Gateway `UPSTREAM_ISSUER` (or product issuer) at customer IdP / self-hosted Logto; connectors (SAML/LDAP/OIDC) stay at the IdP — **no product code change**.
+Private / enterprise: point Gateway `UPSTREAM_ISSUER` (or product issuer) at customer IdP / self-hosted Logto and select a supported runtime/login adapter; connectors (SAML/LDAP/OIDC) stay at the IdP. Do not add empty adapters for unintegrated providers.
 ### C. Casbin model (starter)
 
 ```ini
@@ -137,8 +138,8 @@ Match existing product contracts when present:
 
 ### F. Out of scope / do not
 
-- Do not store business ACL in Logto custom claims.
-- Do not call Logto Management API from SPA.
+- Do not store business ACL in IdP custom claims.
+- Do not call any IdP Management API from SPA or product services; central `identity` owns those credentials.
 - Do not break offline `IDP_MODE=legacy` until OIDC path is verified (feature-flag if needed).
 - Do not cross-import other products' permission tables.
 
@@ -147,8 +148,8 @@ Match existing product contracts when present:
 - [ ] Unauthenticated API → 401; invalid JWT → 401
 - [ ] Valid JWT without Casbin policy → deny protected actions
 - [ ] Resource GET returns computed `permission(s)` map
-- [ ] Login + callback works against local Logto
-- [ ] README / product `spec` mentions Logto + Casbin and links MetaRepo IAM spec
+- [ ] Login + callback works through the configured Login Experience Adapter
+- [ ] README / product `spec` mentions Luminary IAM Adapter + Casbin and links MetaRepo IAM spec
 - [ ] `.env.example` documents `IDP_*` / `VITE_IDP_*`
 
 ## References

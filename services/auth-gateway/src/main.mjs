@@ -1,20 +1,24 @@
 /**
  * Luminary Auth Gateway — OIDC + Experience API reverse proxy in front of the active IdP.
  *
- * Products point VITE_IDP_ISSUER / IDP_ISSUER at this gateway (`…/oidc`),
- * not at Logto/Auth0/Keycloak directly. Swap UPSTREAM_ISSUER to change IdP
- * without touching product code.
+ * Products keep VITE_IDP_ISSUER / IDP_ISSUER on the canonical upstream issuer
+ * for JWT validation, and use this gateway as their discovery/Experience transport.
+ * Swap UPSTREAM_ISSUER to change the routed IdP.
  *
  * Local:  pnpm --dir services/auth-gateway start
  * Default listen: http://localhost:3010  → upstream Logto http://localhost:3001
  *
- * For product-origin Headless (cookies on the SPA host), products should also
- * same-origin proxy `/oidc` + `/api/experience` (+ `/sign-in`) to this gateway
- * and rewrite discovery `issuer` to the SPA origin.
+ * Discovery keeps the upstream `issuer` because JWT `iss` is provider-owned,
+ * while browser-reachable endpoints are rewritten to this gateway.
  */
 import http from "node:http";
 import { URL } from "node:url";
 import zlib from "node:zlib";
+import {
+  createTransportRewriter,
+  isDiscoveryPath,
+  parsePathList,
+} from "./transport.mjs";
 
 const PORT = Number(process.env.AUTH_GATEWAY_PORT || 3010);
 const PUBLIC_BASE = (process.env.AUTH_GATEWAY_PUBLIC_URL || `http://localhost:${PORT}`).replace(
@@ -23,6 +27,16 @@ const PUBLIC_BASE = (process.env.AUTH_GATEWAY_PUBLIC_URL || `http://localhost:${
 );
 const UPSTREAM = (process.env.UPSTREAM_ISSUER || "http://localhost:3001/oidc").replace(/\/$/, "");
 const UPSTREAM_ORIGIN = new URL(UPSTREAM).origin;
+const UPSTREAM_ISSUER_PATH = new URL(UPSTREAM).pathname.replace(/\/$/, "") || "/";
+const DISCOVERY_PATHS = parsePathList(process.env.AUTH_GATEWAY_DISCOVERY_PATHS, [
+  UPSTREAM_ISSUER_PATH,
+  `${UPSTREAM_ISSUER_PATH === "/" ? "" : UPSTREAM_ISSUER_PATH}/.well-known/openid-configuration`,
+  "/.well-known/openid-configuration",
+]);
+const transport = createTransportRewriter({
+  upstreamIssuer: UPSTREAM,
+  publicBase: PUBLIC_BASE,
+});
 const CORS_ORIGINS = (process.env.AUTH_GATEWAY_CORS_ORIGINS ||
   [
     "http://localhost:3003",
@@ -31,7 +45,7 @@ const CORS_ORIGINS = (process.env.AUTH_GATEWAY_CORS_ORIGINS ||
     "http://localhost:5173",
     "http://localhost:5174",
     "http://localhost:5175",
-    "http://localhost:5180",
+    "http://localhost:15180",
     "http://localhost:13010",
     "http://localhost:13011",
     "http://localhost:18081",
@@ -40,48 +54,6 @@ const CORS_ORIGINS = (process.env.AUTH_GATEWAY_CORS_ORIGINS ||
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
-
-function gatewayIssuer() {
-  return `${PUBLIC_BASE}/oidc`;
-}
-
-/**
- * Keep upstream `issuer` (JWT `iss` must match Logto) but point all endpoints at the
- * gateway so browser SPA calls stay CORS-friendly.
- */
-function rewriteDiscovery(body) {
-  try {
-    const data = JSON.parse(body);
-    for (const [key, value] of Object.entries(data)) {
-      if (typeof value !== "string") continue;
-      if (key === "issuer") continue;
-      if (value.startsWith(UPSTREAM_ORIGIN)) {
-        data[key] = value.replace(UPSTREAM_ORIGIN, PUBLIC_BASE);
-      } else if (value.startsWith(UPSTREAM)) {
-        data[key] = value.replace(UPSTREAM, gatewayIssuer());
-      }
-    }
-    return JSON.stringify(data);
-  } catch {
-    return body
-      .replaceAll(`${UPSTREAM_ORIGIN}/oidc/`, `${PUBLIC_BASE}/oidc/`)
-      .replaceAll(UPSTREAM_ORIGIN, PUBLIC_BASE);
-  }
-}
-
-function rewriteLocation(location) {
-  if (!location) return location;
-  return location.replaceAll(UPSTREAM_ORIGIN, PUBLIC_BASE);
-}
-
-function rewriteSetCookie(cookie) {
-  // Bind cookie to the gateway host the browser actually talks to (drop Domain).
-  return cookie
-    .split(";")
-    .map((part) => part.trim())
-    .filter((part) => !/^domain=/i.test(part))
-    .join("; ");
-}
 
 function applyCors(req, res) {
   const origin = req.headers.origin;
@@ -110,11 +82,8 @@ function proxyToUpstream(req, res, upstreamPathWithSearch) {
     upstreamRes.on("data", (c) => chunks.push(c));
     upstreamRes.on("end", () => {
       let buf = Buffer.concat(chunks);
-      const ct = String(upstreamRes.headers["content-type"] || "");
       const encoding = String(upstreamRes.headers["content-encoding"] || "").toLowerCase();
-      const isDiscovery =
-        target.pathname.includes("/.well-known/openid-configuration") ||
-        target.pathname.endsWith("/oidc");
+      const isDiscovery = isDiscoveryPath(target.pathname, DISCOVERY_PATHS);
 
       // If upstream still compressed (some stacks ignore accept-encoding), decompress first.
       if (encoding.includes("gzip")) {
@@ -141,9 +110,10 @@ function proxyToUpstream(req, res, upstreamPathWithSearch) {
         }
       }
 
-      if (ct.includes("json") || isDiscovery) {
+      if (isDiscovery) {
         try {
-          const text = rewriteDiscovery(buf.toString("utf8"));
+          // JWT `iss` remains the upstream issuer; browser-reachable endpoints use the gateway.
+          const text = transport.rewriteDiscovery(buf.toString("utf8"));
           buf = Buffer.from(text, "utf8");
         } catch {
           /* keep original */
@@ -172,7 +142,7 @@ function proxyToUpstream(req, res, upstreamPathWithSearch) {
           continue;
         }
         if (key === "location" && typeof value === "string") {
-          res.setHeader("location", rewriteLocation(value));
+          res.setHeader("location", transport.rewriteLocation(value));
           continue;
         }
         if (value !== undefined) res.setHeader(key, value);
@@ -181,7 +151,7 @@ function proxyToUpstream(req, res, upstreamPathWithSearch) {
         const list = Array.isArray(setCookies) ? setCookies : [setCookies];
         res.setHeader(
           "set-cookie",
-          list.map((c) => rewriteSetCookie(c)),
+          list.map((c) => transport.rewriteSetCookie(c)),
         );
       }
       res.setHeader("content-length", String(buf.length));
@@ -212,7 +182,13 @@ function proxy(req, res) {
   if (incoming.pathname === "/health" || incoming.pathname === "/healthz") {
     applyCors(req, res);
     res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ ok: true, issuer: gatewayIssuer(), upstream: UPSTREAM }));
+    res.end(
+      JSON.stringify({
+        ok: true,
+        publicIssuer: transport.publicIssuer,
+        upstreamIssuer: UPSTREAM,
+      }),
+    );
     return;
   }
 
@@ -223,7 +199,8 @@ function proxy(req, res) {
 const server = http.createServer(proxy);
 server.listen(PORT, () => {
   console.log(`[auth-gateway] listening on ${PUBLIC_BASE}`);
-  console.log(`[auth-gateway] public issuer: ${gatewayIssuer()}`);
+  console.log(`[auth-gateway] public OIDC:   ${transport.publicIssuer}`);
+  console.log(`[auth-gateway] JWT issuer:    ${UPSTREAM}`);
   console.log(`[auth-gateway] experience:   ${PUBLIC_BASE}/api/experience`);
   console.log(`[auth-gateway] upstream:      ${UPSTREAM}`);
 });

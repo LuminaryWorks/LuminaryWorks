@@ -14,6 +14,7 @@
     "id:register": "node scripts/run.mjs identity register",
     "id:sync": "node scripts/run.mjs identity sync",
     "verify:login": "node scripts/verify-unified-login.mjs",
+    "verify:login:strict": "node scripts/verify-unified-login.mjs --strict",
     "auth:gateway": "node services/auth-gateway/src/main.mjs",
     "shared:build": "node scripts/run.mjs shared build",
     "docs:dev": "node scripts/run.mjs docs dev",

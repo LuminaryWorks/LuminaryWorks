@@ -7,7 +7,9 @@
   "type": "module",
   "scripts": {
     "start": "node src/main.mjs",
-    "dev": "node --watch src/main.mjs"
+    "dev": "node --watch src/main.mjs",
+    "check": "node --check src/main.mjs && node --check src/transport.mjs",
+    "build": "node --check src/main.mjs && node --check src/transport.mjs"
   },
   "engines": {
     "node": ">=24.0.0"
