@@ -43,6 +43,7 @@ SyncroBrain（Brain · 物理数据）  ↔  DoerFlow（Flow · 价值流转）
 
 - 设备遥测 → DataLuminary 洞察  
 - 告警 → VistaCast AI 检测 / VistaRemote 人工远程  
+- 跨产品事件总线：VistaCast 可向 `lw/v1/{tenantId}/vistacast/alert.v1` 出站（[mqtt-topics.md](../mqtt-topics.md)）。这是产品事件，**不是** ThingsBoard `v1/devices/me/telemetry`，也**不是** camera↔device 绑定。  
 - 设备算力/数据 → DoerFlow 注册与结算  
 - 工程师培养 → BlockyEdu ESPHome/MQTT 课程  
 

@@ -78,7 +78,7 @@ NestJS + Fastify + TypeORM + PostgreSQL · ONVIF/RTSP · WebSocket · Rsbuild + 
 | 产品 | 场景 | 里程碑 |
 |------|------|:------:|
 | DataLuminary | 告警/客流大屏、数据集 API | M2–M3 |
-| SyncroBrain | 设备台账、MQTT 事件 | M2 |
+| SyncroBrain | 设备台账、MQTT 事件（告警出站 topic 见 [mqtt-topics.md](../mqtt-topics.md)；非 TB 设备遥测、非 camera 绑定） | M2 |
 | DoerFlow | 视觉事件触发 Skill | M3 |
 | BlockyEdu | 安防实训 | M2 |
 | VistaRemote | 告警后人工远程介入 | M3 |

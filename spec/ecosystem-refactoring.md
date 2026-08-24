@@ -126,7 +126,7 @@ github.com/LuminaryWorks/
 4. 更新状态页 / 里程碑              → docs 同步
 ```
 
-**强约束**：跨产品 JWT claim、`iot.*`/`agent.*` 权限码、MQTT topic 变更，必须先改本仓 spec，再改实现。详见 [collaboration-standards.md](../docs/collaboration-standards.md)。
+**强约束**：跨产品 JWT claim、`iot.*`/`agent.*` 权限码、MQTT topic 变更，必须先改本仓 spec，再改实现。MQTT topic 登记：[mqtt-topics.md](./mqtt-topics.md)。协作流程见 [collaboration-standards.md](../docs/collaboration-standards.md)。
 
 ## 9. 验收标准
 

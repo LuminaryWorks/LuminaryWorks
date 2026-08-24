@@ -1,3 +1,4 @@
+name: luminary-works-entitlement
 services:
   entitlement-db:
     image: postgres:16-alpine
