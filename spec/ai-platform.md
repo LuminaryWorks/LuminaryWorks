@@ -49,7 +49,7 @@ User → Product UI (unified dialog / copilot)
 | **DataLuminary** | DataInsight（DataTalk `src/modules/ai/`）、Semantic Layer、Analysis Engine、Chart/Dashboard tools、space ACL | LLM / embed / BYOK / stream / credits |
 | **BlockyEdu** | 教辅 prompt、Blockly/Monaco、artifact 校验、sandbox；`ai-bridge` 作 BFF | 替换直连 Gemini/Doubao/DeepSeek；不新建平行 `ai-engine` |
 | **VistaRemote** | Edge AI、录制、BullMQ worker、产品 RAG、Python ML、Casbin | 仅 LLM；`@vistaremote/ai` 作适配器；默认不出网 |
-| **VistaCast** | ONVIF/RTSP、ONNX/CV、告警（文档先行） | 可选远程推理；不做实时 CV |
+| **VistaCast** | ONVIF/RTSP、ONNX/CV、告警（产品仓 Edge Runtime） | 可选告警叙事；**不做**实时 CV 经网关 |
 | **SyncroBrain** | 设备、MQTT、规则、遥测 hook | LLM/RAG/quota；不自建 IoT LLM 栈 |
 | **DoerFlow** | AgentNFT、SkillRegistry、Escrow/Merkle、SIWE | 可选推理 + 预留 `ai.strategy.run`。ChainSkill ≠ AiTool |
 

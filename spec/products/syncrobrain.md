@@ -32,7 +32,7 @@
 | 模式 | 闭源 SaaS | **开源可私有化** |
 | 核心 | 设备管理、场景 | **AI + 数据 + 链上变现** |
 | 可视化 | 内置面板 | **DataLuminary DataTalk** |
-| 远程 | 有限 | **VistaRemote**（桌面）+ **VistaCast**（摄像头 AI，规划） |
+| 远程 | 有限 | **VistaRemote**（桌面）+ **VistaCast**（摄像头 AI；切片已编码，非生产 tag） |
 | 开发者 | 涂鸦开发者平台 | **BlockyEdu** AI 实验课 |
 
 ## 4. 生态协同
@@ -43,7 +43,7 @@ SyncroBrain（Brain · 物理数据）  ↔  DoerFlow（Flow · 价值流转）
 
 - 设备遥测 → DataLuminary 洞察  
 - 告警 → VistaCast AI 检测 / VistaRemote 人工远程  
-- 跨产品事件总线：VistaCast 可向 `lw/v1/{tenantId}/vistacast/alert.v1` 出站（[mqtt-topics.md](../mqtt-topics.md)）。这是产品事件，**不是** ThingsBoard `v1/devices/me/telemetry`，也**不是** camera↔device 绑定。  
+- 跨产品事件总线：VistaCast 可向 `lw/v1/{tenantId}/vistacast/alert.v1` 出站（[mqtt-topics.md](../mqtt-topics.md)）。这是产品事件，**不是** ThingsBoard `v1/devices/me/telemetry`。可选 `payload.syncrobrainDeviceId` 是 camera 绑定字段，**不是** SyncroBrain 生产消费。  
 - 设备算力/数据 → DoerFlow 注册与结算  
 - 工程师培养 → BlockyEdu ESPHome/MQTT 课程  
 

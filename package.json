@@ -33,6 +33,7 @@
     "ai:dev": "pnpm --dir services/ai-platform run start:dev",
     "lock:node24": "node scripts/lock-node24-ecosystem.mjs",
     "sync:cursor-i18n-rule": "node scripts/write-i18n-no-defaultvalue.mjs",
+    "sync:cursor-model-policy": "node scripts/write-model-usage-policy.mjs",
     "verify:migration": "node scripts/verify-migration.mjs"
   },
   "engines": {

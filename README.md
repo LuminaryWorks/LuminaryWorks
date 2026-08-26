@@ -17,7 +17,7 @@
 | 1 | **DataLuminary** | 数据明鉴 | [dataluminary.dev](https://dataluminary.dev) | [DataLuminary/DataLuminary](https://github.com/DataLuminary/DataLuminary) | AI 数据洞察 — BI、DataTalk 大屏 |
 | 2 | **BlockyEdu** | 智码工坊 | [blockyedu.com](https://blockyedu.com) | [BlockyEdu/BlockyEdu](https://github.com/BlockyEdu/BlockyEdu) | AI 全民创造 + VibeLearn 企业大学私有化 |
 | 3 | **DoerFlow** | 智工网 | [doerflow.dev](https://doerflow.dev) | [DoerFlow/DoerFlow](https://github.com/DoerFlow/DoerFlow) | 执行者价值网络 — Agent/链上结算 |
-| 4 | **VistaCast** | 视界云遥 | [vistacast.dev](https://vistacast.dev) | [VistaCast/VistaCast](https://github.com/VistaCast/VistaCast) | AI 摄像头云监控（**文档先行**） |
+| 4 | **VistaCast** | 视界云遥 | [vistacast.dev](https://vistacast.dev) | [VistaCast/VistaCast](https://github.com/VistaCast/VistaCast) | AI 摄像头云监控（切片已编码，未打生产 tag） |
 | 5 | **VistaRemote** | 视界远程 | [remote.vistacast.dev](https://remote.vistacast.dev) | [VistaRemote/VistaRemote](https://github.com/VistaRemote/VistaRemote) | WebRTC 远程桌面 + AI 录制 |
 | 6 | **SyncroBrain** | 万物智脑 | [syncrobrain.com](https://syncrobrain.com) | [SyncroBrain/SyncroBrain](https://github.com/SyncroBrain/SyncroBrain) | 连接设备的 AI OS |
 
@@ -31,7 +31,7 @@
 ├── DataLuminary/            # 数据明鉴
 ├── BlockyEdu/               # 智码工坊
 ├── DoerFlow/                # 智工网
-├── VistaCast/               # 视界云遥（规划 spec）
+├── VistaCast/               # 视界云遥
 ├── VistaRemote/             # 视界远程（远程桌面实现）
 └── SyncroBrain/             # 万物智脑
 ```
@@ -53,7 +53,7 @@
 
 - **连**：万物智脑 SyncroBrain — 开源 IoT PaaS  
 - **看**：数据明鉴 DataLuminary — 数据洞察与大屏  
-- **视**：视界云遥 VistaCast — AI 摄像头云监控（规划，文档先行）  
+- **视**：视界云遥 VistaCast — AI 摄像头云监控（切片已编码，未打生产 tag）  
 - **控**：视界远程 VistaRemote — WebRTC 远程桌面运维  
 - **赚**：智工网 DoerFlow — Agent 与人类 Doer 价值网络  
 
@@ -121,14 +121,16 @@ pnpm auth:gateway  # Auth Gateway :3010（需 identity 已起）
 
 **常规执行**（小改动、明确 bug 修复、文档、测试、验证）默认：
 
-1. **Cursor Grok 4.5 High Fast**
+1. **当前会话里最新的 Cursor Grok High**（不钉 4.5 / 4.6；Cursor 升级后自动跟最新）
 2. **Composer 2.5**（备选）
 
-编码前做能力判断：若任务涉及架构改动、跨服务契约、深层排查等，Grok 4.5 可能不是最优选时，**暂停执行**，推荐 2–3 个模型及取舍，由你点名后再落地。不得在未点名时自动升到 GPT / Claude 等高消耗模型。
+默认 **不要** Fast / Faster。赶时间时再显式选 Fast。
+
+编码前做能力判断：若任务涉及架构改动、跨服务契约、深层排查等，Grok High 可能不是最优选时，**暂停执行**，推荐 2–3 个模型及取舍，由你点名后再落地。不得在未点名时自动升到 GPT / Claude 等高消耗模型。
 
 **仅规划**（Plan mode）可用任意合适模型。计划 Accept 后仍走上述能力门禁，不默认死锁 Grok。
 
-规则文件：各仓 `.cursor/rules/model-usage-policy.mdc`（`alwaysApply: true`）。重同步：`node scripts/write-model-usage-policy.mjs`。
+规则文件：各仓 `.cursor/rules/model-usage-policy.mdc`（`alwaysApply: true`）。重同步：`pnpm sync:cursor-model-policy`。
 
 ## Node.js 版本（强制）
 
@@ -173,7 +175,7 @@ Nest 共享库（如 `@luminaryworks/entitlement-client`）**源码是 ES import
 - DataLuminary → `spec/ecosystem.md`
 - BlockyEdu → `spec/luminaryworks-ecosystem.md`
 - DoerFlow → `spec/luminaryworks-ecosystem.md`
-- VistaCast → `spec/`（规划，见 LuminaryWorks `spec/products/vistacast.md`）
+- VistaCast → `spec/`（权威实现规格）+ LuminaryWorks `spec/products/vistacast.md`（生态摘要）
 - VistaRemote → `spec/luminaryworks-ecosystem.md`
 - SyncroBrain → `spec/ecosystem.md`
 

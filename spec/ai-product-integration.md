@@ -62,8 +62,8 @@ DataLuminary MCP 属于产品协议面，不升级为中央 AI Platform 的通�
 
 ## 5. VistaCast
 
-- 实时 CV / ONNX 不走 LLM 网关。
-- 告警叙事、周报等可选远程推理，仍属 D0/文档阶段。
+- 实时 CV / ONNX 不走 LLM 网关（产品仓 `ai` Edge Runtime）。
+- 告警叙事、周报等可选远程推理仍属后期；**不得**写成已上线 LLM 视觉。
 
 ## 6. SyncroBrain
 

@@ -1,5 +1,5 @@
 ---
-description: Default Grok/Composer for routine execution; pause and recommend models when capacity may be insufficient
+description: Latest Cursor Grok High (not Fast) for routine execution; pause when capacity may be insufficient
 alwaysApply: true
 ---
 
@@ -9,14 +9,27 @@ alwaysApply: true
 
 For **basic / routine** implementation — small features, straightforward bug fixes, docs edits, tests, lint, smoke verification, mechanical refactors, and Task/subagents of similar scope:
 
-1. **Primary:** Cursor Grok 4.5 High Fast (`cursor-grok-4.5-high-fast`)
-2. **Fallback:** Composer 2.5 (`composer-2.5-fast`)
+1. **Primary:** the **latest Cursor Grok High** available in this session
+2. **Fallback:** Composer 2.5 (non-Fast if listed)
+
+**Latest, not a pinned version.** Do not hard-code Grok 4.5 / 4.6 / … in day-to-day work. When Cursor ships a newer Grok, use that High variant.
+
+**Quality over speed.** Default is **not** Fast / Faster / `high-fast`. Use those only when the user explicitly asks for speed.
 
 Do **not** quietly switch to GPT / Claude / Other Models API for routine work without the user choosing that model.
 
+### Slug resolution (chat picker / Task / subagents)
+
+From the **currently available** model list in this session:
+
+- Prefer `inherit` when the parent chat is already latest Grok High (non-Fast).
+- Otherwise pick the newest Grok whose id/name is High (or the default Grok) and does **not** contain `fast` / `faster` / `high-fast`.
+- Do **not** default to slugs like `cursor-grok-*-high-fast`.
+- Composer fallback: same rule — avoid `-fast` unless it is the only Composer option.
+
 ## Capacity gate (before coding)
 
-**Before starting execution**, judge whether Grok 4.5 High Fast is a good fit for *this* coding task.
+**Before starting execution**, judge whether the latest Grok High is a good fit for *this* coding task.
 
 ### Proceed on default path when
 
@@ -48,11 +61,11 @@ Never auto-upgrade to a high-cost model without an explicit user choice in the c
 
 - **Planning only** (Plan mode / architecture / rollout design before Accept): any suitable model may be used.
 - After a plan is **Accepted**, re-run the capacity gate above — do not assume “always Grok.”
-- Subagents for routine code/test/verify: default `cursor-grok-4.5-high-fast` or `composer-2.5-fast`; if the parent task already chose another model, pass that model through.
+- Subagents for routine code/test/verify: latest Grok High (non-Fast) or Composer 2.5 as above; if the parent task already chose another model, pass that model through.
 
 ## Hard stops (quota)
 
-- If this session is already on a high-cost model (GPT / Claude / Other Models API) and the user asked for **routine** implementation without authorizing that model: **stop**, recommend switching to **Grok 4.5 High Fast** (or Composer 2.5), and do not continue burning Other Models quota on trivial work.
+- If this session is already on a high-cost model (GPT / Claude / Other Models API) and the user asked for **routine** implementation without authorizing that model: **stop**, recommend switching to **latest Grok High** (not Fast) or Composer 2.5, and do not continue burning Other Models quota on trivial work.
 - If the user already chose a high-cost model for a capacity-gated task, that choice authorizes execution for **this request only**.
 - Never "quietly" continue expensive execution just because planning happened on GPT/Claude.
 - Docs, specs, tests, lint fixes, and smoke verification count as **execution**, not planning — but still use the capacity gate when the change is architectural.

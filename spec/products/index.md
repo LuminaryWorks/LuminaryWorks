@@ -30,7 +30,7 @@ LuminaryWorks（**启明工坊**）生态采用 **House of Brands**：六个产�
 | 1 | **DataLuminary** | 数据明鉴 | [DataLuminary/DataLuminary](https://github.com/DataLuminary/DataLuminary) | 看 — AI 数据洞察 | [dataluminary.md](./dataluminary.md) | **P0** |
 | 2 | **BlockyEdu** | 智码工坊 | [BlockyEdu/BlockyEdu](https://github.com/BlockyEdu/BlockyEdu) | 学+创 — AI 全民创造 + VibeLearn 企业大学私有化 | [blockyedu.md](./blockyedu.md) | **P0** |
 | 3 | **DoerFlow** | 智工网 | [DoerFlow/DoerFlow](https://github.com/DoerFlow/DoerFlow) | 赚 — 执行者价值网络 | [doerflow.md](./doerflow.md) | P1 |
-| 4 | **VistaCast** | 视界云遥 | [VistaCast/VistaCast](https://github.com/VistaCast/VistaCast) | 视 — AI 摄像头 | [vistacast.md](./vistacast.md) | **文档先行** |
+| 4 | **VistaCast** | 视界云遥 | [VistaCast/VistaCast](https://github.com/VistaCast/VistaCast) | 视 — AI 摄像头 | [vistacast.md](./vistacast.md) | 🟡 M1/M2 切片已编码；未打生产 tag |
 | 5 | **VistaRemote** | 视界远程 | [VistaRemote/VistaRemote](https://github.com/VistaRemote/VistaRemote) | 控 — 远程桌面 | [vistaremote.md](./vistaremote.md) | ✅ |
 | 6 | **SyncroBrain** | 万物智脑 | [SyncroBrain/SyncroBrain](https://github.com/SyncroBrain/SyncroBrain) | 连 — 设备 AI OS | [syncrobrain.md](./syncrobrain.md) | P1 |
 
@@ -52,7 +52,7 @@ LuminaryWorks（**启明工坊**）生态采用 **House of Brands**：六个产�
 | 输入 | 固定摄像头 ONVIF/RTSP | 桌面/移动端屏幕 |
 | 价值 | AI 自动告警、客流、防盗 | 人工远程操作、录制审计 |
 | 合规叙事 | 安防与资产 | 员工效率（敏感，私有化交付） |
-| 当前状态 | 文档 / spec | 完整 MetaRepo + 子仓 |
+| 当前状态 | MetaRepo + 切片已编码（stub / JPEG；未打生产 tag） | 完整 MetaRepo + 子仓 |
 
 ## 独立 vs 组合
 

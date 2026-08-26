@@ -84,10 +84,10 @@
 ### 4.4 VistaCast — 视界云遥 · vistacast.dev
 
 - **定位**：AI Visual Autopilot — 纯软件 AI 云监控 SaaS（ONVIF/RTSP 摄像头 + AI 告警/客流）
-- **Slogan**：把线下店铺变成数字化数据流
+- **Slogan**：把线下空间变成可编程的视觉数据流
 - **场景**：仓储防盗、门店客流、工厂危险区域
 - **与 VistaRemote 关系**：**并存**，不替代；VistaCast 做固定摄像头 AI，VistaRemote 做远程桌面人工触达
-- **实现节奏**：文档与 spec 先行；编码排在 DataLuminary、BlockyEdu 之后
+- **实现节奏**：M1/M2 切片已编码；**不再**等待 DataLuminary / BlockyEdu P0；未打生产 tag。详见 [products/vistacast.md](./products/vistacast.md)
 
 ### 4.5 VistaRemote — 视界远程 · VistaRemote 组织
 

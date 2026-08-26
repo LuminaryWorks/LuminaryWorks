@@ -13,7 +13,7 @@
 | [DataLuminary/DataLuminary](https://github.com/DataLuminary/DataLuminary) | 数据明鉴 | dataluminary.dev | 产品 | DataLuminary — BI / DataTalk |
 | [BlockyEdu/BlockyEdu](https://github.com/BlockyEdu/BlockyEdu) | 智码工坊 | blockyedu.com | 产品 | BlockyEdu — AI 全民创造 + VibeLearn 企业大学 |
 | [DoerFlow/DoerFlow](https://github.com/DoerFlow/DoerFlow) | 智工网 | doerflow.dev | 产品 | DoerFlow — 执行者价值网络 |
-| [VistaCast/VistaCast](https://github.com/VistaCast/VistaCast) | 视界云遥 | vistacast.dev | 产品 | VistaCast — AI 摄像头云监控（规划 spec） |
+| [VistaCast/VistaCast](https://github.com/VistaCast/VistaCast) | 视界云遥 | vistacast.dev | 产品 | VistaCast — AI 摄像头云监控（切片已编码，未打生产 tag） |
 | [VistaRemote/VistaRemote](https://github.com/VistaRemote/VistaRemote) | 视界远程 | — | 产品 | VistaRemote — WebRTC 远程桌面 |
 | [SyncroBrain/SyncroBrain](https://github.com/SyncroBrain/SyncroBrain) | 万物智脑 | syncrobrain.com | 产品 | SyncroBrain — 设备 AI OS |
 
@@ -23,7 +23,7 @@
 
 | 品牌 | 组织 | 输入 | 状态 |
 |------|------|------|------|
-| VistaCast | vistacast | ONVIF/RTSP 摄像头 | 文档 / spec 先行 |
+| VistaCast | vistacast | ONVIF/RTSP 摄像头 | MetaRepo + M1/M2 切片已编码（stub；未打生产 tag） |
 | VistaRemote | VistaRemote | 远程桌面 WebRTC | 已有完整 MetaRepo |
 
 > 历史上 vistacast 组织曾托管远程桌面代码；远程桌面现归 **VistaRemote** 组织维护。VistaCast 为新增 AI 摄像头产品线。
@@ -38,7 +38,7 @@
 ├── DataLuminary/
 ├── BlockyEdu/
 ├── DoerFlow/
-├── VistaCast/               # VistaCast 规划 spec
+├── VistaCast/               # VistaCast MetaRepo
 ├── VistaRemote/             # VistaRemote 远程桌面
 └── SyncroBrain/
 ```
@@ -80,7 +80,7 @@ LuminaryWorks/shared (@luminary/*)
 | 域名 / 品牌 / 组织迁移 | **LuminaryWorks/LuminaryWorks** `spec/` |
 | 六产品规划摘要 | **LuminaryWorks/LuminaryWorks** `spec/products/` |
 | 生态叙事 / 开发者门户 | **LuminaryWorks/docs** |
-| VistaCast 规划 spec | `../VistaCast/spec/` + `spec/products/vistacast.md` |
+| VistaCast 产品 spec | `../VistaCast/spec/` + `spec/products/vistacast.md` |
 | VistaRemote 实现 spec | `../VistaRemote/spec/` + `spec/products/vistaremote.md` |
 | 各产品域规格 | 各产品 `spec/` |
 | AI 网关 / Vault / 计量 | **LuminaryWorks/LuminaryWorks** `spec/ai-*.md`；实现仓后期独立服务 |

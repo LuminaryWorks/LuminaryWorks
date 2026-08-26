@@ -57,7 +57,7 @@ github.com/LuminaryWorks/
 | 课程 / 实验 | BlockyEdu | **产品私有** | 留在 blockyedu |
 | 链上合约 / Agent | DoerFlow | **产品私有** | 留在 doerflow |
 | WebRTC 信令 / 录制 | VistaRemote | **产品私有** | 留在 VistaRemote |
-| ONVIF / 摄像头 AI | VistaCast | **产品私有** | 规划，vistacast |
+| ONVIF / 摄像头 AI | VistaCast | **产品私有** | 留在 vistacast |
 | EMQX / ThingsBoard 编排 | SyncroBrain | **产品私有** | 留在 syncrobrain |
 | 媒体网关 media-platform | BlockyEdu | **候选共享**（IoT 摄像头/VistaCast 复用） | 评估，暂留 blockyedu |
 | Notify（Email） | DataTalk nodemailer 等 | **共享（一期包）** | `@luminaryworks/notification`；见 [notification-service.md](./notification-service.md) |

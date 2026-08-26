@@ -39,4 +39,6 @@ services:
       - "${ENTITLEMENT_PORT:-3040}:3040"
 
 volumes:
+  # 固定绝对卷名（不随 compose project 前缀变化），新机首次 up 会自动创建
   luminary_entitlement_pg:
+    name: entitlement_luminary_entitlement_pg

@@ -32,7 +32,7 @@
 | VistaCast | [VistaCast](https://github.com/VistaCast) | AI 摄像头云监控 | `../VistaCast` · [VistaCast/VistaCast](https://github.com/VistaCast/VistaCast) |
 | VistaRemote | [VistaRemote](https://github.com/VistaRemote) | WebRTC 远程桌面 | `../VistaRemote` |
 
-远程桌面代码维护在 **VistaRemote** 组织；VistaCast 为新产品线，编码排在 DataLuminary、BlockyEdu 之后。详见 [products/vistacast.md](./products/vistacast.md)、[products/vistaremote.md](./products/vistaremote.md)。
+远程桌面代码维护在 **VistaRemote** 组织；VistaCast 为独立摄像头 AI 产品线，**编码不再等待** DataLuminary / BlockyEdu P0。详见 [products/vistacast.md](./products/vistacast.md)、[products/vistaremote.md](./products/vistaremote.md)。
 
 ## 2. GitHub 组织操作（Phase A · 已完成）
 

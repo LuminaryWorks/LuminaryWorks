@@ -12,7 +12,7 @@
 | DataLuminary | 数据明鉴 | `DataLuminary/` | [DataLuminary/DataLuminary](https://github.com/DataLuminary/DataLuminary) |
 | BlockyEdu | 智码工坊 | `BlockyEdu/` | [BlockyEdu/BlockyEdu](https://github.com/BlockyEdu/BlockyEdu) |
 | DoerFlow | 智工网 | `DoerFlow/` | [DoerFlow/DoerFlow](https://github.com/DoerFlow/DoerFlow) |
-| **VistaCast** | 视界云遥 | `VistaCast/` | [VistaCast/VistaCast](https://github.com/VistaCast/VistaCast)（AI 摄像头，规划 spec） |
+| **VistaCast** | 视界云遥 | `VistaCast/` | [VistaCast/VistaCast](https://github.com/VistaCast/VistaCast)（AI 摄像头 MetaRepo） |
 | **VistaRemote** | 视界远程 | `VistaRemote/` | [VistaRemote/VistaRemote](https://github.com/VistaRemote/VistaRemote) |
 | SyncroBrain | 万物智脑 | `SyncroBrain/` | [SyncroBrain/SyncroBrain](https://github.com/SyncroBrain/SyncroBrain) |
 
