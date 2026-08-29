@@ -59,7 +59,7 @@ github.com/LuminaryWorks/
 | WebRTC 信令 / 录制 | VistaRemote | **产品私有** | 留在 VistaRemote |
 | ONVIF / 摄像头 AI | VistaCast | **产品私有** | 留在 vistacast |
 | EMQX / ThingsBoard 编排 | SyncroBrain | **产品私有** | 留在 syncrobrain |
-| 媒体网关 media-platform | BlockyEdu | **候选共享**（IoT 摄像头/VistaCast 复用） | 评估，暂留 blockyedu |
+| 媒体网关 media-platform | BlockyEdu | **候选共享**（IoT 摄像头/VistaCast 复用） | 评估，暂留 blockyedu。**ICE/TURN 凭据格式**可跨产品共享；**信令与媒体轨仍私有**（Edu RTP、Remote H.264+SFU、Cast JPEG DataChannel） |
 | Notify（Email） | DataTalk nodemailer 等 | **共享（一期包）** | `@luminaryworks/notification`；见 [notification-service.md](./notification-service.md) |
 | 文件服务 | 各产品分散 | **候选共享** | 抽象接口 P3 |
 
