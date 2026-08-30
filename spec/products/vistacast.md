@@ -2,8 +2,8 @@
 
 > **组织**：[github.com/VistaCast](https://github.com/VistaCast) · **MetaRepo**：[VistaCast/VistaCast](https://github.com/VistaCast/VistaCast) · **域名**：[vistacast.dev](https://vistacast.dev)  
 > **Slogan**：AI Visual Autopilot — 把线下空间变成可编程的视觉数据流。  
-> **实现状态**：M1 切片已编码 + 本机 lab（**未**打 `vistacast-v0.1.0`）；M2 必须切片 + P1 已编码（**未**打 `v0.2.0`）。检测默认 stub，预览为 JPEG。M3 P0 非生产试点技术已验收；M3.1 设备 claim / 家庭成员 / HMAC ICE 已编码；M3.2 共享 coturn / lab-jpeg / 双平面 OTA 已编码。**白牌 / NRE / 真机 NAT / 刷 ROM / 生产 tag 仍阻塞。** **不再**等待 DataLuminary / BlockyEdu P0。  
-> **详细 spec**：[VistaCast/spec](https://github.com/VistaCast/VistaCast/tree/main/spec) · 手册：[m1](https://github.com/VistaCast/VistaCast/blob/main/spec/m1-commercial-playbook.md) · [m2](https://github.com/VistaCast/VistaCast/blob/main/spec/m2-sentinel-playbook.md) · [m3 P0](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-guardian-playbook.md) · [m3.1](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-1-ecosystem-playbook.md) · [m3.2](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-2-ice-soc-playbook.md) · 诚实矩阵：[implementation-status.md](https://github.com/VistaCast/VistaCast/blob/main/spec/implementation-status.md)
+> **实现状态**：M1 切片已编码 + 本机 lab（**未**打 `vistacast-v0.1.0`）；M2 必须切片 + P1 已编码（**未**打 `v0.2.0`）。检测默认 stub，预览为 JPEG。M3 P0 非生产试点技术已验收；M3.1 设备 claim / 家庭成员 / HMAC ICE 已编码；M3.2 共享 coturn / lab-jpeg / 双平面 OTA 已编码；M3.3 私有化 overlay / 租户品牌 / thin sdk 仓已编码。**商店 App / NRE / 真机 NAT / 刷 ROM / 生产 tag 仍阻塞。** **不再**等待 DataLuminary / BlockyEdu P0。  
+> **详细 spec**：[VistaCast/spec](https://github.com/VistaCast/VistaCast/tree/main/spec) · 手册：[m1](https://github.com/VistaCast/VistaCast/blob/main/spec/m1-commercial-playbook.md) · [m2](https://github.com/VistaCast/VistaCast/blob/main/spec/m2-sentinel-playbook.md) · [m3 P0](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-guardian-playbook.md) · [m3.1](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-1-ecosystem-playbook.md) · [m3.2](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-2-ice-soc-playbook.md) · [m3.3](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-3-golive-branding-playbook.md) · 诚实矩阵：[implementation-status.md](https://github.com/VistaCast/VistaCast/blob/main/spec/implementation-status.md)
 
 与 **[VistaRemote](./vistaremote.md)** **并存**：VistaRemote = WebRTC **远程桌面**；VistaCast = 固定摄像头 AI 事件 + 按需预览信令。P2P 预览不是远程桌面。
 
@@ -48,7 +48,7 @@
 | **D0** | Blueprint | Spec 定稿 | 战略、产品、架构、artifacts | 🟡 待签字 |
 | **M1** | Horizon | 第一商业版 | ONVIF + 客流/入侵/离线 + P2P + Docker | 🟡 切片已编码；**未**打 tag（stub / 非真机） |
 | **M2** | Sentinel | 规则质量 + 工厂语义 | 分级/AND-OR/审计/报表/导出/MQTT/渠道；工厂 kind+stub；人脸/员工默认关 stub；签名 OTA；camera 绑定字段 | 🟡 必须+P1 已编码；**未**打 tag；F1/OEM 未勾 |
-| **M3** | Embedded | OEM / 看护 | SDK、级联通知 | 🟡 P0 试点 + M3.1 claim/ICE/成员 + M3.2 coturn/lab-jpeg/双平面；⬜ 商业/白牌/真机 NAT/刷 ROM/tag |
+| **M3** | Embedded | OEM / 看护 | SDK、级联通知 | 🟡 P0 试点 + M3.1 claim/ICE/成员 + M3.2 coturn/lab-jpeg/双平面 + M3.3 上线 overlay/租户品牌/thin sdk；⬜ 商业/商店 App/真机 NAT/刷 ROM/tag |
 | **M4** | Nexus | 生态 | DataLuminary 模板、Re-ID β | ⬜ |
 | **M5** | Module | 模组 | 按需 | ⬜ |
 
@@ -78,7 +78,8 @@
 - P0：独立 household、级联、30–60s 确认、同意 fail-closed、OEM 激活计量；AI 只发候选。
 - M3.1：HMAC 短期 TURN（信令仍私有）、`POST /v1/oem/devices/claim`、家庭成员。ICE DTO 可被 VistaRemote / BlockyEdu 消费，**不**统一信令。
 - M3.2：一份 coturn 模块（HMAC 前缀 `vc:`/`vr:`/`be:` + 配额）、`lab-jpeg` adapter、`POST /v1/oem/soc-intake/validate`、固件/模型双平面。lab JPEG **不是**真机 NAT；固件暂存 **不是**刷 ROM。
-- **仍阻塞**：白牌品牌/域名/push/商店（FR-OEM-02）、OEM 付费 NRE、真机 SoC 刷写 / 真机 NAT 首帧、看护 F1、`vistacast-v0.3.0`。
+- M3.3：生产 Compose overlay（回环绑定、env 门闩、pg_dump、Caddy 示例）、租户品牌 overlay（`GET /v1/public/branding`）、`@vistacast/sdk` thin 客户端。**不是**商店 App，**不是** APNs，**未** npm publish。
+- **仍阻塞**：商店 App / 域名+push 证书（FR-OEM-02 余量）、OEM 付费 NRE、真机 SoC 刷写 / 真机 NAT 首帧、看护 F1、`vistacast-v0.3.0`。
 
 ## 5. AI 能力矩阵（诚实）
 
