@@ -9,11 +9,11 @@ description: >-
 
 # Product Auth Implementation (Luminary IAM Adapter + Casbin)
 
-Follow MetaRepo spec: `LuminaryWorks/spec/identity-and-permissions.md`.
+Follow MetaRepo spec: `LuminaryWorks/spec/identity-and-permissions.md` and frozen provider choice `LuminaryWorks/spec/iam-provider-selection.md`.
 
 ## Non-negotiables
 
-1. **AuthN = Luminary IAM Adapter.** Logto is the current default provider; enterprise/private deployments may use standard external OIDC. Do not invent product-local password stores for production OIDC modes.
+1. **AuthN = Luminary IAM Adapter.** Default IdP is **Logto** (frozen; MPL-2.0). Do not re-evaluate Logto vs ZITADEL. Enterprise/private deployments may use `IAM_PROVIDER=oidc`. ZITADEL is a reserved plugin (hosted OIDC login only until a real management adapter ships).
 2. **AuthZ = product Casbin.** Never put dashboard/device/course ACL into JWT or IdP roles.
 3. **Login UI = Login Experience Adapter + OIDC PKCE.** Logto uses Experience API Headless; providers without Headless APIs use Hosted Redirect. Do not fork IdP login source as the default path.
 4. **Management API is central-only.** Never put M2M credentials or an Identity Management client in a product backend or browser.
@@ -50,6 +50,7 @@ Env:
 IDP_ISSUER=http://localhost:3001/oidc
 IDP_AUDIENCE=https://api.<product>.local
 IDP_MODE=logto
+IAM_PROVIDER=logto
 ```
 
 ### B. Frontend (React SPA)
@@ -82,7 +83,7 @@ VITE_IDP_REDIRECT_URI=http://localhost:<spa-port>/auth/callback
 VITE_ALLOW_LOCAL_LOGIN=false
 ```
 
-Private / enterprise: point Gateway `UPSTREAM_ISSUER` (or product issuer) at customer IdP / self-hosted Logto and select a supported runtime/login adapter; connectors (SAML/LDAP/OIDC) stay at the IdP. Do not add empty adapters for unintegrated providers.
+Private / enterprise: set `IAM_PROVIDER=oidc` (or `zitadel` for hosted OIDC against a ZITADEL issuer) and point Gateway `UPSTREAM_ISSUER` (or product issuer) at the customer IdP / self-hosted Logto. Connectors (SAML/LDAP/OIDC) stay at the IdP. Do not add empty adapters for unintegrated providers. See `spec/iam-provider-selection.md`.
 ### C. Casbin model (starter)
 
 ```ini
@@ -154,7 +155,7 @@ Match existing product contracts when present:
 
 ## References
 
-- MetaRepo: `spec/identity-and-permissions.md`
+- MetaRepo: `spec/identity-and-permissions.md`, `spec/iam-provider-selection.md`
 - Docs: `docs/docs/develop/unified-login.md`
 - Identity: `identity/README.md`, `identity/apps.json`
 - Shared: `shared/packages/auth-core`, `auth-react`, `pal`

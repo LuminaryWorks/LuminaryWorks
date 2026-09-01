@@ -1,7 +1,7 @@
 # LuminaryWorks 身份与权限体系（Identity & Authorization）
 
-> **状态**：Accepted · **决策日**：2024-04-24 · **修订**：2026-08-21（Luminary IAM Adapter）
-> **关联**：[ecosystem-refactoring.md](./ecosystem-refactoring.md) · [subscription-and-entitlement.md](./subscription-and-entitlement.md) · [identity 仓](https://github.com/LuminaryWorks/identity) · 开发者文档 [unified-login](https://github.com/LuminaryWorks/docs)
+> **状态**：Accepted · **决策日**：2024-04-24 · **修订**：2026-09-01（冻结默认 Logto；ZITADEL 为预留插件）
+> **关联**：[ecosystem-refactoring.md](./ecosystem-refactoring.md) · [subscription-and-entitlement.md](./subscription-and-entitlement.md) · **[iam-provider-selection.md](./iam-provider-selection.md)**（Logto vs ZITADEL **已冻结**） · [identity 仓](https://github.com/LuminaryWorks/identity) · 开发者文档 [unified-login](https://github.com/LuminaryWorks/docs)
 
 ## 0. 决策摘要（TL;DR）
 
@@ -13,6 +13,7 @@
 | D-IAM-4 | 产品资源权限引擎采用 **Casbin**（`node-casbin`），NestJS 集成 | 各产品本地 PermissionService |
 | D-IAM-5 | 远期规模化（类 PowerBI）可迁 **OpenFGA**；现阶段 Casbin 足够 | 模型保持 `sub / obj / act` |
 | D-IAM-6 | **商业套餐 / 配额 / License** 不由 IAM Provider 或 Casbin 承载 | 见 [subscription-and-entitlement.md](./subscription-and-entitlement.md) |
+| D-IAM-7 | **默认 IdP 冻结为 Logto**（MPL-2.0、开发更简单）。ZITADEL 是可选插件，不是替换方案；**不要再重评选型** | `IAM_PROVIDER=logto`（默认）/ `oidc` / 预留 `zitadel`。详见 [iam-provider-selection.md](./iam-provider-selection.md) |
 
 核心原则：**身份统一，权限解耦；品牌独立，体验一致。商业权益中央化，资源 ACL 产品私有。**
 
@@ -77,6 +78,24 @@
 
 Management API 的 M2M 凭据不得进入产品仓、浏览器或 `@luminaryworks/auth-react`。当前 Logto Management API 只允许 `identity/scripts` 及未来中央 IAM 后台使用。
 
+### 2.2 Provider 目录（`IAM_PROVIDER`）
+
+```text
+LuminaryWorks IAM Adapter
+       │
+       ├── Logto      ← 默认，已交付
+       ├── oidc       ← 企业 IdP / 标准 Hosted OIDC
+       └── ZITADEL    ← 预留插件（登录可走 Hosted OIDC；Management 未交付）
+```
+
+| `IAM_PROVIDER` | 含义 |
+|----------------|------|
+| `logto` | SaaS / 默认自托管。Experience Headless + Logto Management |
+| `oidc` | 私有化直连客户 IdP（Entra / Okta / Keycloak…） |
+| `zitadel` | 预留。需要 Delegated Administration / Identity Brokering 等且客户接受 AGPL 时再实现管理插件 |
+
+选型理由与「何时才做 ZITADEL 插件」见 [iam-provider-selection.md](./iam-provider-selection.md)。**禁止**为空的 ZITADEL / Casdoor adapter。不支持的管理能力返回 `IDENTITY_CAPABILITY_UNSUPPORTED`。
+
 ## 3. 登录页方案：Login Experience Adapter
 
 | 方案 | 结论 |
@@ -102,7 +121,7 @@ Management API 的 M2M 凭据不得进入产品仓、浏览器或 `@luminarywork
 ```text
 Product SPA  →  Luminary Auth SDK (@luminaryworks/auth-react)
                     →  Auth Gateway（OIDC 反代 / 产品识别 / 白标 / 风控 / 审计）
-                         →  Logto | Auth0 | Keycloak | Cognito | 企业 IdP
+                         →  Logto | ZITADEL（预留）| Auth0 | Keycloak | Cognito | 企业 IdP
 ```
 
 **落地（MVP）**：
@@ -162,7 +181,7 @@ Controller → JwtAuth → EntitlementGuard(feature?) → Service → 查资源 
 
 ```text
                  LuminaryWorks IAM
-            IAM Adapter（默认 Logto）
+            IAM Adapter（默认 Logto；可选 oidc / 预留 ZITADEL）
        用户登录 / SSO / Token / Organization
                       |
                  JWT Access Token（身份 + 准入）
@@ -229,6 +248,7 @@ cd identity && node scripts/register-apps.mjs
 
 - 产品接入 Cursor 规范：[.cursor/skills/product-auth-implementation/SKILL.md](../.cursor/skills/product-auth-implementation/SKILL.md)
 - 开发者门户：[docs/develop/unified-login](../docs/docs/develop/unified-login.md)
+- Provider 选型（已冻结）：[iam-provider-selection.md](./iam-provider-selection.md)
 
 ## 8. 落地阶段（摘要）
 
@@ -243,6 +263,7 @@ cd identity && node scripts/register-apps.mjs
 - 不在 Logto 中维护各产品 Dashboard/设备等业务 ACL  
 - 不在 Logto / JWT 中维护商业 entitlements、plan 或配额  
 - 不以 fork Logto Experience 源码作为默认定制路径  
+- 不把默认 IdP 从 Logto 换成 ZITADEL；ZITADEL 只作为未来插件  
 - 不强制六产品共享同一套角色表结构  
 - 不以 Casbin 全局放行替代私有化 License 或计费控制  
 
