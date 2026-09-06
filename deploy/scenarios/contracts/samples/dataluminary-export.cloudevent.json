@@ -1,0 +1,16 @@
+{
+  "specversion": "1.0",
+  "datacontenttype": "application/json",
+  "id": "dl-export-1",
+  "source": "https://dataluminary.dev/t/tenant-vc",
+  "type": "com.dataluminary.export.v1",
+  "time": "2026-09-06T02:04:00.000Z",
+  "subject": "site-7/alert-9",
+  "data": {
+    "sourceTenantId": "tenant-vc",
+    "sourceId": "export-1",
+    "audience": "human",
+    "sourceRef": "site-7/alert-9",
+    "summary": "export ready for embed"
+  }
+}

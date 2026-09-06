@@ -93,6 +93,7 @@ export function pickEffectivePlan(plans: Array<PlanCode | null | undefined>): Pl
 export function mergeFeatureMaps(
   sources: ActiveSource[],
   planFeaturesByPlan: Map<PlanCode, PlanFeatureDef[]>,
+  catalogQuotas: Map<string, { period: QuotaPeriod; merge: QuotaMerge }> = new Map(),
 ): {
   features: Record<string, FeatureSnapshot>;
   quotas: Record<
@@ -127,14 +128,17 @@ export function mergeFeatureMaps(
     }
     for (const [code, override] of Object.entries(src.features ?? {})) {
       if (override.limitValue != null) {
+        const catalog = catalogQuotas.get(code);
         const existing = quotaLimits.get(code) ?? {
           limits: [],
-          period: "lifetime" as QuotaPeriod,
-          merge: "max" as QuotaMerge,
+          period: catalog?.period ?? "lifetime",
+          merge: catalog?.merge ?? "max",
           sources: [],
         };
         existing.limits.push(Number(override.limitValue));
         existing.sources.push(label);
+        if (catalog?.period) existing.period = catalog.period;
+        if (catalog?.merge) existing.merge = catalog.merge;
         quotaLimits.set(code, existing);
       } else if (override.effect === "deny") {
         const set = boolDeny.get(code) ?? new Set();

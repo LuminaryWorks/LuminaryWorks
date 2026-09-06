@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminaryworks.dev/schemas/mqtt-planes.v1.json",
+  "title": "MQTT topic plane separation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "deviceTelemetry",
+    "crossProductEvents",
+    "forbidden"
+  ],
+  "properties": {
+    "deviceTelemetry": {
+      "$ref": "#/$defs/plane"
+    },
+    "crossProductEvents": {
+      "$ref": "#/$defs/plane"
+    },
+    "forbidden": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "plane": {
+      "type": "object",
+      "required": [
+        "pattern",
+        "writers",
+        "productionIngress"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "pattern": {
+          "type": "string"
+        },
+        "writers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "productionIngress": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

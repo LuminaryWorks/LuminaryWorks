@@ -21,16 +21,26 @@ interface AiUsageEvent {
   organizationId?: string | null;
   spaceUid?: string;
   conversationUid?: string;
+  feature?: string;
+  purpose?: "chat" | "stt" | "tts" | "realtime";
   providerType: string;
   model: string;
   promptTokens: number;
   completionTokens: number;
+  audioInputMs?: number;
+  audioOutputMs?: number;
+  latencyMs?: number;
+  firstTokenMs?: number;
+  cacheHit?: boolean;
+  routeTier?: string;
+  estimatedCostMinor?: number;
   billed: "byok" | "managed";
   at: string;
+  traceId?: string;
 }
 ```
 
-产品本地可落 `ai_usage` 表；中央平台后期接收同一事件。
+产品本地可落 `ai_usage` 表；中央平台后期接收同一事件。学员看到的口语分钟是 Entitlement `ai.voice.*.seconds`，不是本事件。
 
 ## 3. 与 Entitlement 的关系
 

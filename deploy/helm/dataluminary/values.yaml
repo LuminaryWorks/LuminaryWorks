@@ -1,0 +1,35 @@
+# Scaffold values. Do not put shared DB passwords in global.
+global:
+  domain: luminaryworks.dev
+  imageRegistry: ghcr.io/luminaryworks
+  storageClass: ""
+  controlPlane:
+    identity: http://identity:3001/oidc
+    authGateway: http://auth-gateway:3010
+    entitlement: http://entitlement:3040
+
+database:
+  external: false
+  host: ""
+  port: 5432
+  name: dataluminary
+  existingSecret: ""
+
+existingSecret: ""
+
+networkPolicy:
+  enabled: false
+
+persistence:
+  enabled: false
+  storageClass: ""
+  size: 10Gi
+  retain: true
+
+migration:
+  preUpgradeJob:
+    enabled: false
+    image: busybox:1.36
+
+nameOverride: ""
+fullnameOverride: ""

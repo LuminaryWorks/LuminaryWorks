@@ -1,0 +1,21 @@
+# Local-debugging override: publish control-plane datastores on loopback.
+#
+# Never use this in pilot or production — `scripts/preflight-control-plane.mjs`
+# fails a hardened stage when a database or Redis port is published.
+#
+#   docker compose --env-file deploy/env/control-plane.env \
+#     -f deploy/compose/control-plane.yaml \
+#     -f deploy/compose/control-plane.dev-ports.yaml up -d
+
+services:
+  identity-db:
+    ports:
+      - "127.0.0.1:${IDENTITY_DB_PORT:-5433}:5432"
+
+  identity-redis:
+    ports:
+      - "127.0.0.1:${IDENTITY_REDIS_PORT:-6381}:6379"
+
+  entitlement-db:
+    ports:
+      - "127.0.0.1:${ENTITLEMENT_DB_PORT:-5434}:5432"

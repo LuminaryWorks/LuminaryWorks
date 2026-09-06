@@ -1,0 +1,254 @@
+# LuminaryWorks optional shared control plane
+#
+#   Identity (Logto) + Auth Gateway + Entitlement are the core.
+#   AI Platform and observability are opt-in Compose profiles.
+#
+# The control plane is OPTIONAL. Every product must still start standalone with
+# `identity=external_oidc|local`, `entitlement=off|offline_license` and
+# `ai=off|local_byok`. See spec/composable-deployment.md.
+#
+# Usage (from repo root):
+#   cp deploy/env/control-plane.env.example deploy/env/control-plane.env  # then fill in real secrets
+#   node scripts/preflight-control-plane.mjs --manifest deploy/manifests/control-plane.dev.json
+#   docker compose --env-file deploy/env/control-plane.env -f deploy/compose/control-plane.yaml up -d
+#
+#   Local DB/Redis debugging ports (never in pilot/production):
+#     ... -f deploy/compose/control-plane.yaml -f deploy/compose/control-plane.dev-ports.yaml up -d
+#   Optional profiles:
+#     ... --profile ai --profile observability up -d
+#
+# Contract notes:
+#   * No `container_name`: this stack must be able to run next to product stacks
+#     and next to `identity/docker-compose.yml` / `services/entitlement/docker-compose.yml`,
+#     which stay independently runnable and own their own project name + volumes.
+#   * No `host.docker.internal`: services address each other by Compose DNS name.
+#   * No committed passwords: every secret is a required variable (`${VAR:?...}`).
+#   * Databases and Redis have no host ports and live on an `internal` network.
+#   * Host publishing defaults to loopback; terminate TLS at a reverse proxy in
+#     pilot/production and set CONTROL_PLANE_BIND_ADDR accordingly.
+
+name: ${CONTROL_PLANE_PROJECT:-luminary-control-plane}
+
+x-restart: &restart
+  restart: unless-stopped
+
+networks:
+  # Data tier: no egress, reachable only by control-plane services.
+  control-data:
+    internal: true
+  # Edge tier: control-plane services + product stacks that opt in.
+  # Product Compose projects join it with:
+  #   networks: { luminary-control-edge: { external: true } }
+  control-edge:
+    name: ${CONTROL_PLANE_EDGE_NETWORK:-luminary-control-edge}
+
+volumes:
+  identity-db-data:
+  entitlement-db-data:
+  ai-platform-data:
+
+services:
+  identity-db:
+    <<: *restart
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
+    environment:
+      POSTGRES_USER: ${IDENTITY_DB_USER:-logto}
+      POSTGRES_DB: ${IDENTITY_DB_NAME:-logto}
+      POSTGRES_PASSWORD: ${IDENTITY_DB_PASSWORD:?set IDENTITY_DB_PASSWORD in deploy/env/control-plane.env}
+    volumes:
+      - identity-db-data:/var/lib/postgresql/data
+    networks:
+      - control-data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U ${IDENTITY_DB_USER:-logto} -d ${IDENTITY_DB_NAME:-logto}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  identity-redis:
+    <<: *restart
+    image: ${REDIS_IMAGE:-redis:7-alpine}
+    networks:
+      - control-data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  # Identity = Logto. It exposes no /version endpoint of its own; the readiness
+  # contract is the OIDC discovery document (see scripts/preflight-control-plane.mjs).
+  identity:
+    <<: *restart
+    image: ${IDENTITY_IMAGE:-svhd/logto:latest}
+    depends_on:
+      identity-db:
+        condition: service_healthy
+      identity-redis:
+        condition: service_healthy
+    environment:
+      TRUST_PROXY_HEADER: "1"
+      DB_URL: postgres://${IDENTITY_DB_USER:-logto}:${IDENTITY_DB_PASSWORD:?set IDENTITY_DB_PASSWORD in deploy/env/control-plane.env}@identity-db:5432/${IDENTITY_DB_NAME:-logto}
+      REDIS_URL: redis://identity-redis:6379
+      ENDPOINT: ${IDENTITY_ENDPOINT:?set IDENTITY_ENDPOINT to the browser-reachable OIDC base URL}
+      ADMIN_ENDPOINT: ${IDENTITY_ADMIN_ENDPOINT:?set IDENTITY_ADMIN_ENDPOINT to the browser-reachable admin URL}
+    # `db seed` is idempotent; start_period covers the first seed + boot window.
+    entrypoint: ["sh", "-c", "npm run cli db seed -- --swe && npm start"]
+    ports:
+      - "${CONTROL_PLANE_BIND_ADDR:-127.0.0.1}:${IDENTITY_PORT:-3001}:3001"
+      - "${CONTROL_PLANE_ADMIN_BIND_ADDR:-127.0.0.1}:${IDENTITY_ADMIN_PORT:-3002}:3002"
+    networks:
+      - control-data
+      - control-edge
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -q -O /dev/null http://127.0.0.1:3001/oidc/.well-known/openid-configuration || exit 1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 90s
+
+  # Auth Gateway keeps products off a specific IdP: JWT `iss` stays upstream,
+  # browser-reachable endpoints are rewritten to the gateway.
+  auth-gateway:
+    <<: *restart
+    build:
+      context: ../../services/auth-gateway
+    image: ${AUTH_GATEWAY_IMAGE:-luminaryworks/auth-gateway:local}
+    depends_on:
+      identity:
+        condition: service_healthy
+    environment:
+      AUTH_GATEWAY_PORT: "3010"
+      AUTH_GATEWAY_PUBLIC_URL: ${AUTH_GATEWAY_PUBLIC_URL:?set AUTH_GATEWAY_PUBLIC_URL to the browser-reachable gateway base URL}
+      UPSTREAM_ISSUER: ${AUTH_GATEWAY_UPSTREAM_ISSUER:-http://identity:3001/oidc}
+      AUTH_GATEWAY_READY_UPSTREAM: ${AUTH_GATEWAY_READY_UPSTREAM:-1}
+      AUTH_GATEWAY_CORS_ORIGINS: ${AUTH_GATEWAY_CORS_ORIGINS:-}
+    ports:
+      - "${CONTROL_PLANE_BIND_ADDR:-127.0.0.1}:${AUTH_GATEWAY_PORT:-3010}:3010"
+    networks:
+      - control-edge
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3010/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+  entitlement-db:
+    <<: *restart
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
+    environment:
+      POSTGRES_USER: ${ENTITLEMENT_DB_USER:-entitlement}
+      POSTGRES_DB: ${ENTITLEMENT_DB_NAME:-entitlement}
+      POSTGRES_PASSWORD: ${ENTITLEMENT_DB_PASSWORD:?set ENTITLEMENT_DB_PASSWORD in deploy/env/control-plane.env}
+    volumes:
+      - entitlement-db-data:/var/lib/postgresql/data
+    networks:
+      - control-data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${ENTITLEMENT_DB_USER:-entitlement} -d ${ENTITLEMENT_DB_NAME:-entitlement}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  entitlement:
+    <<: *restart
+    build:
+      context: ../../services/entitlement
+    image: ${ENTITLEMENT_IMAGE:-luminaryworks/entitlement:local}
+    depends_on:
+      entitlement-db:
+        condition: service_healthy
+      identity:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${ENTITLEMENT_NODE_ENV:-production}
+      ENTITLEMENT_PORT: "3040"
+      ENTITLEMENT_DATABASE_URL: postgres://${ENTITLEMENT_DB_USER:-entitlement}:${ENTITLEMENT_DB_PASSWORD:?set ENTITLEMENT_DB_PASSWORD in deploy/env/control-plane.env}@entitlement-db:5432/${ENTITLEMENT_DB_NAME:-entitlement}
+      ENTITLEMENT_MIGRATIONS_RUN: "true"
+      ENTITLEMENT_SYNCHRONIZE: "false"
+      # OIDC is the only auth mode that belongs in a shared control plane;
+      # `legacy` shared-secret mode stays product-local and dev-only.
+      ENTITLEMENT_AUTH_MODE: ${ENTITLEMENT_AUTH_MODE:-oidc}
+      ENTITLEMENT_OIDC_ISSUER: ${ENTITLEMENT_OIDC_ISSUER:?set ENTITLEMENT_OIDC_ISSUER to the canonical IdP issuer}
+      ENTITLEMENT_OIDC_AUDIENCE: ${ENTITLEMENT_OIDC_AUDIENCE:-https://entitlement.luminaryworks.dev}
+      ENTITLEMENT_SERVICE_API_KEY: ${ENTITLEMENT_SERVICE_API_KEY:?set ENTITLEMENT_SERVICE_API_KEY in deploy/env/control-plane.env}
+      ENTITLEMENT_PARTNER_SECRET_PEPPER: ${ENTITLEMENT_PARTNER_SECRET_PEPPER:?set ENTITLEMENT_PARTNER_SECRET_PEPPER in deploy/env/control-plane.env}
+      ENTITLEMENT_PARTNER_TOKEN_SECRET: ${ENTITLEMENT_PARTNER_TOKEN_SECRET:?set ENTITLEMENT_PARTNER_TOKEN_SECRET in deploy/env/control-plane.env}
+      ENTITLEMENT_LICENSE_PUBLIC_KEYS: ${ENTITLEMENT_LICENSE_PUBLIC_KEYS:-}
+      ENTITLEMENT_GIT_SHA: ${ENTITLEMENT_GIT_SHA:-unknown}
+    ports:
+      - "${CONTROL_PLANE_BIND_ADDR:-127.0.0.1}:${ENTITLEMENT_PORT:-3040}:3040"
+    networks:
+      - control-data
+      - control-edge
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3040/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Optional profile: ai
+  #
+  # NOT HARDENED. The AI Platform currently has no AuthN, no Entitlement
+  # enforcement and only in-memory metering, so `ai=central` is refused by
+  # preflight for pilot/production manifests. This profile exists for dev and
+  # lab work only; production deployments use ai=off or ai=local_byok.
+  # ---------------------------------------------------------------------------
+  ai-platform:
+    <<: *restart
+    profiles: ["ai"]
+    build:
+      context: ../../services/ai-platform
+    image: ${AI_PLATFORM_IMAGE:-luminaryworks/ai-platform:local}
+    environment:
+      PORT: "13100"
+      AI_VAULT_MASTER_KEY: ${AI_VAULT_MASTER_KEY:?set AI_VAULT_MASTER_KEY (32-byte hex/base64) in deploy/env/control-plane.env}
+      AI_PLATFORM_DATA_DIR: /data
+    volumes:
+      - ai-platform-data:/data
+    ports:
+      - "${CONTROL_PLANE_BIND_ADDR:-127.0.0.1}:${AI_PLATFORM_PORT:-13100}:13100"
+    networks:
+      - control-edge
+    healthcheck:
+      # Liveness only — this is not a hardened readiness contract.
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:13100/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  # ---------------------------------------------------------------------------
+  # Optional profile: observability
+  #
+  # Products propagate `traceparent` / `x-request-id`; this collector only
+  # aggregates. Products deployed standalone can leave it off entirely.
+  # ---------------------------------------------------------------------------
+  otel-collector:
+    <<: *restart
+    profiles: ["observability"]
+    image: ${OTEL_COLLECTOR_IMAGE:-otel/opentelemetry-collector-contrib:0.115.1}
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      - ../observability/otel-collector.yaml:/etc/otel/config.yaml:ro
+    ports:
+      - "${CONTROL_PLANE_BIND_ADDR:-127.0.0.1}:${OTEL_GRPC_PORT:-4317}:4317"
+      - "${CONTROL_PLANE_BIND_ADDR:-127.0.0.1}:${OTEL_HTTP_PORT:-4318}:4318"
+    networks:
+      - control-edge

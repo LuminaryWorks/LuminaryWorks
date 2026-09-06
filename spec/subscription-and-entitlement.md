@@ -1,7 +1,7 @@
 # LuminaryWorks 订阅与权益体系（Subscription & Entitlement）
 
 > **状态**：Accepted · **决策日**：2024-04-28 · **冻结实现契约**  
-> **关联**：[identity-and-permissions.md](./identity-and-permissions.md) · [migration-matrix.md](./migration-matrix.md) · [notification-service.md](./notification-service.md) · [ai-platform.md](./ai-platform.md) · [products/index.md](./products/index.md)  
+> **关联**：[identity-and-permissions.md](./identity-and-permissions.md) · [migration-matrix.md](./migration-matrix.md) · [notification-service.md](./notification-service.md) · [ai-platform.md](./ai-platform.md) · [products/index.md](./products/index.md) · [composable-deployment.md](./composable-deployment.md)  
 > **草案来源**：`LuminaryWorks_Identity_Entitlement_Design.md`（设计输入）；`test.md` 中若干主张已被本规范**显式否决**（见 §0.2），不以 `test.md` 为权威。
 
 ## 0. 决策摘要（TL;DR）
@@ -18,6 +18,7 @@
 | D-ENT-8 | 联合会员 = Bundle/SKU 拆分为各产品独立 subscription/grant | Partner API 泛化，不硬编码合作方名称 |
 | D-ENT-9 | 关键付费能力：Entitlement 不可确认时 **fail closed** | 短 TTL cache + 有限离线宽限（可配置） |
 | D-ENT-10 | 迁移：`shadow_read` → 灰度 enforcement → 全量；可逆 feature flag | 旧字段保留至审计通过 |
+| D-ENT-11 | 中央 Entitlement HTTP **冻结端口 `3040`**；产品 `ENTITLEMENT_BASE_URL` / Manifest `services.entitlement.url` 不得再指向历史 `7090` | `ENTITLEMENT_PORT` · Compose 服务名 `entitlement` |
 
 核心原则：**身份统一，权益中央，资源权限产品私有；商业能力与 ACL 永不混装进 Token。**
 
@@ -127,7 +128,7 @@ flowchart LR
 | `vistaremote` | VistaRemote |
 | `doerflow` | DoerFlow |
 
-`products.trial_policy`（API 为 `trialPolicy`）只允许 `standard_7d | disabled`。DataLuminary、BlockyEdu、VistaRemote 固定为 `standard_7d`；DoerFlow 固定为 `disabled`。
+`products.trial_policy`（API 为 `trialPolicy`）只允许 `standard_7d | disabled`。DataLuminary、BlockyEdu、VistaRemote 固定为 `standard_7d`；DoerFlow 固定为 `disabled`。VistaCast / SyncroBrain **不是**本目录的付费 `productCode`（不发布面向用户的中央价格方案）；其跨产品用量挂在 DoerFlow `integration.*` 上。
 
 ### 3.3 Plan tiers
 
@@ -156,9 +157,28 @@ VistaRemote 现有本地模型为 `free` / `pro` / `enterprise`（见 `vistaremo
 | 产品 | 示例 `featureCode`（非穷尽） | 来源 |
 |------|------------------------------|------|
 | VistaRemote | `webrtc.sfu`, `recording`, `ai.recording_summarize`, `ai.cloud_infer`, `recording.sfu_server`, `telemetry.enterprise` | 现有 `ProductFeature` |
-| BlockyEdu | `code.execute.pro`, `ai.copilot`, `ai.tutor`, 班级/学员额度类 quota | `code_pro` / memberTier 迁移 |
+| BlockyEdu | `code.execute.pro`, `ai.copilot`, `ai.tutor`, `ai.voice`, `ai.voice.trial.seconds`, `ai.voice.monthly.seconds`, `ai.voice.purchased.seconds`, 班级/学员额度类 quota | `code_pro` / memberTier 迁移；口语分钟 ≠ 7 天 Trial |
 | DataLuminary | `dashboard.export`, `ai.analysis`, `storage.bytes`, `dashboard.count` 等 | 商业能力与容量门禁 |
-| DoerFlow | `agent.publish`, `skill.register`, `task.publish`, `ai.strategy.run`, `settlement.merkle_batch`, `admin.ops.read`；`agent.limit`, `task.publish.monthly`, `api.request.monthly` 配额 | Agent 区块链平台能力；链上手续费、Escrow、技能按次计价不进入 Entitlement |
+| DoerFlow | `agent.publish`, `skill.register`, `task.publish`, `ai.strategy.run`, `settlement.merkle_batch`, `admin.ops.read`；`agent.limit`, `task.publish.monthly`, `api.request.monthly` 配额；跨产品 `integration.provider.register`, `integration.event.submit`, `integration.event.monthly`, `integration.api.monthly` | 托管平台能力 + 生态 integration 门禁。**Pro 不开放 provider/event 写**；Ultra 小额、Enterprise 高额。**协议费、Job 单价、Escrow、Gas 不进入 Entitlement。** 不新增 VistaCast / SyncroBrain 面向用户 SKU；`trialPolicy=disabled` 不变 |
+
+### 3.5 DoerFlow 跨产品 integration（种子可增，语义冻结）
+
+VistaCast server 与 SyncroBrain gateway 以 M2M 调用 DoerFlow API 时，除 Logto scopes 外还须通过中央 feature/quota（映射到现有 Pro / Ultra / Enterprise，不新增档位或价格）：
+
+| `featureCode` | 类型 | 含义 |
+|---------------|------|------|
+| `integration.provider.register` | bool | 注册/更新跨产品 provider offering |
+| `integration.event.submit` | bool | 提交 integration 事件（可能创建 Task） |
+| `integration.event.monthly` | quota `calendar_month` | 每月 integration 事件条数 |
+| `integration.api.monthly` | quota `calendar_month` | 每月 integration API 调用 |
+
+| 档位 | provider/event 写 | `event.monthly` | `api.monthly` |
+|------|-------------------|-----------------|---------------|
+| Pro | **不开放**（计划省略这些 feature；禁止 `deny`，以免与 Ultra/Enterprise 并集时覆盖允许） | — | — |
+| Ultra | 允许 | 10_000 | 100_000 |
+| Enterprise | 允许 | 100_000 | 10_000_000 |
+
+这些门禁 **不是** Job 单价、协议费、Escrow 锁仓或 Gas 代付。
 
 ---
 
@@ -292,8 +312,9 @@ Base path（SaaS）：`/v1`。管理端与 Partner 端使用独立 audience / sc
 | `POST` | `/v1/orders/{id}/pay` | 支付回执 / 适配器回调入口（服务端） |
 | `POST` | `/v1/admin/grants` | 人工合同发放（admin scope） |
 | `POST` | `/v1/partner/redemptions` | Partner 兑换 |
-| `GET` | `/health` | 存活 |
-| `GET` | `/ready` | 依赖就绪（DB） |
+| `GET` | `/health` | 存活（进程；不探测依赖） |
+| `GET` | `/ready` | 依赖就绪（DB）；失败返回非 2xx |
+| `GET` | `/version` | `service` / `apiVersion=v1` / `schemaVersion=1` / `gitSha` |
 
 ### 9.2 权益快照 DTO（示意）
 
@@ -348,6 +369,12 @@ Base path（SaaS）：`/v1`。管理端与 Partner 端使用独立 audience / sc
 
 产品可在本地兼容层将历史 reason（如 VistaRemote `TRIAL_EXPIRED_REQUIRES_PRO`）**映射**到上表，对外逐步统一。
 
+### 9.4 监听端口与 AI 组合门禁
+
+中央 Entitlement HTTP **冻结 `ENTITLEMENT_PORT=3040`**。Compose 服务名 `entitlement`，控制面内部 URL `http://entitlement:3040`。产品 `ENTITLEMENT_BASE_URL` / Manifest `services.entitlement.url` / `LW_ENTITLEMENT_URL` 一律指向 3040。历史文档或 env 中的 **`7090` 视为漂移，必须改正**，不得作为兼容别名保留。
+
+本服务**不是** AI Platform，也**不**为 `ai=central` 背书。中央 AI 当前为 **lab**（无 AuthN、无对本服务的强制门禁、metering 仅进程内存、无 `/ready`、provider secret 无 vault）。Control Manifest preflight 在 `pilot` / `production` **拒绝** `ai=central`；那些阶段使用 `ai=off` 或 `ai=local_byok`。`AI_CENTRAL_HARDENING_GATES`（`authn` / `entitlement` / `persistentMetering` / `secretVault` / `readiness`）必须与能力落地**同一次改动**一起翻转。详见 [composable-deployment.md §8–§9](./composable-deployment.md)。
+
 ---
 
 ## 10. 通知（Trial T-3 与到期）
@@ -383,6 +410,7 @@ PostgreSQL。表名稳定；列可增不可静默改语义。
 | `organization_seats` | seat 限额与占用 |
 | `usage_counters` | 配额用量 |
 | `trial_redemptions` | `(logto_sub, product_code)` 唯一 |
+| `promotion_redemptions` | `(subject, product_code, promotion_code)` 唯一；口语注册 300 秒等 once-grant |
 | `partners` / `partner_benefits` | 合作方与权益模板 |
 | `redemptions` | 兑换记录与幂等键 |
 | `licenses` | 已签发 / 已激活 License 元数据 |
@@ -412,6 +440,7 @@ LuminaryJwtAuthGuard → EntitlementGuard(feature) → PermissionGuard(Casbin)
 | **DataLuminary** | DataTalk：`JwtAuthGuard` + `PermissionGuard` 之间插入 Entitlement；Casbin 继续管 dashboard/space/dataset；高级分析/导出/容量走 feature/quota。DataView：Trial 倒计时、Pro/Ultra 升级、企业视图。Space ↔ Logto Org 显式映射 + seat。 |
 | **BlockyEdu** | `edu-server` / `server` 接入 client；`memberTier` / `code_pro` 等改为 feature code；课程班级作业 ACL 仍 Casbin。双前端 Trial/升级 UX；OIDC 未稳时保留 legacy 登录开关。 |
 | **VistaRemote** | 以 `shared/src/billing` catalog 为迁移基线；`server` billing 改为中央适配器，保持 `GET /billing/entitlements` 等 DTO 兼容；SFU/AI/录制门禁走 entitlement；设备会话归属仍 Casbin/ABAC。 |
+| **DoerFlow** | Logto JWT → Entitlement（含 `integration.*`，`trialPolicy=disabled`）→ Casbin；平台套餐不含协议费 / Escrow / Gas；钱包/SIWE 另轨。 |
 
 ---
 
@@ -444,6 +473,8 @@ LuminaryJwtAuthGuard → EntitlementGuard(feature) → PermissionGuard(Casbin)
 - 不用 Entitlement 表存储产品资源 ACL。
 - 不强制六产品同一套本地角色表。
 - 不在本服务内实现完整支付渠道（仅订单抽象与适配器接口）。
+- 不为 VistaCast / SyncroBrain 凭空发布面向用户的中央价格方案；跨产品用量走 DoerFlow `integration.*`。
+- 不把协议费、Job 单价、Escrow 或 Gas 编进套餐 feature。
 
 ---
 
@@ -459,6 +490,6 @@ LuminaryJwtAuthGuard → EntitlementGuard(feature) → PermissionGuard(Casbin)
 6. Bundle 拆分与 Partner 幂等兑换形状  
 7. T-3 / 到期通知事件名与去重键  
 8. `ENTITLEMENT_MODE` 三态迁移  
+9. 监听端口 `3040`（不作 `7090`）；`GET /version` 契约  
 
 OpenAPI 以本契约为准生成；种子目录可增 feature，不得改变已发布 code 语义。
-`)

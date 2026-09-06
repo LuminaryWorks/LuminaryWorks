@@ -1,0 +1,4 @@
+LuminaryWorks umbrella.
+
+Enable planes with components.<product>.enabled only.
+Production use is gated on standalone + agent-commerce + smart-site Compose acceptance.

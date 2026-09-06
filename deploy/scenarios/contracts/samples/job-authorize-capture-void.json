@@ -1,0 +1,35 @@
+{
+  "owner": "doerflow",
+  "states": [
+    "awaiting_payment",
+    "authorized",
+    "running",
+    "succeeded",
+    "captured",
+    "voided",
+    "failed"
+  ],
+  "transitions": [
+    {
+      "from": "awaiting_payment",
+      "to": "authorized",
+      "meaning": "authorize reserves budget + nonce; payee is not credited."
+    },
+    {
+      "from": "authorized",
+      "to": "captured",
+      "meaning": "provider 2xx and output hash required before capture/settled."
+    },
+    {
+      "from": "authorized",
+      "to": "voided",
+      "meaning": "5xx or timeout voids the authorization; no payee credit."
+    }
+  ],
+  "callbackMustNot": [
+    "ack or resolve the source VistaCast alert",
+    "close the source SyncroBrain Incident",
+    "execute device RPC",
+    "treat DataLuminary as settlement authority"
+  ]
+}

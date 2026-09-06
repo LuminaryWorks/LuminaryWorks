@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminaryworks.dev/schemas/http-status-semantics.v1.json",
+  "title": "401 / 402 / 403 semantics (identity vs entitlement vs Casbin)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "401",
+    "402",
+    "403"
+  ],
+  "properties": {
+    "401": {
+      "$ref": "#/$defs/family"
+    },
+    "402": {
+      "$ref": "#/$defs/family"
+    },
+    "403": {
+      "$ref": "#/$defs/family"
+    }
+  },
+  "$defs": {
+    "family": {
+      "type": "object",
+      "required": [
+        "meaning",
+        "layer",
+        "codes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "meaning": {
+          "type": "string"
+        },
+        "layer": {
+          "enum": [
+            "identity",
+            "entitlement",
+            "casbin"
+          ]
+        },
+        "codes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "not": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

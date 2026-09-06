@@ -20,7 +20,7 @@
 | `vertex` | Vertex AI | service account / ADC（后期） |
 | `azure-openai` | Azure OpenAI | endpoint + key + deployment（后期） |
 | `bedrock` | AWS Bedrock | IAM / keys（后期） |
-| `luminary-managed` | 平台托管额度 | 平台签发的 connection id |
+| `luminary-managed` | 平台托管额度 | 平台签发的 connection id；BlockyEdu ToC 口语默认 |
 
 MVP 必须实现：`deepseek`、`qwen`、`kimi`、`mimo`、`doubao`、`openai`、`openai-compatible`、`anthropic`、`gemini`。`vertex` / `azure-openai` / `bedrock` 保留枚举，未实现时返回明确错误。Ollama 走 `openai-compatible` + 本地 baseUrl。
 
@@ -50,7 +50,8 @@ interface ProviderConnection {
 - `ownerKind=space`：DataLuminary 空间设置。
 - `ownerKind=user`：产品账户页个人 BYOK（如 VibeLearn `/account`）。
 - `ownerKind=organization` / `deployment`：租户或私有化部署默认连接。
-- `purpose` 由产品解释；连接表结构共享。建议常量：`chat`、`stt`、`tts`。可多选，落库为逗号分隔（如 `chat,stt`）。Catalog 的 `supportedPurposes` 声明该厂商能力；仅 `chat` 的提供商（如 DeepSeek）不展示用途字段，默认 `chat`。
+- `purpose` 由产品解释；连接表结构共享。建议常量：`chat`、`stt`、`tts`、`realtime`。可多选，落库为逗号分隔。Catalog 的 `supportedPurposes` 只声明 **adapter 已接通** 的能力；未实现 STT/TTS 的厂商不得标 stt/tts。
+- Live 模型列表必须 **按 purpose 过滤**：chat 排除 whisper/tts/audio；stt/tts 保留语音模型。
 
 写入时只接受 `secret` 一次；读取只返回 fingerprint。轮换 = 覆盖密文。
 

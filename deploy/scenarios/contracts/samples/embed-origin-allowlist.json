@@ -1,0 +1,18 @@
+{
+  "product": "dataluminary",
+  "frameAncestors": [
+    "https://vistacast.dev",
+    "https://syncrobrain.com",
+    "https://doerflow.dev",
+    "https://remote.vistacast.dev"
+  ],
+  "browserMustNotHold": [
+    "rtsp",
+    "onvif",
+    "thingsboard-token",
+    "mqtt-password",
+    "wallet-mnemonic",
+    "turn-credentials"
+  ],
+  "authority": "DataLuminary is an observer (REST export / embed). It is not Safety Kernel, DoerFlow settlement, or source-alert state."
+}

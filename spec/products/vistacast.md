@@ -2,8 +2,8 @@
 
 > **组织**：[github.com/VistaCast](https://github.com/VistaCast) · **MetaRepo**：[VistaCast/VistaCast](https://github.com/VistaCast/VistaCast) · **域名**：[vistacast.dev](https://vistacast.dev)  
 > **Slogan**：AI Visual Autopilot — 把线下空间变成可编程的视觉数据流。  
-> **实现状态**：M1 切片已编码 + 本机 lab（**未**打 `vistacast-v0.1.0`）；M2 必须切片 + P1 已编码（**未**打 `v0.2.0`）。检测默认 stub，预览为 JPEG。M3 P0 非生产试点技术已验收；M3.1 设备 claim / 家庭成员 / HMAC ICE 已编码；M3.2 共享 coturn / lab-jpeg / 双平面 OTA 已编码；M3.3 私有化 overlay / 租户品牌 / thin sdk 仓已编码。**商店 App / NRE / 真机 NAT / 刷 ROM / 生产 tag 仍阻塞。** **不再**等待 DataLuminary / BlockyEdu P0。  
-> **详细 spec**：[VistaCast/spec](https://github.com/VistaCast/VistaCast/tree/main/spec) · 手册：[m1](https://github.com/VistaCast/VistaCast/blob/main/spec/m1-commercial-playbook.md) · [m2](https://github.com/VistaCast/VistaCast/blob/main/spec/m2-sentinel-playbook.md) · [m3 P0](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-guardian-playbook.md) · [m3.1](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-1-ecosystem-playbook.md) · [m3.2](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-2-ice-soc-playbook.md) · [m3.3](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-3-golive-branding-playbook.md) · 诚实矩阵：[implementation-status.md](https://github.com/VistaCast/VistaCast/blob/main/spec/implementation-status.md)
+> **实现状态**：M1 切片已编码 + 本机 lab（**未**打 `vistacast-v0.1.0`）；M2 必须切片 + P1 已编码（**未**打 `v0.2.0`）。检测默认 stub，预览为 JPEG。M3 P0–M3.5 已编码（门店盒子 + Electron/RN 窗口 YOLO/Chat WASM）。**商店 App / 云端视觉大模型（延期） / NRE / 真机 NAT / 刷 ROM / 生产 tag 仍阻塞。** **不再**等待 DataLuminary / BlockyEdu P0。  
+> **详细 spec**：[VistaCast/spec](https://github.com/VistaCast/VistaCast/tree/main/spec) · 手册：[m1](https://github.com/VistaCast/VistaCast/blob/main/spec/m1-commercial-playbook.md) · [m2](https://github.com/VistaCast/VistaCast/blob/main/spec/m2-sentinel-playbook.md) · [m3 P0](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-guardian-playbook.md) · [m3.1](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-1-ecosystem-playbook.md) · [m3.2](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-2-ice-soc-playbook.md) · [m3.3](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-3-golive-branding-playbook.md) · [m3.4](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-4-on-device-packaging-playbook.md) · [m3.5](https://github.com/VistaCast/VistaCast/blob/main/spec/m3-5-client-infer-playbook.md) · 诚实矩阵：[implementation-status.md](https://github.com/VistaCast/VistaCast/blob/main/spec/implementation-status.md)
 
 与 **[VistaRemote](./vistaremote.md)** **并存**：VistaRemote = WebRTC **远程桌面**；VistaCast = 固定摄像头 AI 事件 + 按需预览信令。P2P 预览不是远程桌面。
 
@@ -45,10 +45,10 @@
 
 | 里程碑 | 代号 | 主题 | 核心交付 | 编码 |
 |:------:|------|------|----------|:----:|
-| **D0** | Blueprint | Spec 定稿 | 战略、产品、架构、artifacts | 🟡 待签字 |
+| **D0** | Blueprint | Spec 定稿 | 战略、产品、架构、artifacts | ✅ 2026-08-31 已签字 |
 | **M1** | Horizon | 第一商业版 | ONVIF + 客流/入侵/离线 + P2P + Docker | 🟡 切片已编码；**未**打 tag（stub / 非真机） |
 | **M2** | Sentinel | 规则质量 + 工厂语义 | 分级/AND-OR/审计/报表/导出/MQTT/渠道；工厂 kind+stub；人脸/员工默认关 stub；签名 OTA；camera 绑定字段 | 🟡 必须+P1 已编码；**未**打 tag；F1/OEM 未勾 |
-| **M3** | Embedded | OEM / 看护 | SDK、级联通知 | 🟡 P0 试点 + M3.1 claim/ICE/成员 + M3.2 coturn/lab-jpeg/双平面 + M3.3 上线 overlay/租户品牌/thin sdk；⬜ 商业/商店 App/真机 NAT/刷 ROM/tag |
+| **M3** | Embedded | OEM / 看护 | SDK、级联通知 | 🟡 P0–M3.5 窗口 YOLO/Chat WASM；⬜ 商业/商店 App/云端视觉 LLM（延期）/真机 NAT/tag |
 | **M4** | Nexus | 生态 | DataLuminary 模板、Re-ID β | ⬜ |
 | **M5** | Module | 模组 | 按需 | ⬜ |
 
@@ -79,7 +79,9 @@
 - M3.1：HMAC 短期 TURN（信令仍私有）、`POST /v1/oem/devices/claim`、家庭成员。ICE DTO 可被 VistaRemote / BlockyEdu 消费，**不**统一信令。
 - M3.2：一份 coturn 模块（HMAC 前缀 `vc:`/`vr:`/`be:` + 配额）、`lab-jpeg` adapter、`POST /v1/oem/soc-intake/validate`、固件/模型双平面。lab JPEG **不是**真机 NAT；固件暂存 **不是**刷 ROM。
 - M3.3：生产 Compose overlay（回环绑定、env 门闩、pg_dump、Caddy 示例）、租户品牌 overlay（`GET /v1/public/branding`）、`@vistacast/sdk` thin 客户端。**不是**商店 App，**不是** APNs，**未** npm publish。
-- **仍阻塞**：商店 App / 域名+push 证书（FR-OEM-02 余量）、OEM 付费 NRE、真机 SoC 刷写 / 真机 NAT 首帧、看护 F1、`vistacast-v0.3.0`。
+- M3.4：门店盒子一键包（`install-store-box.mjs`）、Electron 宿主、RN LAN WebView 壳。RTSP 检测仍在本机 `ai`（默认 stub）。**不是**商店上架。
+- M3.5：窗口内 YOLO / Chat（`client-infer` WASM，Electron/RN 加载）。**云端视觉大模型延期**。**不是**生产 F1，**不是** VistaCast 云 GPU。
+- **仍阻塞**：商店 App / 域名+push 证书（FR-OEM-02 余量）、云端视觉大模型（待规模）、OEM 付费 NRE、真机 SoC 刷写 / 真机 NAT 首帧、看护 F1、`vistacast-v0.3.0`。
 
 ## 5. AI 能力矩阵（诚实）
 
@@ -114,19 +116,71 @@ NestJS + **Fastify** + TypeORM + **PostgreSQL** · ONVIF/RTSP · WebSocket · Rs
 |------|------|:------:|----------|
 | DataLuminary | 告警/客流 REST 导出（无 DL 账号也可拉） | M2 | DataTalk 模板仍是 M4 |
 | SyncroBrain | MQTT `alert.v1`；payload 可选 `syncrobrainDeviceId` | M2 | **不是** SB 生产消费 / TB 遥测 |
-| VistaRemote | 告警后人工远程介入 | M4 | 深链未做 |
-| DoerFlow | 视觉事件触发 Skill | M4 | 未做 |
+| VistaRemote | 告警后人工 **远程桌面** 介入 | M4 | 深链未做；VistaRemote ≠ 本产品 |
+| DoerFlow | 双向 commerce：告警证据/客流报表 Skill + `alert.v1`→任务 | M4 Nexus | 中央 M2M/OIDC 已登记；产品适配器 lab，**未**生产 tag |
 | BlockyEdu | 安防实训 | M2 | FR-ECO-06 未做 |
 
-集成方式：**HTTP / OIDC / MQTT / Webhook**，禁止跨仓 runtime import。
+集成方式：**HTTP / OIDC client_credentials / HMAC CloudEvents / MQTT**，禁止跨仓 runtime import 或共享 DB。
 
-## 9. 编码启动前置
+### 8.1 DoerFlow（视觉事件 ≠ 远程桌面）
+
+VistaCast 是 **固定摄像头 AI 事件** 平台。P2P 预览与告警不是 VistaRemote 远程桌面会话。
+
+| 项 | 合同 |
+|----|------|
+| 卖方 offering | `vistacast.alert-evidence.v1`、`vistacast.footfall-report.v1`（有诚实证据的能力）；stub / 人脸 / staff / fall-smoke **默认不可变现**，**禁止**把 stub 标成生产变现 |
+| 处置 | 满足租户策略、severity、预算的 `alert.v1` 经 M2M 提交 DoerFlow Task；回调只记录外部处置，ack/resolve 仍走本产品 Casbin |
+| 身份 | Logto M2M `VistaCast Service` → audience `https://api.doerflow.local`；scopes `integration.provider.register`、`integration.event.submit`、`integration.callback.read` |
+| 商业 | **不**在中央 Entitlement 增加 VistaCast 面向用户价格方案；用量走 DoerFlow `integration.*` feature/quota（Pro 不开放 provider/event 写）。协议费 / Job 单价 / Escrow / Gas 不属于套餐 |
+| 隐私 | 禁止原始视频、人脸模板、RTSP 凭据出站；只传引用、摘要、hash、短期授权 URL |
+| 协议 | 仅 REST + OIDC client_credentials + HMAC CloudEvents；禁止跨仓 runtime import / 共享 DB |
+
+## 9. 可组合部署边界
+
+权威：[composable-deployment.md](../composable-deployment.md)。VistaCast 是 `agent-commerce` / `smart-site` 的视觉事件源，但 **不依赖**兄弟产品即可部署。
+
+### 最小独立依赖
+
+- 自有 PostgreSQL、Casbin `cast.*`、ONVIF/RTSP 凭据、边缘 `ai` 仓
+- 身份：Logto Headless 或外部 OIDC；本地账密仅开发回退
+- 权益：本产品**不是**中央 ToC `productCode`；可完全不连 Entitlement `:3040`
+- AI：实时 CV **不走**中央 LLM；`ai=off` / 边缘 stub / 本地 ONNX
+
+### 可选兄弟产品
+
+| 产品 | 场景 | 关闭后 |
+|------|------|--------|
+| SyncroBrain | MQTT `alert.v1`（可选 `syncrobrainDeviceId`） | 告警闭环留在本产品 |
+| DataLuminary | REST 导出 | 无 DL 账号也可拉；DataTalk 模板仍是 M4 |
+| VistaRemote | 告警后远程桌面介入（深链未做） | 不得展示「一键介入」 |
+| DoerFlow | 双向 commerce（适配器 **lab**） | 关闭 offering / inbox |
+| BlockyEdu | 安防实训（FR-ECO-06 未做） | 无运行依赖 |
+
+### 降级方式
+
+- 检测默认 stub：几何演示可开，**不得**静默换成「生产模型已就绪」
+- `identity` `fail_closed`；`ai=central` 禁止进入本产品 pilot/production Manifest
+- DoerFlow / MQTT 对端不可达：事件留在本库，outbox 可观察，不丢本地 ack
+- 无 VistaRemote 深链时，人工介入走本产品工单 / 电话，不假装已接通
+
+### 数据所有权
+
+摄像头、视觉事件、告警状态与 ack。原始视频帧 / 截图 / 人脸模板 / RTSP **禁止**出站。P2P 预览不是 VistaRemote 远程桌面。
+
+### 不得宣称上线的 lab·stub
+
+- 客流 / 入侵 / 工厂 kind / 人脸 / staff / fall-smoke：**stub 或默认关**，禁止标成生产变现能力
+- JPEG DataChannel 预览 **不是** H.264 RTP；lab-jpeg **不是**真机 NAT
+- **未**打 `vistacast-v0.1.0` / `v0.2.0` / `v0.3.0`；商店 App / 云端视觉大模型 / 真机刷 ROM 仍阻塞
+- 中央 `ai=central` 为 lab；实时 CV 经中央 LLM **禁止**
+
+## 10. 编码启动前置
 
 - **不再要求** DataLuminary / BlockyEdu P0 完成后再编码
 - 2 家 ToB 付费试点争取，**不锁编码**
 - 打 `vistacast-v0.1.0` / `v0.2.0` 须创始人显式确认；**禁止**把 stub / JPEG / 非真机写成生产就绪
 
-## 10. 相关文档
+## 11. 相关文档
 
 | 文档 | 路径 |
 |------|------|

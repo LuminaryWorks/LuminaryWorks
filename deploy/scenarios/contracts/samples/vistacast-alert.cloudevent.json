@@ -1,0 +1,19 @@
+{
+  "specversion": "1.0",
+  "datacontenttype": "application/json",
+  "id": "alert-01900000-aaaa-7bbb-8ccc-000000000042",
+  "source": "https://vistacast.dev/t/tenant-vc",
+  "type": "com.vistacast.alert.v1",
+  "time": "2026-09-06T02:00:00.000Z",
+  "subject": "cam-42",
+  "data": {
+    "sourceTenantId": "tenant-vc",
+    "sourceId": "cam-42",
+    "severity": "warning",
+    "summary": "intrusion",
+    "audience": "agent",
+    "budget": "10000",
+    "callbackUrl": "https://vistacast.dev/integrations/doerflow/callbacks",
+    "sourceRef": "site-7/alert-9"
+  }
+}

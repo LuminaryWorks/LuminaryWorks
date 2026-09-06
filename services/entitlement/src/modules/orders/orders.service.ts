@@ -4,6 +4,7 @@ import { DataSource, In, type Repository } from "typeorm";
 import type { PlanCode, SubjectKind } from "../../common/constants";
 import { EntitlementException } from "../../common/errors";
 import { assertTrialPlanAllowed } from "../../common/trial-policy";
+import { getQuotaPack } from "../../common/voice-packs";
 import { BundleEntity } from "../../database/entities/bundle.entity";
 import { GrantEntity } from "../../database/entities/grant.entity";
 import { OrderEntity } from "../../database/entities/order.entity";
@@ -42,6 +43,7 @@ export class OrdersService {
     productCode?: string;
     planCode?: PlanCode;
     bundleSku?: string;
+    packSku?: string;
     amountCents?: number;
     currency?: string;
     paymentProvider?: string;
@@ -49,10 +51,14 @@ export class OrdersService {
     actor: string;
     requestId?: string;
   }): Promise<OrderEntity> {
-    if (!input.bundleSku && (!input.productCode || !input.planCode)) {
+    const pack = input.packSku ? getQuotaPack(input.packSku) : undefined;
+    if (input.packSku && !pack) {
+      throw new EntitlementException("NOT_FOUND", `Unknown pack SKU ${input.packSku}`);
+    }
+    if (!pack && !input.bundleSku && (!input.productCode || !input.planCode)) {
       throw new EntitlementException(
         "VALIDATION_ERROR",
-        "Provide bundleSku or productCode+planCode",
+        "Provide packSku, bundleSku, or productCode+planCode",
       );
     }
     if (input.bundleSku) {
@@ -67,7 +73,7 @@ export class OrdersService {
       for (const item of bundle.items) {
         await assertTrialPlanAllowed(this.products, item.productCode, item.planCode);
       }
-    } else if (input.productCode) {
+    } else if (!pack && input.productCode) {
       await this.assertDeclaredBundleProducts([input.productCode]);
       await assertTrialPlanAllowed(this.products, input.productCode, input.planCode);
     }
@@ -79,14 +85,25 @@ export class OrdersService {
       this.orders.create({
         subjectKind: input.subjectKind,
         subjectId: input.subjectId,
-        productCode: input.productCode ?? null,
-        planCode: input.planCode ?? null,
+        productCode: pack?.productCode ?? input.productCode ?? null,
+        planCode: pack ? null : (input.planCode ?? null),
         bundleSku: input.bundleSku ?? null,
         status: "pending",
-        amountCents: input.amountCents ?? 0,
-        currency: input.currency ?? "USD",
+        amountCents: input.amountCents ?? pack?.amountCents ?? 0,
+        currency: input.currency ?? pack?.currency ?? "USD",
         paymentProvider: provider,
-        metadata: input.metadata ?? {},
+        metadata: {
+          ...(input.metadata ?? {}),
+          ...(pack
+            ? {
+                kind: "quota_pack",
+                packSku: pack.sku,
+                featureCode: pack.featureCode,
+                seconds: pack.seconds,
+                validDays: pack.validDays,
+              }
+            : {}),
+        },
       }),
     );
     await this.audit.record({
@@ -203,6 +220,37 @@ export class OrdersService {
       locked.status = "paid";
       locked.providerRef = providerRef;
       await manager.save(locked);
+
+      if (locked.metadata?.kind === "quota_pack") {
+        const packSku = String(locked.metadata.packSku ?? "");
+        const pack = getQuotaPack(packSku);
+        if (!pack) {
+          throw new EntitlementException("VALIDATION_ERROR", `Unknown pack SKU ${packSku}`);
+        }
+        const startsAt = new Date();
+        const endsAt =
+          pack.validDays != null
+            ? new Date(startsAt.getTime() + pack.validDays * 24 * 60 * 60 * 1000)
+            : null;
+        await manager.save(
+          manager.create(GrantEntity, {
+            subjectKind: locked.subjectKind,
+            subjectId: locked.subjectId,
+            productCode: pack.productCode,
+            planCode: null,
+            features: {
+              [pack.featureCode]: { effect: "allow", limitValue: pack.seconds },
+              "ai.voice": { effect: "allow" },
+            },
+            startsAt,
+            endsAt,
+            source: "order",
+            sourceRef: locked.id,
+            revoked: false,
+          }),
+        );
+        return;
+      }
 
       const startsAt = new Date();
       const items: Array<{ productCode: string; planCode: PlanCode }> = [];

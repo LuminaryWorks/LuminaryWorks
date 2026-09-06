@@ -1,0 +1,25 @@
+{
+  "manifestVersion": 1,
+  "profile": "standalone",
+  "stage": "production",
+  "capabilities": {
+    "identity": "external_oidc",
+    "entitlement": "offline_license",
+    "ai": "local_byok",
+    "notification": "smtp"
+  },
+  "services": {
+    "identity": {
+      "url": "https://sso.customer.example/oidc",
+      "required": true,
+      "apiVersion": "v1",
+      "schemaVersion": "1"
+    }
+  },
+  "degradation": {
+    "identity": "fail_closed",
+    "entitlement": "offline_license",
+    "ai": "fallback_local_byok",
+    "notification": "queue"
+  }
+}

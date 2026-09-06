@@ -1,0 +1,30 @@
+{
+  "scenario": "smart-site",
+  "extends": "agent-commerce",
+  "manifest": "deploy/manifests/smart-site.dev.json",
+  "controlPlane": {
+    "optional": true,
+    "project": "lw-control",
+    "compose": ["deploy/compose/control-plane.yaml"]
+  },
+  "projects": [
+    {
+      "product": "vistaremote",
+      "project": "lw-vistaremote",
+      "required": true,
+      "role": "runtime"
+    },
+    {
+      "product": "dataluminary",
+      "project": "lw-dataluminary",
+      "required": false,
+      "role": "observe"
+    },
+    {
+      "product": "blockyedu",
+      "project": "lw-blockyedu",
+      "required": false,
+      "role": "training"
+    }
+  ]
+}

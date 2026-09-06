@@ -1,0 +1,31 @@
+# Same-host demo ingress for LuminaryWorks scenario packs.
+#
+# Daily laptop: skip this file and use each product's published host ports.
+# Demo: one Caddy by hostname. HTTP only — this is not Let's Encrypt / TLS CI.
+#
+# Requires:
+#   1. Product APIs have joined luminary-control-edge
+#   2. /etc/hosts (or equivalent):
+#        127.0.0.1 vistacast.lw.local syncrobrain.lw.local doerflow.lw.local remote.lw.local
+#
+# Do not expose product /internal planes.
+
+http://vistacast.lw.local {
+	encode gzip
+	reverse_proxy api:13100
+}
+
+http://syncrobrain.lw.local {
+	encode gzip
+	reverse_proxy iot-gateway:13200
+}
+
+http://doerflow.lw.local {
+	encode gzip
+	reverse_proxy doerflow-api:13008
+}
+
+http://remote.lw.local {
+	encode gzip
+	reverse_proxy server:3000
+}

@@ -1,6 +1,6 @@
 # 六产品规划索引
 
-> **品牌决策**：[../domain-and-branding.md](../domain-and-branding.md) · **组织迁移**：[../github-org-migration.md](../github-org-migration.md) · **IAM**：[../identity-and-permissions.md](../identity-and-permissions.md) · **Entitlement**：[../subscription-and-entitlement.md](../subscription-and-entitlement.md) · **AI**：[../ai-platform.md](../ai-platform.md) · **Notify**：[../notification-service.md](../notification-service.md)
+> **品牌决策**：[../domain-and-branding.md](../domain-and-branding.md) · **组织迁移**：[../github-org-migration.md](../github-org-migration.md) · **IAM**：[../identity-and-permissions.md](../identity-and-permissions.md) · **Entitlement**：[../subscription-and-entitlement.md](../subscription-and-entitlement.md) · **AI**：[../ai-platform.md](../ai-platform.md) · **Notify**：[../notification-service.md](../notification-service.md) · **可组合部署**：[../composable-deployment.md](../composable-deployment.md)
 
 LuminaryWorks（**启明工坊**）生态采用 **House of Brands**：六个产品各自独立品牌与 GitHub 组织（VistaCast / VistaRemote 为两个独立视觉产品线），通过 OIDC / HTTP / MQTT 按需集成。身份统一用 **Logto**（Experience Headless 登录页）；商业套餐 / Trial / License 用中央 **Entitlement**；产品资源权限用 **Casbin**。商业权益**不**进入 JWT。
 
@@ -57,4 +57,17 @@ LuminaryWorks（**启明工坊**）生态采用 **House of Brands**：六个产�
 ## 独立 vs 组合
 
 - **独立**：每个产品可单独部署、单独销售  
-- **组合**：SyncroBrain 设备 + VistaCast 摄像头 + DataLuminary 大屏；VistaCast 告警 → VistaRemote 人工介入；智码工坊培养全栈工程师
+- **组合**：SyncroBrain 设备 + VistaCast 摄像头 + DataLuminary 大屏；VistaCast 告警 → VistaRemote 人工介入；智码工坊培养全栈工程师  
+
+生态是**联邦式产品套件**，不是单体：中央共享契约（Identity / Entitlement / 可选 AI），不共享业务库或 Casbin。形态冻结为 `standalone` / `control-plane` / `agent-commerce` / `smart-site` / `air-gapped`，见 [composable-deployment.md](../composable-deployment.md)。
+
+每个产品摘要都补充同一组边界小节（最小独立依赖 / 可选兄弟产品 / 降级方式 / 数据所有权 / 不得宣称上线的 lab·stub）。下表是索引，细节以各文件为准。
+
+| 产品 | 最小独立依赖 | 关闭兄弟后 | 数据权威 | 不得宣称上线 |
+|------|--------------|------------|----------|--------------|
+| [DataLuminary](./dataluminary.md) | 自有 PG + BI；身份/权益/AI 均可本地或关闭 | 核心问数与看板仍 `/ready` | 报表 / 看板 / 导出 / embed | 中央 `ai=central`；不得自称 Safety Kernel 或结算权威 |
+| [BlockyEdu](./blockyedu.md) | 创造平台与 VibeLearn 均可单独交付 | `smart-site` 中 `required=false` | 课程 / 演练 / 学员 PII | 制造 / 实体 SKU 量产 |
+| [DoerFlow](./doerflow.md) | 自有 API / 合约 / 钱包 | 公开市场与链签名仍可用 | 目录 / Job / Receipt / 账本 / Merkle | 公开 commerce 生产 tag；`ai.strategy.run` |
+| [VistaCast](./vistacast.md) | 自有 PG + ONVIF/RTSP + `cast.*` | 告警闭环不依赖兄弟 | 摄像头 / 视觉事件 / 告警 ack | CV / 人脸 / staff / fall-smoke stub；生产 tag |
+| [VistaRemote](./vistaremote.md) | 自有 PG + WebRTC 远程桌面 | 无摄像头也可远控 | 会话 / 房间 / 录制 / 审计 | SFU 多方媒体 |
+| [SyncroBrain](./syncrobrain.md) | Cloud Lite（TB + EMQX）；DoerFlow 默认关 | 设备 OS 仍 `/ready` | 设备 / 遥测 / Incident / Safety Kernel | 全硬件兼容；跨产品 MQTT 生产消费 |

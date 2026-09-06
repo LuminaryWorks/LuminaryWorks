@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminaryworks.dev/schemas/cloudevents-envelope.v1.json",
+  "title": "LuminaryWorks CloudEvents 1.0 envelope (cross-product)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "specversion",
+    "id",
+    "source",
+    "type",
+    "time",
+    "datacontenttype",
+    "data"
+  ],
+  "properties": {
+    "specversion": {
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "datacontenttype": {
+      "const": "application/json"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceTenantId",
+        "sourceId",
+        "audience"
+      ],
+      "properties": {
+        "sourceTenantId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "audience": {
+          "enum": [
+            "agent",
+            "human"
+          ]
+        },
+        "severity": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "budget": {
+          "type": "string"
+        },
+        "callbackUrl": {
+          "type": "string"
+        },
+        "sourceRef": {
+          "type": "string"
+        },
+        "orgId": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "scenario": "agent-commerce",
+  "manifest": "deploy/manifests/agent-commerce.dev.json",
+  "controlPlane": {
+    "optional": true,
+    "project": "lw-control",
+    "compose": ["deploy/compose/control-plane.yaml"]
+  },
+  "projects": [
+    {
+      "product": "vistacast",
+      "project": "lw-vistacast",
+      "required": true,
+      "role": "runtime"
+    },
+    {
+      "product": "syncrobrain",
+      "project": "lw-syncrobrain",
+      "required": true,
+      "role": "runtime"
+    },
+    {
+      "product": "doerflow",
+      "project": "lw-doerflow",
+      "required": true,
+      "role": "runtime"
+    }
+  ]
+}

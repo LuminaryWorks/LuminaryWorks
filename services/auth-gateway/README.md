@@ -31,7 +31,24 @@ pnpm auth:gateway
 # → http://localhost:3010/oidc
 ```
 
-Health: `GET http://localhost:3010/health`
+Contract ([`spec/composable-deployment.md`](../../spec/composable-deployment.md) §8):
+
+| Path | Meaning |
+|------|---------|
+| `GET /health` | liveness only — never probes the IdP |
+| `GET /ready` | 503 when upstream OIDC discovery fails (`AUTH_GATEWAY_READY_UPSTREAM=0` skips the probe) |
+| `GET /version` | `apiVersion=v1`, `schemaVersion=1`, git SHA |
+
+## Adjacent control-plane services (not proxied here)
+
+This gateway is **AuthN transport only**. It does not reverse-proxy Entitlement or the AI Platform.
+
+| Service | Port | Notes |
+|---------|------|-------|
+| Identity (upstream Logto) | 3001 | Canonical JWT `iss`; Admin 3002 stays on loopback |
+| Auth Gateway | **3010** | This process |
+| Entitlement | **3040** | `http://entitlement:3040` on the control-plane network. Legacy **`7090` is retired** — product `ENTITLEMENT_BASE_URL` must not point at 7090 |
+| AI Platform | optional Compose profile `ai` | **lab**. `ai=central` is refused for `pilot`/`production` until `AI_CENTRAL_HARDENING_GATES` (AuthN, Entitlement, persistent metering, vault, `/ready`) are all true. Use `ai=off` or `ai=local_byok` in those stages |
 
 ## Product env
 

@@ -1,0 +1,8 @@
+{
+  "Content-Type": "application/cloudevents+json",
+  "X-DoerFlow-Signature": "sha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "X-LW-Timestamp": "1788660000",
+  "X-LW-Nonce": "6f1d0c2e-7a11-4b20-9c33-000000000001",
+  "traceparent": "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01",
+  "x-request-id": "req-agent-commerce-example"
+}

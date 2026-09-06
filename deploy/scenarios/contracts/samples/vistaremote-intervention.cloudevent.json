@@ -1,0 +1,16 @@
+{
+  "specversion": "1.0",
+  "datacontenttype": "application/json",
+  "id": "vr-session-1",
+  "source": "https://remote.vistacast.dev/t/tenant-vc",
+  "type": "com.vistaremote.intervention.v1",
+  "time": "2026-09-06T02:03:00.000Z",
+  "subject": "site-7/alert-9",
+  "data": {
+    "sourceTenantId": "tenant-vc",
+    "sourceId": "session-1",
+    "audience": "human",
+    "sourceRef": "site-7/alert-9",
+    "summary": "human-confirmed remote session completed"
+  }
+}

@@ -1,0 +1,41 @@
+{{- /*
+Scaffold only. No product Deployment is rendered until Compose acceptance
+(standalone + agent-commerce + smart-site) has passed. NetworkPolicy and the
+idempotent pre-upgrade migration Job can be enabled independently.
+*/ -}}
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "dataluminary.fullname" . }}
+  labels:
+    {{- include "dataluminary.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "dataluminary.name" . }}
+  policyTypes:
+    - Ingress
+    - Egress
+{{- end }}
+{{- if .Values.migration.preUpgradeJob.enabled }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "dataluminary.fullname" . }}-migrate
+  labels:
+    {{- include "dataluminary.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: {{ .Values.migration.preUpgradeJob.image | default "busybox:1.36" | quote }}
+          command: ["sh", "-c", "echo idempotent-pre-upgrade-migrate; exit 0"]
+{{- end }}

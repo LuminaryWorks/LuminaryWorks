@@ -15,6 +15,7 @@ export { PartnerNonceEntity } from "./partner-nonce.entity";
 export { PlanEntity } from "./plan.entity";
 export { PlanFeatureEntity } from "./plan-feature.entity";
 export { ProductEntity } from "./product.entity";
+export { PromotionRedemptionEntity } from "./promotion-redemption.entity";
 export { RedemptionEntity } from "./redemption.entity";
 export { SubscriptionEntity } from "./subscription.entity";
 export { TrialRedemptionEntity } from "./trial-redemption.entity";
@@ -38,6 +39,7 @@ import { PartnerNonceEntity } from "./partner-nonce.entity";
 import { PlanEntity } from "./plan.entity";
 import { PlanFeatureEntity } from "./plan-feature.entity";
 import { ProductEntity } from "./product.entity";
+import { PromotionRedemptionEntity } from "./promotion-redemption.entity";
 import { RedemptionEntity } from "./redemption.entity";
 import { SubscriptionEntity } from "./subscription.entity";
 import { TrialRedemptionEntity } from "./trial-redemption.entity";
@@ -46,6 +48,7 @@ import { WebhookEventEntity } from "./webhook-event.entity";
 
 export const ALL_ENTITIES = [
   ProductEntity,
+  PromotionRedemptionEntity,
   FeatureEntity,
   PlanEntity,
   PlanFeatureEntity,

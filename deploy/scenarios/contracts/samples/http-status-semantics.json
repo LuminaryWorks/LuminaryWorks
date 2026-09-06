@@ -1,0 +1,32 @@
+{
+  "401": {
+    "meaning": "Caller has no valid identity (missing/invalid OIDC, M2M or SIWE).",
+    "layer": "identity",
+    "codes": [
+      "UNAUTHORIZED"
+    ],
+    "not": "Do not use 401 for an identified caller who is unpaid or ACL-denied."
+  },
+  "402": {
+    "meaning": "Identity is valid but commercial entitlement, quota, seat or license failed.",
+    "layer": "entitlement",
+    "codes": [
+      "ENTITLEMENT_REQUIRED",
+      "ENTITLEMENT_TRIAL_EXPIRED",
+      "ENTITLEMENT_FEATURE_REQUIRED",
+      "ENTITLEMENT_QUOTA_EXCEEDED",
+      "ENTITLEMENT_SEAT_EXHAUSTED",
+      "ENTITLEMENT_LICENSE_INVALID",
+      "ENTITLEMENT_LICENSE_EXPIRED"
+    ],
+    "not": "Do not collapse unpaid into 403. Upgrade UX reacts only to this family."
+  },
+  "403": {
+    "meaning": "Identity and entitlement passed; Casbin denied the resource operation.",
+    "layer": "casbin",
+    "codes": [
+      "FORBIDDEN"
+    ],
+    "not": "Do not use 403 to mean 'has not paid' or 'token missing'."
+  }
+}

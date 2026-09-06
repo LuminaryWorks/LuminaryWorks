@@ -1,0 +1,37 @@
+apiVersion: v2
+name: luminaryworks
+description: Umbrella chart — enable product planes via components.<product>.enabled only
+type: application
+version: 0.0.1
+appVersion: "0.0.0"
+annotations:
+  luminaryworks.dev/gated: compose-acceptance
+dependencies:
+  - name: control-plane
+    version: 0.0.1
+    repository: "file://../control-plane"
+    condition: components.controlPlane.enabled
+  - name: vistacast
+    version: 0.0.1
+    repository: "file://../vistacast"
+    condition: components.vistacast.enabled
+  - name: syncrobrain
+    version: 0.0.1
+    repository: "file://../syncrobrain"
+    condition: components.syncrobrain.enabled
+  - name: doerflow
+    version: 0.0.1
+    repository: "file://../doerflow"
+    condition: components.doerflow.enabled
+  - name: vistaremote
+    version: 0.0.1
+    repository: "file://../vistaremote"
+    condition: components.vistaremote.enabled
+  - name: dataluminary
+    version: 0.0.1
+    repository: "file://../dataluminary"
+    condition: components.dataluminary.enabled
+  - name: blockyedu
+    version: 0.0.1
+    repository: "file://../blockyedu"
+    condition: components.blockyedu.enabled

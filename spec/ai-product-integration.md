@@ -49,10 +49,11 @@ DataLuminary MCP 属于产品协议面，不升级为中央 AI Platform 的通�
 
 ## 3. BlockyEdu
 
-- 保留教辅 / Blockly / Monaco / artifact 校验。
-- `ai-bridge` 继续作 BFF，底层改为 ai-client。
-- 不新建第二套 `ai-engine` 服务。
-- 详见产品仓 `spec/ai-platform-spec.md` 边界节。
+- 保留教辅 / Blockly / Monaco / artifact 校验 / **口语 Teaching Engine**（策略、Student Model、Lesson Report）。
+- `ai-bridge` 继续作编程 BFF；教育口语走 `edu-server/edu-ai`。
+- 不新建第二套 `ai-engine` 服务。半双工 STT/TTS 经 ai-client；realtime 为可选 Voice Engine，不是教学大脑。
+- ToC 口语默认 managed route；注册 300 秒 / Pro 每月 1800 秒 / 分钟包见 entitlement 目录。冻结的 7 天 Trial **不变**。
+- 详见产品仓 `spec/ai-platform-spec.md` 与 `spec/edu-ai-entitlement-spec.md`。
 
 ## 4. VistaRemote
 
@@ -69,7 +70,7 @@ DataLuminary MCP 属于产品协议面，不升级为中央 AI Platform 的通�
 
 - 设备、MQTT、规则引擎不迁出。
 - 事件可桥到 DataLuminary 数据集；LLM 摘要走中央平台。
-- Entitlement 若缺 `syncrobrain` productCode，先补目录再接线。
+- Entitlement 若缺 `syncrobrain` productCode，先补目录再接线（**仅** AI 计量；不得因此发布 SyncroBrain ToC 价格方案。跨产品 commerce 走 DoerFlow `integration.*`）。
 
 ## 7. DoerFlow
 

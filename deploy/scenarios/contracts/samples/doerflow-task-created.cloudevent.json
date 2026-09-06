@@ -1,0 +1,18 @@
+{
+  "specversion": "1.0",
+  "datacontenttype": "application/json",
+  "id": "cb-task-1",
+  "source": "https://doerflow.dev/trading",
+  "type": "com.doerflow.task.created",
+  "time": "2026-09-06T02:01:00.000Z",
+  "subject": "site-7/alert-9",
+  "data": {
+    "eventId": "alert-01900000-aaaa-7bbb-8ccc-000000000042",
+    "taskId": "task-1",
+    "status": "dispatched",
+    "dispatchStatus": "dispatched",
+    "sourceTenantId": "tenant-vc",
+    "sourceRef": "site-7/alert-9",
+    "correlationId": "site-7/alert-9"
+  }
+}

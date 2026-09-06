@@ -1,3 +1,4 @@
+import { CATALOG } from "../src/database/seed-catalog";
 import { AdminService } from "../src/modules/admin/admin.service";
 import { CatalogService } from "../src/modules/catalog/catalog.service";
 import { OrdersService } from "../src/modules/orders/orders.service";
@@ -20,6 +21,14 @@ function expectDisabled(promise: Promise<unknown>) {
 }
 
 describe("DoerFlow disabled trial policy", () => {
+  it("keeps catalog trialPolicy disabled after adding integration features", () => {
+    const doerflow = CATALOG.find((product) => product.code === "doerflow");
+    expect(doerflow?.trialPolicy).toBe("disabled");
+    expect(doerflow?.plans.some((plan) => plan.code === "trial")).toBe(false);
+    expect(doerflow?.features.some((feature) => feature.code.startsWith("integration."))).toBe(
+      true,
+    );
+  });
   it("rejects ensure before opening a transaction or writing audit", async () => {
     const dataSource = { transaction: jest.fn() };
     const audit = { record: jest.fn() };

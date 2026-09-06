@@ -15,6 +15,15 @@ import http from "node:http";
 import { URL } from "node:url";
 import zlib from "node:zlib";
 import {
+  buildHealthPayload,
+  buildVersionPayload,
+  checkUpstreamDiscovery,
+  evaluateReadiness,
+  HEALTH_PATHS,
+  READY_PATHS,
+  VERSION_PATHS,
+} from "./health.mjs";
+import {
   createTransportRewriter,
   isDiscoveryPath,
   parsePathList,
@@ -37,6 +46,12 @@ const transport = createTransportRewriter({
   upstreamIssuer: UPSTREAM,
   publicBase: PUBLIC_BASE,
 });
+const SERVICE_VERSION = process.env.AUTH_GATEWAY_VERSION || "0.1.0";
+const GIT_SHA = process.env.AUTH_GATEWAY_GIT_SHA || "";
+// `/ready` probes upstream discovery by default: an unreachable IdP must never
+// look like a healthy gateway. Set to 0 only for offline transport testing.
+const READY_CHECKS_UPSTREAM = process.env.AUTH_GATEWAY_READY_UPSTREAM !== "0";
+const READY_TIMEOUT_MS = Number(process.env.AUTH_GATEWAY_READY_TIMEOUT_MS || 2000);
 const CORS_ORIGINS = (process.env.AUTH_GATEWAY_CORS_ORIGINS ||
   [
     "http://localhost:3003",
@@ -169,6 +184,25 @@ function proxyToUpstream(req, res, upstreamPathWithSearch) {
   req.pipe(upstreamReq);
 }
 
+function sendJson(req, res, statusCode, payload) {
+  applyCors(req, res);
+  res.writeHead(statusCode, { "content-type": "application/json", "cache-control": "no-store" });
+  res.end(JSON.stringify(payload));
+}
+
+async function handleReady(req, res) {
+  const checks = READY_CHECKS_UPSTREAM
+    ? [
+        await checkUpstreamDiscovery({
+          upstreamIssuer: UPSTREAM,
+          timeoutMs: READY_TIMEOUT_MS,
+        }),
+      ]
+    : [{ name: "upstream_issuer", status: "skipped", detail: "AUTH_GATEWAY_READY_UPSTREAM=0" }];
+  const { statusCode, payload } = evaluateReadiness(checks);
+  sendJson(req, res, statusCode, payload);
+}
+
 function proxy(req, res) {
   const incoming = new URL(req.url || "/", PUBLIC_BASE);
 
@@ -179,12 +213,37 @@ function proxy(req, res) {
     return;
   }
 
-  if (incoming.pathname === "/health" || incoming.pathname === "/healthz") {
-    applyCors(req, res);
-    res.writeHead(200, { "content-type": "application/json" });
-    res.end(
-      JSON.stringify({
-        ok: true,
+  if (HEALTH_PATHS.includes(incoming.pathname)) {
+    sendJson(req, res, 200, {
+      // `ok` retained for existing probes that check it.
+      ok: true,
+      ...buildHealthPayload({
+        publicIssuer: transport.publicIssuer,
+        upstreamIssuer: UPSTREAM,
+      }),
+    });
+    return;
+  }
+
+  if (READY_PATHS.includes(incoming.pathname)) {
+    handleReady(req, res).catch((err) => {
+      sendJson(req, res, 503, {
+        status: "not_ready",
+        service: "luminary-auth-gateway",
+        error: String(err?.message ?? err),
+      });
+    });
+    return;
+  }
+
+  if (VERSION_PATHS.includes(incoming.pathname)) {
+    sendJson(
+      req,
+      res,
+      200,
+      buildVersionPayload({
+        version: SERVICE_VERSION,
+        gitSha: GIT_SHA,
         publicIssuer: transport.publicIssuer,
         upstreamIssuer: UPSTREAM,
       }),

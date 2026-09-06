@@ -1,0 +1,17 @@
+{
+  "specversion": "1.0",
+  "datacontenttype": "application/json",
+  "id": "cb-intervention-1",
+  "source": "https://doerflow.dev/site",
+  "type": "com.doerflow.site.intervention.requested.v1",
+  "time": "2026-09-06T02:02:30.000Z",
+  "subject": "site-7/alert-9",
+  "data": {
+    "eventId": "alert-01900000-aaaa-7bbb-8ccc-000000000042",
+    "sourceTenantId": "tenant-vc",
+    "sourceRef": "site-7/alert-9",
+    "mode": "manual",
+    "deepLink": "https://remote.vistacast.dev/sessions/new?ref=site-7%2Falert-9&tenant=tenant-vc",
+    "autoRemoteControl": false
+  }
+}

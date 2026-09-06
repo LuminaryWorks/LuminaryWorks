@@ -1,0 +1,43 @@
+# Optional observability profile — aggregation only.
+#
+# Products own their own instrumentation and must keep working with this
+# collector absent. Traces carry `traceparent`, `x-request-id`, the source event
+# ID and the task/job ID; they must not carry video frames, face templates,
+# RTSP/ThingsBoard credentials, wallet keys or learner PII.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 5s
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 75
+    spike_limit_percentage: 15
+
+exporters:
+  # Default is stdout so the profile is useful without an external backend.
+  # Point OTEL_EXPORTER_OTLP_ENDPOINT at your own collector for real storage.
+  debug:
+    verbosity: normal
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]

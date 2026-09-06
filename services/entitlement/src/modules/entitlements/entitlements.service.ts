@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
 import { DataSource, In, type Repository } from "typeorm";
-import type { PlanCode, SubjectKind } from "../../common/constants";
+import type { PlanCode, QuotaMerge, QuotaPeriod, SubjectKind } from "../../common/constants";
 import { EntitlementException } from "../../common/errors";
 import { ConsumeIdempotencyEntity } from "../../database/entities/consume-idempotency.entity";
 import { FeatureEntity } from "../../database/entities/feature.entity";
@@ -67,7 +67,8 @@ export class EntitlementsService {
       ...new Set(sources.map((s) => s.planCode).filter((p): p is PlanCode => Boolean(p))),
     ];
     const planFeatureMap = await this.loadPlanFeatures(ctx.productCode, planCodes);
-    const merged = mergeFeatureMaps(sources, planFeatureMap);
+    const catalogQuotas = await this.loadCatalogQuotas(ctx.productCode);
+    const merged = mergeFeatureMaps(sources, planFeatureMap, catalogQuotas);
 
     const usageRows = await this.usage.find({
       where: {
@@ -443,6 +444,23 @@ export class EntitlementsService {
     }
 
     return sources;
+  }
+
+  private async loadCatalogQuotas(
+    productCode: string,
+  ): Promise<Map<string, { period: QuotaPeriod; merge: QuotaMerge }>> {
+    const product = await this.products.findOne({ where: { code: productCode } });
+    if (!product) return new Map();
+    const rows = await this.features.find({ where: { productId: product.id, kind: "quota" } });
+    return new Map(
+      rows.map((row) => [
+        row.code,
+        {
+          period: row.quotaPeriod ?? "lifetime",
+          merge: row.quotaMerge ?? "max",
+        },
+      ]),
+    );
   }
 
   private async loadPlanFeatures(

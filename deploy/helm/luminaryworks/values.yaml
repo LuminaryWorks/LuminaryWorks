@@ -1,0 +1,25 @@
+# Umbrella values. global has no shared database passwords.
+global:
+  domain: luminaryworks.dev
+  imageRegistry: ghcr.io/luminaryworks
+  storageClass: ""
+  controlPlane:
+    identity: http://identity:3001/oidc
+    authGateway: http://auth-gateway:3010
+    entitlement: http://entitlement:3040
+
+components:
+  controlPlane:
+    enabled: false
+  vistacast:
+    enabled: false
+  syncrobrain:
+    enabled: false
+  doerflow:
+    enabled: false
+  vistaremote:
+    enabled: false
+  dataluminary:
+    enabled: false
+  blockyedu:
+    enabled: false

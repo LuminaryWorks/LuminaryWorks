@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "global",
+    "database",
+    "existingSecret",
+    "networkPolicy",
+    "persistence",
+    "migration"
+  ],
+  "properties": {
+    "global": {
+      "type": "object",
+      "description": "Shared non-secret topology. Must not contain database passwords.",
+      "additionalProperties": false,
+      "properties": {
+        "domain": {
+          "type": "string"
+        },
+        "imageRegistry": {
+          "type": "string"
+        },
+        "storageClass": {
+          "type": "string"
+        },
+        "controlPlane": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "identity": {
+              "type": "string"
+            },
+            "authGateway": {
+              "type": "string"
+            },
+            "entitlement": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "database": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "external"
+      ],
+      "properties": {
+        "external": {
+          "type": "boolean"
+        },
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "existingSecret": {
+          "type": "string",
+          "description": "Secret with username/password keys"
+        }
+      }
+    },
+    "existingSecret": {
+      "type": "string",
+      "description": "Optional existing Secret for app credentials; empty means chart does not create one."
+    },
+    "networkPolicy": {
+      "type": "object",
+      "required": [
+        "enabled"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "persistence": {
+      "type": "object",
+      "required": [
+        "retain"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "storageClass": {
+          "type": "string"
+        },
+        "size": {
+          "type": "string"
+        },
+        "retain": {
+          "type": "boolean",
+          "description": "When true, helm uninstall keeps the PVC (resource-policy keep)."
+        }
+      }
+    },
+    "migration": {
+      "type": "object",
+      "required": [
+        "preUpgradeJob"
+      ],
+      "properties": {
+        "preUpgradeJob": {
+          "type": "object",
+          "required": [
+            "enabled"
+          ],
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "image": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

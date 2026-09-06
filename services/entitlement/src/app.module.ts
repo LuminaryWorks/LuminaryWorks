@@ -14,6 +14,7 @@ import { LicenseModule } from "./modules/license/license.module";
 import { NotifyModule } from "./modules/notify/notify.module";
 import { OrdersModule } from "./modules/orders/orders.module";
 import { PartnerModule } from "./modules/partner/partner.module";
+import { PromotionsModule } from "./modules/promotions/promotions.module";
 import { TrialsModule } from "./modules/trials/trials.module";
 
 @Module({
@@ -39,6 +40,7 @@ import { TrialsModule } from "./modules/trials/trials.module";
     EntitlementsModule,
     TrialsModule,
     OrdersModule,
+    PromotionsModule,
     AdminModule,
     HealthModule,
     PartnerModule,

@@ -98,6 +98,16 @@ export class EnsureTrialDto {
   deploymentId?: string;
 }
 
+export class EnsurePromotionDto {
+  @ApiProperty({ example: "blockyedu" })
+  @IsString()
+  productCode!: string;
+
+  @ApiProperty({ example: "ai.voice.signup.300s" })
+  @IsString()
+  promotionCode!: string;
+}
+
 export class CreateOrderDto {
   @ApiPropertyOptional()
   @IsOptional()
@@ -129,6 +139,11 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   paymentProvider?: string;
+
+  @ApiPropertyOptional({ example: "blockyedu.voice.pack.1800s" })
+  @IsOptional()
+  @IsString()
+  packSku?: string;
 }
 
 export class AdminGrantDto {

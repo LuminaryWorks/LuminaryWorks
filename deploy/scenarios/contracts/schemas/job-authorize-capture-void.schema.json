@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminaryworks.dev/schemas/job-authorize-capture-void.v1.json",
+  "title": "DoerFlow Job authorize / capture / void",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "owner",
+    "states",
+    "transitions",
+    "callbackMustNot"
+  ],
+  "properties": {
+    "owner": {
+      "const": "doerflow"
+    },
+    "states": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "meaning"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "meaning": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "callbackMustNot": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

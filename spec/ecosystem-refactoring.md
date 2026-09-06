@@ -1,7 +1,8 @@
 # LuminaryWorks 生态重构规格 (v1.0)
 
 > **状态**：Draft · **作者视角**：架构师 / 技术经理 · **方法**：VibeCode Spec-Driven  
-> **目标**：把分散在各产品仓的「公共能力」收敛到 [LuminaryWorks](https://github.com/LuminaryWorks) 组织，统一登录授权、文档门户与共享库，降低五产品重复建设。
+> **目标**：把分散在各产品仓的「公共能力」收敛到 [LuminaryWorks](https://github.com/LuminaryWorks) 组织，统一登录授权、文档门户与共享库，降低产品重复建设。  
+> **关联**：[composable-deployment.md](./composable-deployment.md)（联邦式可组合部署权威） · [repository-relationships.md](./repository-relationships.md)
 
 ## 0. 决策摘要（TL;DR）
 
@@ -12,7 +13,8 @@
 | D3 | **共享包迁出 DataLuminary** → `LuminaryWorks/shared` pnpm 工作区 | `@luminaryworks/auth-core`、`auth-react`、`pal`、`notification`、`tooling` |
 | D4 | **一键初始化脚本**，开发者 `bootstrap` 即可拉起 identity + 构建共享库 | `LuminaryWorks/scripts/bootstrap.*` |
 | D5 | **LuminaryWorks 作为编排 MetaRepo**，子仓为独立 Git（不做 submodule） | 沿用 DataLuminary/BlockyEdu 模式 |
-| D6 | **五产品 GitHub 组织与域名对齐** | 见 [domain-and-branding.md](./domain-and-branding.md)、[github-org-migration.md](./github-org-migration.md) |
+| D6 | **五产品 GitHub 组织与域名对齐**（现为六产品，含 VistaCast / VistaRemote 分线） | 见 [domain-and-branding.md](./domain-and-branding.md)、[github-org-migration.md](./github-org-migration.md) |
+| D7 | **联邦式可组合部署**：中央共享的是**契约**，不是强制运行时；六产品可独立销售，也可按场景叠加 | 权威规格 [composable-deployment.md](./composable-deployment.md)；落地 `deploy/` + `@luminaryworks/control-manifest` |
 
 ## 1. 现状问题（Why）
 
@@ -136,3 +138,19 @@ github.com/LuminaryWorks/
 - [ ] `shared` 工作区可独立构建 `@luminary/*`
 - [ ] 五产品开发文档含「统一登录」章节
 - [ ] 迁移里程碑 LW-S0 完成，S1–S4 排期明确
+- [x] 联邦式可组合部署决策冻结为 D7；形态与契约见 [composable-deployment.md](./composable-deployment.md)
+
+## 10. 联邦式可组合部署（D7）
+
+D1–D6 把登录、共享库和文档门户从产品仓里抽出来；它们**不**把六产品收成一个运行时。组合部署的权威规格是 **[composable-deployment.md](./composable-deployment.md)**，本条只冻结决策，不重复条款。
+
+| 决策 | 含义 |
+|------|------|
+| 联邦，不是单体 | 每个产品独占业务 DB、迁移、Casbin、领域凭据与发布节奏。禁止跨仓 runtime import、共享业务 schema、复用对方 JWT。 |
+| 五种形态 | `standalone` / `control-plane` / `agent-commerce` / `smart-site` / `air-gapped`。场景包只编排多个独立 Compose project，不 merge 成一个 project。 |
+| 中央可选 | Identity / Entitlement / AI / 观测全部可关。单品用外部 OIDC、离线 License、本地 BYOK 也能 `/ready`。 |
+| 静态 Manifest | `@luminaryworks/control-manifest` 描述 profile、URL、required、契约版本、能力与降级；**不含 secret**。 |
+| 诚实门禁 | 区分 `production` / `pilot` / `lab` / `stub`。`ai=central` 当前为 lab，preflight 拒绝进入 pilot/production。 |
+| 端口 | 中央 Entitlement **冻结 `3040`**（不作 `7090`）；Auth Gateway `3010`；Identity OIDC `3001`。 |
+
+各产品的最小独立依赖、可选兄弟、降级、数据所有权与不得宣称上线的 lab·stub 见 [products/index.md](./products/index.md) 与 `spec/products/*.md`。

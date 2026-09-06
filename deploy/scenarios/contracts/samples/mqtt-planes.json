@@ -1,0 +1,25 @@
+{
+  "deviceTelemetry": {
+    "pattern": "v1/devices/me/telemetry",
+    "writers": [
+      "device",
+      "thingsboard-simulator"
+    ],
+    "productionIngress": "SyncroBrain / ThingsBoard device MQTT",
+    "notes": "Never publish VistaCast alert.v1 here."
+  },
+  "crossProductEvents": {
+    "pattern": "lw/v1/{tenantId}/{sourceProduct}/{schemaVersion}",
+    "writers": [
+      "vistacast-control-plane"
+    ],
+    "productionIngress": "signed Webhook; MQTT is optional compatibility",
+    "notes": "Example: lw/v1/{tenantId}/vistacast/alert.v1. care payloads must not appear."
+  },
+  "forbidden": [
+    "mapping alert.v1 onto ThingsBoard Alarm entities via this bus",
+    "command / RPC topics in this version",
+    "shared MQTT ACL or certificate PKI across products",
+    "browser holding MQTT credentials"
+  ]
+}

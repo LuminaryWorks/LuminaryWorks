@@ -77,7 +77,47 @@ React、Ant Design、Sass · NestJS、TypeORM、PostgreSQL · VibeCode Spec-Driv
 - DataTalk：`@luminaryworks/entitlement-client` + `src/modules/entitlement/`（见产品仓 `spec/development/entitlement.md`）
 - DataView：`#/account`、Trial 倒计时、402 升级 UX（见 `spec/development/entitlement-ui.md`）
 
-## 7. 相关文档
+## 7. 可组合部署边界
+
+权威：[composable-deployment.md](../composable-deployment.md)。DataLuminary 出现在 `smart-site` 上层闭环里，但 **standalone 必须可售**。
+
+### 最小独立依赖
+
+- 产品 plane：DataTalk / DataView + **自有** PostgreSQL、迁移、Casbin（dashboard / space / dataset）
+- 身份：`identity=external_oidc` 或 `local`（lab）；不强制中央 Logto
+- 权益：`entitlement=off` 或 `offline_license`；不强制中央 Entitlement（`:3040`）
+- AI：`ai=off` 或 `ai=local_byok`；**禁止**把 `ai=central` 写成生产依赖
+
+### 可选兄弟产品
+
+| 源 | 用法 | 关闭后 |
+|----|------|--------|
+| SyncroBrain | 遥测 / 孪生指标 REST 或 embed | 去掉对应数据集，核心 BI 仍可用 |
+| VistaCast | 告警 / 客流导出 | 同上 |
+| VistaRemote | 会话录制与摘要报表 | 同上 |
+| DoerFlow | 交易 / Agent 运行指标 | 同上 |
+| BlockyEdu | 课程实验数据 | 同上 |
+
+集成仅 HTTP / OIDC / iframe JWT；禁止跨仓 runtime import 或共享 DB。
+
+### 降级方式
+
+- `identity`：仅 `fail_closed`（AuthN 永不匿名）
+- `entitlement`：`fail_closed` / `offline_license`（`enforce` + `fail_open_local` 在 pilot/production **报错**）
+- `ai`：`disable_feature` 或 `fallback_local_byok`；`ai=off` **不得**回退到 BYOK
+- 兄弟产品不可达：关闭对应数据集 / embed，不阻塞本产品 `/ready`
+
+### 数据所有权
+
+报表、看板、导出与 embed。**不是**设备 Safety Kernel、DoerFlow 结算或源告警状态的权威；只消费 REST export / external-sync / embed。
+
+### 不得宣称上线的 lab·stub
+
+- 中央 AI Platform（`ai=central`）为 **lab**（无 AuthN / Entitlement 门禁 / 持久计量 / `/ready` / vault）
+- AI 报告 / 图表 GA 以产品仓 roadmap 为准，未 GA 不得宣称已上线
+- 不得宣称本产品可替代 SyncroBrain 设备控制或 DoerFlow 结算
+
+## 8. 相关文档
 
 - 实现仓：`spec/ecosystem.md`、`spec/index.md`
 - 生态：[domain-and-branding.md §4.1](../domain-and-branding.md#41-dataluminary--dataluminarydev)

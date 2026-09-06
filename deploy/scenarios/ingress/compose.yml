@@ -1,0 +1,25 @@
+# Optional same-host demo ingress. Independent Compose project — does not merge
+# product stacks. Requires luminary-control-edge to already exist (lw-control up).
+#
+#   docker compose --env-file ../agent-commerce/env \
+#     --env-file ./env -f compose.yml up -d
+#
+# Not production TLS. Not a Kubernetes Ingress.
+
+name: ${INGRESS_PROJECT:-lw-scenario-ingress}
+
+services:
+  scenario-ingress:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - "${INGRESS_HTTP_BIND:-127.0.0.1}:${INGRESS_HTTP_PORT:-8080}:80"
+    volumes:
+      - ${CADDYFILE_PATH:-./Caddyfile.example}:/etc/caddy/Caddyfile:ro
+    networks:
+      - luminary-control-edge
+
+networks:
+  luminary-control-edge:
+    external: true
+    name: ${CONTROL_PLANE_EDGE_NETWORK:-luminary-control-edge}

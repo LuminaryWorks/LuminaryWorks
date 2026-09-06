@@ -1,7 +1,7 @@
 # LuminaryWorks 身份与权限体系（Identity & Authorization）
 
 > **状态**：Accepted · **决策日**：2024-04-24 · **修订**：2026-09-01（冻结默认 Logto；ZITADEL 为预留插件）
-> **关联**：[ecosystem-refactoring.md](./ecosystem-refactoring.md) · [subscription-and-entitlement.md](./subscription-and-entitlement.md) · **[iam-provider-selection.md](./iam-provider-selection.md)**（Logto vs ZITADEL **已冻结**） · [identity 仓](https://github.com/LuminaryWorks/identity) · 开发者文档 [unified-login](https://github.com/LuminaryWorks/docs)
+> **关联**：[ecosystem-refactoring.md](./ecosystem-refactoring.md) · [subscription-and-entitlement.md](./subscription-and-entitlement.md) · [composable-deployment.md](./composable-deployment.md) · **[iam-provider-selection.md](./iam-provider-selection.md)**（Logto vs ZITADEL **已冻结**） · [identity 仓](https://github.com/LuminaryWorks/identity) · 开发者文档 [unified-login](https://github.com/LuminaryWorks/docs)
 
 ## 0. 决策摘要（TL;DR）
 
@@ -62,7 +62,7 @@
 **管**：账号、登录方式、企业租户归属、可访问产品列表、平台级角色、账号生命周期。  
 **不管**：产品内按钮/菜单、业务数据可见范围、具体资源操作权限、**商业套餐 / Trial / 配额 / License**（归 Entitlement）。
 
-当前在 Logto 为 **6 产品 + 主门户** 各建独立 Application（`client_id`），独立回调/登出地址；登录任一应用后访问其他应用可免登（生态 SSO）。
+当前在 Logto 为 **6 产品 + 主门户** 各建独立 SPA Application（`client_id`），另加产品服务 M2M（见 §2.3）；独立回调仅适用于 SPA。登录任一 SPA 后访问其他 SPA 可免登（生态 SSO）。
 
 统一账户模型：外部身份键为标准 OIDC `issuer + sub`；各产品维护本地 profile 与本地 `user_id` 映射。现有 `logtoSub` 字段可作为兼容名称保留，但不得继续假设脱离 issuer 后 `sub` 全局唯一。会员事实由中央 Entitlement 提供，而非各产品自建平行会员主库。
 
@@ -77,6 +77,30 @@
 产品统一消费 `LuminaryPrincipal`：`subject`、`issuer`、`email`、`name`、`organizationId`、`roles`、`appAccess`。Provider 必须显式声明 capability；不支持的管理能力返回 `IDENTITY_CAPABILITY_UNSUPPORTED`，禁止空操作或猜测厂商语义。
 
 Management API 的 M2M 凭据不得进入产品仓、浏览器或 `@luminaryworks/auth-react`。当前 Logto Management API 只允许 `identity/scripts` 及未来中央 IAM 后台使用。
+
+### 2.3 产品 Machine-to-Machine（跨产品调用）
+
+用户 SPA 继续用 PKCE。**产品服务**调用兄弟 API 使用独立的 Logto `MachineToMachine` 应用（client_credentials），与 Management API M2M 分离。
+
+| 应用名 | Caller | Token audience | 最小 scopes | Callback |
+|--------|--------|----------------|-------------|----------|
+| `VistaCast Service` | VistaCast server | `https://api.doerflow.local`（DoerFlow API） | `integration.provider.register`、`integration.event.submit`、`integration.callback.read` | **无**（不用 redirect URI） |
+| `SyncroBrain Gateway` | SyncroBrain iot-gateway | 同上 | 同上 | **无** |
+
+登记清单：`identity/apps.json` 的 `m2mApplications` + `apiResources`（DoerFlow API 声明上述 scopes）。`register-apps.mjs` 幂等创建 API resource、scopes、共享 M2M role `DoerFlow Integration Caller`、两个 M2M app，并把 **client_id** 写入 `registered-apps.json`。**禁止**把 client secret 写入 `apps.json`、`registered-apps.json` 或 Git。
+
+产品服务在本机 env 持有自己的 M2M secret（不进 Git、不进浏览器）。请求 token：
+
+```text
+POST {issuer}/token
+grant_type=client_credentials
+resource=https://api.doerflow.local
+scope=integration.provider.register integration.event.submit integration.callback.read
+```
+
+DoerFlow API 验签后顺序不变：**Logto AuthN → 中央 Entitlement（`integration.*`）→ 产品 Casbin**。JWT 仍不含商业权益。M2M token 含 scope **不等于**已付费：Pro 套餐不授予 `integration.provider.register` / `integration.event.submit`。`sourceTenantId` 由 DoerFlow 本地映射 `issuer + sub + orgId`，不写入中央权益表。历史 SPA audience `https://api.vibeagent.local` 保留；跨产品 M2M 使用 `https://api.doerflow.local`。
+
+VistaCast = 视觉事件；VistaRemote = 远程桌面。二者 M2M 不得混用。
 
 ### 2.2 Provider 目录（`IAM_PROVIDER`）
 
@@ -237,6 +261,18 @@ HTTP 语义：`401` 身份失败；商业权益不足用 `402` / `ENTITLEMENT_*`
 | 私有化 B | 直连企业 IdP（`IDP_MODE=external_oidc`） |
 | 私有化 C | 产品内置本地用户（仅小型离线，不推荐） |
 
+五种组合形态与 Control Manifest 见 [composable-deployment.md](./composable-deployment.md)。可选控制面默认端口（**冻结**）：
+
+| 服务 | 端口 | 说明 |
+|------|------|------|
+| Identity OIDC | 3001 | Logto discovery / token |
+| Identity Admin | 3002 | 仅回环 / VPN |
+| Auth Gateway | **3010** | 产品看到的 Experience / 可达 discovery；**不**反代 Entitlement 或 AI |
+| Entitlement | **3040** | 商业权益。历史 `7090` **作废**；产品 `ENTITLEMENT_BASE_URL` 不得再指向 7090 |
+| AI Platform | 13100（Compose profile `ai`） | **lab**：`ai=central` 在 pilot/production 被 preflight 拒绝 |
+
+Auth Gateway 合同：`GET /health`（仅进程）、`GET /ready`（上游 discovery 失败 → 503）、`GET /version`。AI 硬化清单见 `@luminaryworks/control-manifest` 的 `AI_CENTRAL_HARDENING_GATES`（AuthN / Entitlement / 持久计量 / vault / `/ready` 目前全部为 `false`）。未达标前参考场景使用 `ai=off` 或 `ai=local_byok`。
+
 ## 7. 本地开发入口
 
 ```bash
@@ -254,7 +290,7 @@ cd identity && node scripts/register-apps.mjs
 
 1. 中心 Logto + 应用注册 + Token 验签中间件  
 2. 各产品 Casbin RBAC + 资源 ACL + Webhook 用户同步  
-3. 中央 Entitlement 服务 + 共享 client + 三产品（DataLuminary / BlockyEdu / VistaRemote）接入（见权益规范）  
+3. 中央 Entitlement 服务 + 共享 client + 三产品（DataLuminary / BlockyEdu / VistaRemote）接入；DoerFlow `integration.*` 种子与产品 M2M 登记  
 4. 企业 SSO / 租户管理 / 审计  
 5. 私有化 License 打包与文档（Casbin 仍启用）  
 
@@ -266,6 +302,7 @@ cd identity && node scripts/register-apps.mjs
 - 不把默认 IdP 从 Logto 换成 ZITADEL；ZITADEL 只作为未来插件  
 - 不强制六产品共享同一套角色表结构  
 - 不以 Casbin 全局放行替代私有化 License 或计费控制  
+- 不把 Management API 或产品 M2M **secret** 写入 `apps.json` / Git；产品 M2M 不得授予 Logto Management API 角色  
 
 ### DoerFlow 双身份补充
 

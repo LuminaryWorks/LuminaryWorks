@@ -1,0 +1,10 @@
+LuminaryWorks chart "{{ .Chart.Name }}" is a scaffold.
+
+Production enablement is gated on Compose acceptance:
+
+  1. product standalone
+  2. deploy/scenarios/agent-commerce
+  3. deploy/scenarios/smart-site
+
+global contains only domain / registry / storageClass / control-plane endpoints.
+Database passwords must come from existingSecret — never from global.

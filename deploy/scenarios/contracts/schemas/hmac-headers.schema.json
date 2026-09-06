@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminaryworks.dev/schemas/hmac-headers.v1.json",
+  "title": "HMAC CloudEvents HTTP headers",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "Content-Type",
+    "X-DoerFlow-Signature",
+    "X-LW-Timestamp",
+    "X-LW-Nonce"
+  ],
+  "properties": {
+    "Content-Type": {
+      "const": "application/cloudevents+json"
+    },
+    "X-DoerFlow-Signature": {
+      "type": "string",
+      "pattern": "^sha256=[0-9a-f]{64}$",
+      "description": "HMAC-SHA256 of the raw body with the per-peer secret. Hex digest."
+    },
+    "X-LW-Timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{10}$"
+    },
+    "X-LW-Nonce": {
+      "type": "string",
+      "minLength": 8
+    },
+    "traceparent": {
+      "type": "string"
+    },
+    "x-request-id": {
+      "type": "string"
+    }
+  },
+  "description": "Senders are implemented in product repos. This schema only freezes the header contract."
+}

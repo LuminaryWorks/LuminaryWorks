@@ -26,8 +26,28 @@ pnpm start:dev
 ```
 
 Schema changes: prefer `pnpm migration:run`. Set `ENTITLEMENT_SYNCHRONIZE=true` only for throwaway local DBs. Compose sets `ENTITLEMENT_MIGRATIONS_RUN=true`, which keeps synchronize off.
-- Health: `GET /health` · Ready: `GET /ready`
-- OpenAPI: `http://localhost:3040/docs`
+
+## Listen port (frozen)
+
+`ENTITLEMENT_PORT` defaults to **3040**. That is the only advertised listen port:
+
+- standalone `services/entitlement/docker-compose.yml`
+- control-plane `deploy/compose/control-plane.yaml` (`http://entitlement:3040` on the Compose network)
+- Control Manifest `services.entitlement.url`
+- product `ENTITLEMENT_BASE_URL` / `LW_ENTITLEMENT_URL`
+
+Legacy **`7090` is retired**. Do not keep it as an alias in env files or docs. Never use `host.docker.internal`.
+
+| Path | Meaning |
+|------|---------|
+| `GET /health` | process up (no dependency probes) |
+| `GET /ready` | 503 when PostgreSQL is unreachable |
+| `GET /version` | `service`, `apiVersion=v1`, `schemaVersion=1`, `gitSha` |
+| OpenAPI | `http://localhost:3040/docs` |
+
+## AI Platform is out of scope
+
+This service does **not** make `ai=central` production-ready. The AI Platform currently has no AuthN, no Entitlement enforcement, only in-memory metering, no `/ready`, and no vault gate. `@luminaryworks/control-manifest` preflight therefore **refuses** `ai=central` for `pilot`/`production`; those deployments use `ai=off` or `ai=local_byok`. Flip `AI_CENTRAL_HARDENING_GATES` (`authn`, `entitlement`, `persistentMetering`, `secretVault`, `readiness`) in the **same** change that lands each capability — not before. See [`spec/composable-deployment.md`](../../spec/composable-deployment.md) §9.2.
 
 ## Auth
 

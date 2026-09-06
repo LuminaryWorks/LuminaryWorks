@@ -4,11 +4,22 @@
 .env
 .env.*
 /node_modules/
+services/**/node_modules/
 
 # 嵌套独立仓（各自 Git，由 MetaRepo 编排，不纳入根提交）
 /identity/
 /shared/
 /docs/
+
+# 部署密钥：真实 env 不入库，示例文件保留
+/deploy/env/*.env
+!/deploy/env/*.env.example
+/deploy/scenarios/**/env
+/deploy/scenarios/**/*.env
+!/deploy/scenarios/**/*.env.example
+/deploy/helm/**/charts/
+/deploy/helm/**/Chart.lock
+/deploy/helm/**/*.tgz
 
 
 # test

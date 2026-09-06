@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminaryworks.dev/schemas/m2m-scopes.v1.json",
+  "title": "Product M2M scopes for DoerFlow API",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "audience",
+    "grant",
+    "scopes",
+    "apps",
+    "forbidden"
+  ],
+  "properties": {
+    "audience": {
+      "type": "string"
+    },
+    "grant": {
+      "const": "client_credentials"
+    },
+    "scopes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "apps": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "forbidden": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

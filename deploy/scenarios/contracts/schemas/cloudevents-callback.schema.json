@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminaryworks.dev/schemas/cloudevents-callback.v1.json",
+  "title": "DoerFlow outbound callback CloudEvents (illustration; sender is not in this repo)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "specversion",
+    "id",
+    "source",
+    "type",
+    "time",
+    "datacontenttype",
+    "data"
+  ],
+  "properties": {
+    "specversion": {
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "datacontenttype": {
+      "const": "application/json"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceTenantId",
+        "sourceRef"
+      ],
+      "properties": {
+        "eventId": {
+          "type": "string"
+        },
+        "taskId": {
+          "type": "string"
+        },
+        "jobId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "dispatchStatus": {
+          "type": "string"
+        },
+        "sourceTenantId": {
+          "type": "string"
+        },
+        "sourceRef": {
+          "type": "string"
+        },
+        "correlationId": {
+          "type": "string"
+        },
+        "mode": {
+          "const": "manual"
+        },
+        "deepLink": {
+          "type": "string"
+        },
+        "autoRemoteControl": {
+          "const": false
+        }
+      }
+    }
+  }
+}

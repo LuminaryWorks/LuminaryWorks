@@ -1,0 +1,26 @@
+{
+  "audience": "https://api.doerflow.local",
+  "grant": "client_credentials",
+  "scopes": [
+    "integration.provider.register",
+    "integration.event.submit",
+    "integration.callback.read"
+  ],
+  "apps": [
+    {
+      "name": "VistaCast Service",
+      "caller": "vistacast",
+      "redirectUri": null
+    },
+    {
+      "name": "SyncroBrain Gateway",
+      "caller": "syncrobrain",
+      "redirectUri": null
+    }
+  ],
+  "forbidden": [
+    "Management API M2M secrets in product repos or browsers",
+    "Mixing VistaCast and VistaRemote M2M clients",
+    "Treating M2M scopes as proof of payment (Entitlement still applies)"
+  ]
+}

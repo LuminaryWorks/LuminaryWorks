@@ -71,7 +71,7 @@
 - 创造前端：`code-app-web`（Rsbuild + React + Blockly + Monaco）
 - 教育前端：`edu-app-web`（Next.js）
 - 双后端：`server`（创造/编程）+ `edu-server`（LMS）
-- AI：ai-bridge → ai-engine；Preview Host 独立 origin
+- AI：edu-ai / ai-bridge → `@luminaryworks/ai-client`（中央平台或本地 BYOK）；**不**再建 `ai-engine`
 
 ## 5. 里程碑（产品向）
 
@@ -95,7 +95,7 @@
 | 层 | BlockyEdu 要点 |
 |----|----------------|
 | 身份 | 统一 Logto `sub`；`edu-app-web` / `code-app-web` 在 OIDC 未稳时可保留 legacy 登录开关 |
-| 权益 | 迁移 `memberTier` / `code_pro` 等为 feature code；ToC Trial 每用户每产品一次；Pro / Ultra / 企业 seat；规划 `create.preview.*` / `create.publish.*` 等 |
+| 权益 | 迁移 `memberTier` / `code_pro` 等为 feature code；ToC Trial 每用户每产品一次（**7 天，不变**）；口语另有一次性 300 秒 `ai.voice.trial.seconds`、Pro 月度 1800 秒、分钟包 `ai.voice.purchased.seconds`；规划 `create.preview.*` / `create.publish.*` 等 |
 | 资源 | 课程、班级、作业、workspace / Artifact 仍由角色 + Casbin 控制；**禁止**用 role 名推断会员档 |
 | 迁移 | account membership / wallet → 中央 subscription/order/grant；双读比对后再停本地会员主写 |
 
@@ -107,7 +107,45 @@
 | `server` | 同上；`code.execute.pro` / `ai.copilot` / `ai.tutor` 以 `@RequireEntitlement` 门禁；RBAC `code_pro` 保留作本地事实 |
 | `edu-app-web` / `code-app-web` | 权益状态来自 membership API；Trial 倒计时；402 → 升级 UX；legacy + OIDC 并存 |
 
-## 7. 相关文档
+## 7. 可组合部署边界
+
+权威：[composable-deployment.md](../composable-deployment.md)。`smart-site` 可挂培训入口，但 BlockyEdu **不是**生产运行依赖（Manifest 中 `required` 必须为 `false`）。
+
+### 最小独立依赖
+
+- **创造平台**与 **VibeLearn**（`edu-standalone` / `deploy/edu`）均可单独交付；VibeLearn **零依赖**创造沙箱与编程 IDE
+- 自有双后端库、Casbin（课程 / 班级 / Artifact）、领域凭据
+- 身份 / 权益 / AI 与 DataLuminary 相同：可 `external_oidc` / `off` / `local_byok`，不强制中央控制面
+
+### 可选兄弟产品
+
+| 目标 | 场景 | 关闭后 |
+|------|------|--------|
+| SyncroBrain | 真机 / OTA、固件实验 | 课程仍可在仿真 / 无设备模式下上 |
+| DataLuminary | 创作漏斗、学情、VibeLearn 报表 | 去掉报表入口 |
+| DoerFlow | Agent / 合约课 | 课程内容可关模块 |
+| VistaRemote | WebRTC 运维实验 | 实验课可选 |
+| VistaCast | 安防实训（规划，FR-ECO-06 未做） | 无运行依赖 |
+
+### 降级方式
+
+- 组合场景里本产品可整体省略；缺席不得导致 `agent-commerce` / `smart-site` 控制面失败
+- `identity` `fail_closed`；OIDC 未稳时允许文档化的 legacy 登录开关（lab / 开发），pilot/production 关闭
+- `entitlement` 按 `off` → `shadow_read` → `enforce`；口语分钟走 feature/quota，与 7 天 Trial 分离
+- `ai`：`disable_feature` / `local_byok`；中央 `ai=central` 不得进入生产 Manifest
+
+### 数据所有权
+
+课程、演练、学员进度与学员 PII。跨产品只传**匿名化**演练结果；PII / 成绩不出站。
+
+### 不得宣称上线的 lab·stub
+
+- 制造 / 实体 SKU 为**试点**，不得宣称量产
+- 不承诺任意 Web CSS → LVGL、任意定制制造
+- ICE/TURN **凭据格式**可共享；信令与媒体轨仍私有，不得宣称统一 SFU
+- 中央 AI Platform 为 lab，不得当作口语生产网关售卖
+
+## 8. 相关文档
 
 - 文档站产品页：[docs/docs/products/blockyedu.md](../../docs/docs/products/blockyedu.md)
 - 实现仓蓝图：`blockyedu` → `docs/roadmap/ai-creation-platform-blueprint.md`

@@ -74,7 +74,45 @@ WebRTC · NestJS · TypeORM · PostgreSQL · React / Electron / RN · Redis
 | `web` client/admin | Trial/Pro/Ultra/Enterprise UX；402 升级提示；Admin 套餐调整 |
 | `desktop` / `mobile` | 仍消费 `GET /billing/entitlements`；展示 `effectivePlan` 与 402 文案 |
 
-## 7. 相关文档
+## 7. 可组合部署边界
+
+权威：[composable-deployment.md](../composable-deployment.md)。VistaRemote 进入 `smart-site` 作为人工介入平面，与 VistaCast **不是**同一产品。
+
+### 最小独立依赖
+
+- 自有 PostgreSQL、信令 / REST、WebRTC 客户端（Desktop / Mobile / Web）
+- 可脱离 IoT 与摄像头部署；TURN 可共享基础设施，**信令 / 房间 / 媒体模型私有**
+- 身份：可选 `@luminaryworks/auth-core` 或外部 OIDC
+- 权益：`off` / `offline_license` / 中央 `:3040`；SFU / 录制 / AI 门禁走 feature，设备归属仍 Casbin
+
+### 可选兄弟产品
+
+| 产品 | 场景 | 关闭后 |
+|------|------|--------|
+| SyncroBrain | 设备远程维护、固件调试 | 普通桌面远控仍可用 |
+| DataLuminary | 运维报表、会话审计大屏 | 去掉导出 |
+| DoerFlow | Worker 端远程调试 | 去掉任务深链 |
+| BlockyEdu | WebRTC 运维实验 | 无运行依赖 |
+| VistaCast | 告警 → 可选一键远程介入（深链未做） | 远控不依赖摄像头 AI |
+
+### 降级方式
+
+- `identity` 仅 `fail_closed`
+- `entitlement`：`fail_closed` / `offline_license`；License **不**绕过 Casbin
+- `ai`：录制摘要 `disable_feature` 或 `local_byok`；中央 `ai=central` 不得进入 production Manifest
+- 无 SFU 时保持点对点基线，**不得**把 UI 写成「多方会议已上线」
+
+### 数据所有权
+
+远程会话、房间、录制与审计。不做固定摄像头 AI，也不拥有 VistaCast 告警 ack。
+
+### 不得宣称上线的 lab·stub
+
+- **SFU 未完成**，不得宣称多方媒体已上线
+- 中央 AI Platform 为 lab；录制洞察默认自托管 / BYOK
+- 与 VistaCast 预览信令不得混用；不得把 P2P JPEG 预览叫远程桌面
+
+## 8. 相关文档
 
 - 实现仓：`../VistaRemote/spec/`
 - 生态：[domain-and-branding.md §4.5](../domain-and-branding.md#45-vistaremote--vistaremote-组织)

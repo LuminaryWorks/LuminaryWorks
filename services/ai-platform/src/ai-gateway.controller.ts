@@ -72,13 +72,39 @@ export class AiGatewayController {
   }
 
   @Post("v1/audio/transcribe")
-  transcribe() {
-    return { text: "", traceId: `trc_stt_${Date.now().toString(36)}`, status: "not_configured" };
+  transcribe(
+    @Body()
+    body: {
+      connectionUid?: string;
+      ephemeral?: { providerType: string; model: string; secret: string; baseUrl?: string };
+      audioBase64?: string;
+      mime?: string;
+      language?: string;
+      productCode?: string;
+      subjectId?: string;
+      routeTier?: string;
+      audioInputMs?: number;
+    },
+  ) {
+    return this.ai.transcribe(body);
   }
 
   @Post("v1/audio/synthesize")
-  synthesize() {
-    return { audioBase64: "", mime: "audio/mpeg", traceId: `trc_tts_${Date.now().toString(36)}`, status: "not_configured" };
+  synthesize(
+    @Body()
+    body: {
+      connectionUid?: string;
+      ephemeral?: { providerType: string; model: string; secret: string; baseUrl?: string };
+      text: string;
+      voice?: string;
+      locale?: string;
+      speed?: number;
+      productCode?: string;
+      subjectId?: string;
+      routeTier?: string;
+    },
+  ) {
+    return this.ai.synthesize(body);
   }
 
   @Get("v1/usage")

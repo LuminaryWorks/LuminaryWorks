@@ -27,6 +27,7 @@ export class OrdersController {
       productCode: body.productCode,
       planCode: body.planCode as PlanCode | undefined,
       bundleSku: body.bundleSku,
+      packSku: body.packSku,
       amountCents: body.amountCents,
       currency: body.currency,
       paymentProvider: body.paymentProvider,

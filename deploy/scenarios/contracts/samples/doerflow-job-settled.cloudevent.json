@@ -1,0 +1,16 @@
+{
+  "specversion": "1.0",
+  "datacontenttype": "application/json",
+  "id": "cb-job-1",
+  "source": "https://doerflow.dev/trading",
+  "type": "com.doerflow.trading.job.settled",
+  "time": "2026-09-06T02:02:00.000Z",
+  "subject": "proj-1:inc-1",
+  "data": {
+    "jobId": "job-1",
+    "status": "settled",
+    "correlationId": "proj-1:inc-1",
+    "sourceTenantId": "proj-1",
+    "sourceRef": "proj-1:inc-1"
+  }
+}

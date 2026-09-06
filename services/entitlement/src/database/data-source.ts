@@ -5,6 +5,7 @@ import { InitialSchema1730000000000 } from "./migrations/1730000000000-InitialSc
 import { Todo3Extensions1730100000000 } from "./migrations/1730100000000-Todo3Extensions";
 import { OutboxLeaseClaim1730200000000 } from "./migrations/1730200000000-OutboxLeaseClaim";
 import { ProductTrialPolicy1730300000000 } from "./migrations/1730300000000-ProductTrialPolicy";
+import { PromotionRedemptions1730400000000 } from "./migrations/1730400000000-PromotionRedemptions";
 
 const url =
   process.env.ENTITLEMENT_DATABASE_URL ??
@@ -19,6 +20,7 @@ export default new DataSource({
     Todo3Extensions1730100000000,
     OutboxLeaseClaim1730200000000,
     ProductTrialPolicy1730300000000,
+    PromotionRedemptions1730400000000,
   ],
   synchronize: false,
 });

@@ -1,0 +1,81 @@
+{
+  "manifestVersion": 1,
+  "profile": "smart-site",
+  "stage": "dev",
+  "capabilities": {
+    "identity": "central",
+    "entitlement": "shadow_read",
+    "ai": "off",
+    "notification": "none"
+  },
+  "services": {
+    "identity": {
+      "url": "http://identity:3001/oidc",
+      "required": true,
+      "apiVersion": "v1",
+      "schemaVersion": "1"
+    },
+    "authGateway": {
+      "url": "http://auth-gateway:3010",
+      "required": false,
+      "apiVersion": "v1",
+      "schemaVersion": "1"
+    },
+    "entitlement": {
+      "url": "http://entitlement:3040",
+      "required": false,
+      "apiVersion": "v1",
+      "schemaVersion": "1"
+    },
+    "observability": {
+      "url": "http://otel-collector:4318",
+      "required": false,
+      "apiVersion": "v1",
+      "schemaVersion": "1"
+    }
+  },
+  "products": {
+    "vistacast": {
+      "url": "http://vistacast-api:18080",
+      "required": true,
+      "apiVersion": "v1",
+      "schemaVersion": "1"
+    },
+    "syncrobrain": {
+      "url": "http://syncrobrain-api:8080",
+      "required": true,
+      "apiVersion": "v1",
+      "schemaVersion": "1"
+    },
+    "doerflow": {
+      "url": "http://doerflow-api:3000",
+      "required": true,
+      "apiVersion": "v1",
+      "schemaVersion": "1"
+    },
+    "vistaremote": {
+      "url": "http://vistaremote-api:13010",
+      "required": true,
+      "apiVersion": "v1",
+      "schemaVersion": "1"
+    },
+    "dataluminary": {
+      "url": "http://datatalk-api:13011",
+      "required": false,
+      "apiVersion": "v1",
+      "schemaVersion": "1"
+    },
+    "blockyedu": {
+      "url": "http://blockyedu-api:18081",
+      "required": false,
+      "apiVersion": "v1",
+      "schemaVersion": "1"
+    }
+  },
+  "degradation": {
+    "identity": "fail_closed",
+    "entitlement": "fail_closed",
+    "ai": "disable_feature",
+    "notification": "queue"
+  }
+}
