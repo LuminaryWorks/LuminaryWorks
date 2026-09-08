@@ -143,6 +143,25 @@
 **Acceptance complete for Todo 7 required rollout blockers?**  
 **Yes — fixed and verified with command evidence above.** Org-wide production `enforce` remains a phased soak decision (shadow-diff), not an open implementation blocker for the three required items.
 
+## Legal acceptance + Trial T-1 / purge (2026-09-07)
+
+Control-plane only (no product-repo purge handlers, no payment providers).
+
+| Check | Expected |
+|-------|----------|
+| Current policy version | `lw-legal-v2026-09-07` (configurable) |
+| `GET /v1/policies/current` + `POST /v1/policies/accept` | Authenticated; subject from token; idempotent for current version |
+| `POST /v1/trials/ensure` without accept | `TRIAL_POLICY_NOT_ACCEPTED` (400) |
+| Disabled trial (DoerFlow / VistaCast / SyncroBrain) | `PRODUCT_TRIAL_DISABLED` before acceptance writes |
+| Enterprise / private skip | Still skip Trial without a new accept |
+| Ensure transaction | Enqueues `trial.expiring`, `trial.expiring_t1`, `trial.expired`, `trial.purge` + `trial_cleanup_jobs` at `endsAt` |
+| `trial.purge` missing target | Retry / dead-letter; never `sent` |
+| Product ack | HTTP 2xx `{ "ok": true, "jobId"?: , "eventId"?: }` |
+| Paid vs purge | Same advisory lock; paid cancels pending T-3/T-1/expired/purge; pending payment does not |
+| Admin | `GET/POST /v1/admin/cleanup-jobs*` + policy-acceptances + audit read |
+
+Product-side contract still pending: each `productCode` must expose the HTTPS/internal purge URL from `ENTITLEMENT_TRIAL_PURGE_TARGETS`, verify HMAC, delete Trial-scoped data asynchronously, and return the ack shape. Do not implement payment providers in this slice.
+
 ## Todo 6 — DoerFlow final acceptance (2024-04-29)
 
 ### Security and correctness

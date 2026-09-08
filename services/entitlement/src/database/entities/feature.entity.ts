@@ -9,7 +9,7 @@ import {
   Unique,
   UpdateDateColumn,
 } from "typeorm";
-import type { QuotaMerge, QuotaPeriod } from "../../common/constants";
+import type { MeteringMode, QuotaMerge, QuotaPeriod } from "../../common/constants";
 import { ProductEntity } from "./product.entity";
 
 @Entity({ name: "features" })
@@ -44,6 +44,9 @@ export class FeatureEntity {
 
   @Column({ name: "quota_merge", type: "varchar", length: 8, default: "max" })
   quotaMerge!: QuotaMerge;
+
+  @Column({ name: "metering_mode", type: "varchar", length: 16, default: "counter" })
+  meteringMode!: MeteringMode;
 
   @Column({ type: "text", nullable: true })
   description!: string | null;

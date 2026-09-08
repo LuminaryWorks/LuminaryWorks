@@ -49,3 +49,29 @@ export function resolveTrustedDeploymentId(
 
   throw new EntitlementException("FORBIDDEN", "deploymentId is not allowed for this principal");
 }
+
+/**
+ * Subject identity always comes from verified auth — never trust body.subjectId.
+ * Service/admin may act for a user only via X-Act-As-Subject.
+ */
+export function resolveTrustedSubject(
+  principal: AuthPrincipal,
+  deploymentId?: string,
+): { subjectKind: "USER" | "DEPLOYMENT"; subjectId: string } {
+  if (deploymentId && principal.kind === "service" && !principal.actAsSubjectId) {
+    return { subjectKind: "DEPLOYMENT", subjectId: deploymentId };
+  }
+  if (principal.kind === "user") {
+    return { subjectKind: "USER", subjectId: principal.subjectId };
+  }
+  if ((principal.kind === "service" || principal.kind === "admin") && principal.actAsSubjectId) {
+    return { subjectKind: "USER", subjectId: principal.actAsSubjectId };
+  }
+  if (principal.kind === "admin") {
+    return { subjectKind: "USER", subjectId: principal.subjectId };
+  }
+  throw new EntitlementException(
+    "FORBIDDEN",
+    "Service credential requires X-Act-As-Subject for user entitlement endpoints",
+  );
+}

@@ -1,6 +1,8 @@
 # LuminaryWorks deploy
 
-Optional shared control plane and reference Control Manifests for the federated six-product suite. Normative architecture: [`spec/composable-deployment.md`](../spec/composable-deployment.md).
+**Customer install:** [`HANDBOOK.md`](HANDBOOK.md) (SaaS and private/on-prem). Six products install independently or as a scenario combination; they are never merged into one Compose project.
+
+Optional shared control plane and reference Control Manifests. Normative architecture: [`spec/composable-deployment.md`](../spec/composable-deployment.md).
 
 The control plane is **optional**. Every product ships and runs standalone with `identity=external_oidc|local`, `entitlement=off|offline_license`, `ai=off|local_byok`. Nothing here creates a shared business database, a shared Casbin policy or a shared release train.
 
@@ -8,8 +10,10 @@ The control plane is **optional**. Every product ships and runs standalone with 
 
 | Path | Purpose |
 |---|---|
-| `compose/control-plane.yaml` | Identity + Auth Gateway + Entitlement core; `ai` and `observability` opt-in profiles |
+| `compose/control-plane.yaml` | Identity + Auth Gateway + Entitlement + Control Console core; `ai` and `observability` opt-in profiles |
+| `compose/control-plane.object-storage.yaml` | Optional `object-storage` profile: official AIStor Free standalone. **Not** in offline image packs |
 | `compose/control-plane.dev-ports.yaml` | Local-only override publishing datastore ports |
+| `object-storage/` | Buckets/bootstrap, 120 GiB watermarks, CDN/origin Caddy example, migration notes |
 | `env/control-plane.env.example` | Every variable; copy to `env/control-plane.env` (git-ignored) and fill in |
 | `manifests/*.json` | Reference Control Manifests, one per deployment profile |
 | `observability/otel-collector.yaml` | Collector config for the `observability` profile |
@@ -18,6 +22,8 @@ The control plane is **optional**. Every product ships and runs standalone with 
 | `scenarios/contracts/` | Cross-scenario JSON Schema / CloudEvents samples (UTF-8 no BOM). Product senders are **not** in this repo. |
 | `scenarios/ingress/` | Optional same-host HTTP Caddy by hostname. Not Let's Encrypt. Daily work uses per-product host ports. |
 | `helm/` | Per-product chart **skeletons** + umbrella. Not required. Not production. K8s is future. |
+| `PAYMENTS.md` | Alipay Face-to-Face / PayPal credential, sandbox/live, and callback ops |
+| `HOSTED-SAAS.md` | Single-VPS go-live: TLS, trusted proxy, MinIO watermarks, Doris Pilot, trial purge, N-1 rollback |
 
 ## Quick start
 
@@ -33,12 +39,32 @@ docker compose --env-file deploy/env/control-plane.env \
 pnpm --dir identity exec node scripts/probe-readiness.mjs   # or: node identity/scripts/probe-readiness.mjs
 ```
 
+SSH / CI (private VM or public VPS): [`remote/README.md`](remote/README.md). Lab passwords: [`OPERATOR.md`](OPERATOR.md). Customer handbook: [`HANDBOOK.md`](HANDBOOK.md).
+
+```bash
+node scripts/remote-deploy.mjs --host 192.168.64.3 --user andy \
+  --key ~/.ssh/id_ed25519_lw_lab --target control-plane
+```
+
 Optional profiles:
 
 ```bash
 docker compose --env-file deploy/env/control-plane.env \
   -f deploy/compose/control-plane.yaml --profile ai --profile observability up -d
 ```
+
+Object storage (Hosted SaaS, **not** shipped in offline packs — obtain the AIStor image and license yourself):
+
+```bash
+node scripts/preflight-object-storage.mjs
+docker compose --env-file deploy/env/control-plane.env \
+  -f deploy/compose/control-plane.yaml \
+  -f deploy/compose/control-plane.object-storage.yaml \
+  --profile object-storage up -d
+node scripts/object-storage-status.mjs --used-bytes 0
+```
+
+Old `minio/minio` CE is forbidden. Set `AISTOR_MINIO_IMAGE` / `AISTOR_MC_IMAGE` to a Quay tag or digest **you confirmed**; the example file uses a placeholder that fails preflight. Never `latest`. See [`object-storage/README.md`](object-storage/README.md).
 
 ## Preflight
 
@@ -68,7 +94,21 @@ networks:
     external: true
 ```
 
-…then address services as `http://identity:3001/oidc`, `http://auth-gateway:3010`, `http://entitlement:3040`. Never `host.docker.internal`.
+…then address services as `http://identity:3001/oidc`, `http://auth-gateway:3010`, `http://entitlement:3040`, `http://control-console:3050`. Never `host.docker.internal`.
+
+## Control Console vs Logto Admin
+
+`control-console` (loopback **:3050** by default) is the **business** superadmin SPA: catalog publish, payment provider enable/rotate/test, orders, trial cleanup, legal audit, capacity probes. It is **not** Logto Admin (`CONTROL_PLANE_ADMIN_BIND_ADDR` **:3002**), which only manages the IdP.
+
+Setup:
+
+1. `pnpm id:register` after adding `LuminaryWorks Control Console` in `identity/apps.json` (localhost callbacks are listed; add the public `https://console.example.com/auth/callback` in Logto for production — no secrets in Git).
+2. Put the public SPA `client_id` in `CONTROL_CONSOLE_IDP_CLIENT_ID`. Never a client secret or `ENTITLEMENT_SERVICE_API_KEY`.
+3. Grant operators the Entitlement API resource `https://entitlement.luminaryworks.dev` scope `entitlement:admin`.
+4. Terminate TLS at the reverse proxy; set `CONTROL_CONSOLE_PUBLIC_URL` and `ENTITLEMENT_CORS_ORIGINS` to that origin. Empty CORS is **closed** in production.
+5. Provider enable: create metadata + write-only credentials → **Test** → type `ENABLE` to enable. The console never invents `enabled` or HA. See [`PAYMENTS.md`](PAYMENTS.md).
+
+Runtime `/config.json` is served by the Fastify process (not baked into the JS bundle).
 
 ## health / ready / version
 
@@ -77,7 +117,9 @@ networks:
 | Identity (Logto) | container healthcheck on OIDC discovery | `identity/scripts/probe-readiness.mjs` (discovery + non-empty JWKS) | not exposed by Logto — pinned in the manifest |
 | Auth Gateway | `GET /health` (liveness only) | `GET /ready` → 503 when upstream discovery fails | `GET /version` |
 | Entitlement | `GET /health` | `GET /ready` → 503 when the database is unreachable | `GET /version` |
+| Control Console | `GET /health` | `GET /ready` → 503 when SPA dist or `/config.json` issuer is missing | `GET /version` |
 | AI Platform | `GET /v1/health` (liveness only) | **not implemented** | **not implemented** |
+| Object storage (profile) | container `mc ready local` | operator `scripts/object-storage-status.mjs` JSON | n/a (single-node Pilot, no SLA) |
 
 ## AI Platform status
 
@@ -122,3 +164,4 @@ full-stack up are §11.3 later gates, not a reason to install Helm
 - Per-product standalone Compose contracts (`dev` / `prod` / `external-db` / `control-plane` / `smoke` overlays) live in each product repo. Scenario preflight resolves those files and fails by product name when a required set is missing.
 - Combination runtime (`scenario:up` without `--dry-run`) is a §11.2 deliverable, not a daily gate.
 - Private/SaaS hardening still open: six-product simultaneous up, backup/restore, N-1 (`spec/composable-deployment.md` §11.3). Helm production enablement waits on Compose combination, not on that list.
+- Object-storage **product** wiring (presign in each app, Entitlement HTTP admission) is deferred; the host contract is [`object-storage/admission-contract.json`](object-storage/admission-contract.json).

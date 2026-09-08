@@ -3,12 +3,19 @@ import {
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
+import type { BillingInterval } from "../../common/catalog-pricing";
 import type { PlanCode, SubjectKind } from "../../common/constants";
+import type { OrderStatus } from "../../common/payment-providers";
+import { CatalogRevisionEntity } from "./catalog-revision.entity";
+import { OfferingEntity } from "./offering.entity";
+import { PaymentProviderConfigEntity } from "./payment-provider-config.entity";
 
-export type OrderStatus = "pending" | "paid" | "failed" | "canceled" | "refunded";
+export type { OrderStatus };
 
 @Entity({ name: "orders" })
 export class OrderEntity {
@@ -32,9 +39,40 @@ export class OrderEntity {
   @Column({ name: "bundle_sku", type: "varchar", length: 64, nullable: true })
   bundleSku!: string | null;
 
-  @Column({ type: "varchar", length: 32, default: "pending" })
+  @Column({ name: "offering_id", type: "uuid", nullable: true })
+  offeringId!: string | null;
+
+  @ManyToOne(() => OfferingEntity, { onDelete: "SET NULL", nullable: true })
+  @JoinColumn({ name: "offering_id" })
+  offering!: OfferingEntity | null;
+
+  @Column({ name: "offering_sku", type: "varchar", length: 64, nullable: true })
+  offeringSku!: string | null;
+
+  @Column({ name: "billing_interval", type: "varchar", length: 16, nullable: true })
+  interval!: BillingInterval | null;
+
+  @Column({ name: "catalog_revision_id", type: "uuid", nullable: true })
+  catalogRevisionId!: string | null;
+
+  @ManyToOne(() => CatalogRevisionEntity, { onDelete: "SET NULL", nullable: true })
+  @JoinColumn({ name: "catalog_revision_id" })
+  catalogRevision!: CatalogRevisionEntity | null;
+
+  @Column({ name: "return_url", type: "varchar", length: 2048, nullable: true })
+  returnUrl!: string | null;
+
+  @Column({ type: "varchar", length: 32, default: "created" })
   status!: OrderStatus;
 
+  @Column({ name: "payment_config_id", type: "uuid", nullable: true })
+  paymentConfigId!: string | null;
+
+  @ManyToOne(() => PaymentProviderConfigEntity, { onDelete: "SET NULL", nullable: true })
+  @JoinColumn({ name: "payment_config_id" })
+  paymentConfig!: PaymentProviderConfigEntity | null;
+
+  /** Integer minor units (cents/fen). Snapshot of offering.amountMinor. */
   @Column({ name: "amount_cents", type: "int", default: 0 })
   amountCents!: number;
 

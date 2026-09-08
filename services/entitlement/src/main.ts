@@ -4,8 +4,10 @@ import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import cors from "@fastify/cors";
 import { AppModule } from "./app.module";
 import { REQUEST_RAW_BODY_KEY } from "./auth/auth.types";
+import { corsOriginOption } from "./common/cors";
 import type { EntitlementConfig } from "./config/entitlement.config";
 
 async function bootstrap() {
@@ -15,11 +17,12 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, adapter, {
     logger: ["error", "warn", "log"],
+    // Nest would register application/json during init; we replace that parser
+    // so partner webhook HMAC can read the raw buffer. Express `rawBody: true` is forbidden.
+    bodyParser: false,
   });
 
-  // Preserve raw body for partner webhook HMAC verification (Nest Express rawBody is Express-only).
   const fastify = app.getHttpAdapter().getInstance();
-  fastify.removeContentTypeParser("application/json");
   fastify.addContentTypeParser(
     "application/json",
     { parseAs: "buffer" },
@@ -32,6 +35,15 @@ async function bootstrap() {
       } catch (err) {
         done(err as Error, undefined);
       }
+    },
+  );
+  fastify.addContentTypeParser(
+    "application/x-www-form-urlencoded",
+    { parseAs: "buffer" },
+    (req, body: Buffer, done) => {
+      const request = req as typeof req & { [REQUEST_RAW_BODY_KEY]?: Buffer };
+      request[REQUEST_RAW_BODY_KEY] = body;
+      done(null, Object.fromEntries(new URLSearchParams(body.toString("utf8"))));
     },
   );
 
@@ -56,7 +68,13 @@ async function bootstrap() {
   SwaggerModule.setup("docs", app, document);
 
   const config = app.get(ConfigService);
-  const port = config.getOrThrow<EntitlementConfig>("entitlement").port;
+  const entitlement = config.getOrThrow<EntitlementConfig>("entitlement");
+  await app.register(cors, {
+    origin: corsOriginOption(entitlement.corsOrigins),
+    credentials: true,
+    allowedHeaders: ["Authorization", "Content-Type", "X-Request-Id", "X-Act-As-Subject"],
+  });
+  const port = entitlement.port;
   await app.listen(port, "0.0.0.0");
   // eslint-disable-next-line no-console
   console.log(`Entitlement service listening on :${port} (OpenAPI /docs)`);

@@ -4,7 +4,14 @@ export type SubjectKind = (typeof SUBJECT_KINDS)[number];
 export const PLAN_CODES = ["trial", "pro", "ultra", "enterprise"] as const;
 export type PlanCode = (typeof PLAN_CODES)[number];
 
-export const PRODUCT_CODES = ["dataluminary", "blockyedu", "vistaremote", "doerflow"] as const;
+export const PRODUCT_CODES = [
+  "dataluminary",
+  "blockyedu",
+  "vistaremote",
+  "doerflow",
+  "vistacast",
+  "syncrobrain",
+] as const;
 export type ProductCode = (typeof PRODUCT_CODES)[number];
 
 export const TRIAL_POLICIES = ["standard_7d", "disabled"] as const;
@@ -13,8 +20,17 @@ export type TrialPolicy = (typeof TRIAL_POLICIES)[number];
 export const SUBSCRIPTION_STATUSES = ["active", "canceled", "expired", "pending"] as const;
 export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 
-export const QUOTA_PERIODS = ["lifetime", "calendar_month", "rolling_days", "concurrent"] as const;
+export const QUOTA_PERIODS = [
+  "lifetime",
+  "calendar_month",
+  "calendar_day",
+  "rolling_days",
+  "concurrent",
+] as const;
 export type QuotaPeriod = (typeof QUOTA_PERIODS)[number];
+
+export const METERING_MODES = ["counter", "gauge"] as const;
+export type MeteringMode = (typeof METERING_MODES)[number];
 
 export const FEATURE_EFFECTS = ["allow", "deny"] as const;
 export type FeatureEffect = (typeof FEATURE_EFFECTS)[number];
@@ -42,6 +58,15 @@ export const ENTITLEMENT_ERROR_CODES = [
   "ENTITLEMENT_LICENSE_EXPIRED",
   "ENTITLEMENT_SERVICE_UNAVAILABLE",
   "PRODUCT_TRIAL_DISABLED",
+  "PRODUCT_NOT_SELLABLE",
+  "TRIAL_POLICY_NOT_ACCEPTED",
+  "PAYMENT_PRICE_MISMATCH",
+  "PAYMENT_OFFERING_INVALID",
+  "PAYMENT_PROVIDER_UNAVAILABLE",
+  "PAYMENT_PROVIDER_FORBIDDEN_MARKET",
+  "PAYMENT_WEBHOOK_INVALID",
+  "PAYMENT_AMOUNT_MISMATCH",
+  "PAYMENT_REFUND_UNSUPPORTED",
   "UNAUTHORIZED",
   "FORBIDDEN",
   "VALIDATION_ERROR",
@@ -61,6 +86,15 @@ export const ERROR_HTTP_STATUS: Record<EntitlementErrorCode, number> = {
   ENTITLEMENT_LICENSE_EXPIRED: 402,
   ENTITLEMENT_SERVICE_UNAVAILABLE: 503,
   PRODUCT_TRIAL_DISABLED: 402,
+  PRODUCT_NOT_SELLABLE: 402,
+  TRIAL_POLICY_NOT_ACCEPTED: 400,
+  PAYMENT_PRICE_MISMATCH: 400,
+  PAYMENT_OFFERING_INVALID: 400,
+  PAYMENT_PROVIDER_UNAVAILABLE: 402,
+  PAYMENT_PROVIDER_FORBIDDEN_MARKET: 403,
+  PAYMENT_WEBHOOK_INVALID: 400,
+  PAYMENT_AMOUNT_MISMATCH: 409,
+  PAYMENT_REFUND_UNSUPPORTED: 409,
   UNAUTHORIZED: 401,
   FORBIDDEN: 403,
   VALIDATION_ERROR: 400,

@@ -1,0 +1,119 @@
+# Optional production overlay: self-hosted AIStor Free object storage
+#
+# NOT included in offline packs (AIStor Free forbids redistributing the binary
+# or license). Hosted SaaS operators obtain the image and license themselves.
+#
+#   cp deploy/env/control-plane.env.example deploy/env/control-plane.env
+#   # fill AISTOR_* secrets, AISTOR_LICENSE_FILE, pinned AISTOR_*_IMAGE
+#   node scripts/preflight-object-storage.mjs
+#   docker compose --env-file deploy/env/control-plane.env \
+#     -f deploy/compose/control-plane.yaml \
+#     -f deploy/compose/control-plane.object-storage.yaml \
+#     --profile object-storage up -d
+#
+# Old minio/minio CE is forbidden. Image env must be digest- or RELEASE-pinned
+# (never latest). API and Console publish on loopback only.
+#
+# Compatibility assumption: the official AIStor server image includes `mc` for
+# `mc ready local` (documented Compose healthcheck). The init service uses the
+# official `quay.io/minio/aistor/mc` image with `/bin/sh` to run bootstrap.sh.
+
+name: ${CONTROL_PLANE_PROJECT:-luminary-control-plane}
+
+x-restart: &restart
+  restart: unless-stopped
+
+networks:
+  control-data:
+    internal: true
+  control-edge:
+    name: ${CONTROL_PLANE_EDGE_NETWORK:-luminary-control-edge}
+
+volumes:
+  object-storage-data:
+
+services:
+  object-storage:
+    <<: *restart
+    profiles: ["object-storage"]
+    image: ${AISTOR_MINIO_IMAGE:?set AISTOR_MINIO_IMAGE to a digest- or RELEASE-pinned quay.io/minio/aistor/minio image; never latest or minio/minio CE}
+    command:
+      [
+        "server",
+        "/mnt/data",
+        "--license",
+        "/minio.license",
+        "--console-address",
+        ":9001",
+      ]
+    environment:
+      MINIO_ROOT_USER: ${AISTOR_ROOT_USER:?set AISTOR_ROOT_USER in deploy/env/control-plane.env}
+      MINIO_ROOT_PASSWORD: ${AISTOR_ROOT_PASSWORD:?set AISTOR_ROOT_PASSWORD in deploy/env/control-plane.env}
+    volumes:
+      - object-storage-data:/mnt/data
+      - ${AISTOR_LICENSE_FILE:?set AISTOR_LICENSE_FILE to the host path of the AIStor Free license file}:/minio.license:ro
+    ports:
+      - "127.0.0.1:${AISTOR_API_PORT:-9000}:9000"
+      - "127.0.0.1:${AISTOR_CONSOLE_PORT:-9001}:9001"
+    networks:
+      - control-edge
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    mem_limit: 1536m
+    mem_reservation: 256m
+    cpus: "2.0"
+    pids_limit: 512
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+
+  object-storage-init:
+    profiles: ["object-storage"]
+    image: ${AISTOR_MC_IMAGE:?set AISTOR_MC_IMAGE to a digest- or RELEASE-pinned quay.io/minio/aistor/mc image; never latest}
+    restart: on-failure
+    depends_on:
+      object-storage:
+        condition: service_healthy
+    environment:
+      MC_CONFIG_DIR: /tmp/mc
+      AISTOR_ROOT_USER: ${AISTOR_ROOT_USER:?set AISTOR_ROOT_USER in deploy/env/control-plane.env}
+      AISTOR_ROOT_PASSWORD: ${AISTOR_ROOT_PASSWORD:?set AISTOR_ROOT_PASSWORD in deploy/env/control-plane.env}
+      AISTOR_LUMINARY_ACCESS_KEY: ${AISTOR_LUMINARY_ACCESS_KEY:?set AISTOR_LUMINARY_ACCESS_KEY}
+      AISTOR_LUMINARY_SECRET_KEY: ${AISTOR_LUMINARY_SECRET_KEY:?set AISTOR_LUMINARY_SECRET_KEY}
+      AISTOR_DATALUMINARY_ACCESS_KEY: ${AISTOR_DATALUMINARY_ACCESS_KEY:?set AISTOR_DATALUMINARY_ACCESS_KEY}
+      AISTOR_DATALUMINARY_SECRET_KEY: ${AISTOR_DATALUMINARY_SECRET_KEY:?set AISTOR_DATALUMINARY_SECRET_KEY}
+      AISTOR_BLOCKYEDU_ACCESS_KEY: ${AISTOR_BLOCKYEDU_ACCESS_KEY:?set AISTOR_BLOCKYEDU_ACCESS_KEY}
+      AISTOR_BLOCKYEDU_SECRET_KEY: ${AISTOR_BLOCKYEDU_SECRET_KEY:?set AISTOR_BLOCKYEDU_SECRET_KEY}
+      AISTOR_VISTAREMOTE_ACCESS_KEY: ${AISTOR_VISTAREMOTE_ACCESS_KEY:?set AISTOR_VISTAREMOTE_ACCESS_KEY}
+      AISTOR_VISTAREMOTE_SECRET_KEY: ${AISTOR_VISTAREMOTE_SECRET_KEY:?set AISTOR_VISTAREMOTE_SECRET_KEY}
+      AISTOR_VISTACAST_ACCESS_KEY: ${AISTOR_VISTACAST_ACCESS_KEY:?set AISTOR_VISTACAST_ACCESS_KEY}
+      AISTOR_VISTACAST_SECRET_KEY: ${AISTOR_VISTACAST_SECRET_KEY:?set AISTOR_VISTACAST_SECRET_KEY}
+      AISTOR_BACKUP_ACCESS_KEY: ${AISTOR_BACKUP_ACCESS_KEY:?set AISTOR_BACKUP_ACCESS_KEY}
+      AISTOR_BACKUP_SECRET_KEY: ${AISTOR_BACKUP_SECRET_KEY:?set AISTOR_BACKUP_SECRET_KEY}
+      AISTOR_BUDGET_GIB: ${AISTOR_BUDGET_GIB:-120}
+      AISTOR_QUOTA_LUMINARY_MEDIA_GIB: ${AISTOR_QUOTA_LUMINARY_MEDIA_GIB:-8}
+      AISTOR_QUOTA_DATALUMINARY_MEDIA_GIB: ${AISTOR_QUOTA_DATALUMINARY_MEDIA_GIB:-10}
+      AISTOR_QUOTA_BLOCKYEDU_MEDIA_GIB: ${AISTOR_QUOTA_BLOCKYEDU_MEDIA_GIB:-8}
+      AISTOR_QUOTA_VISTAREMOTE_RECORDINGS_GIB: ${AISTOR_QUOTA_VISTAREMOTE_RECORDINGS_GIB:-40}
+      AISTOR_QUOTA_VISTACAST_RECORDINGS_GIB: ${AISTOR_QUOTA_VISTACAST_RECORDINGS_GIB:-40}
+      AISTOR_QUOTA_BACKUP_STAGING_GIB: ${AISTOR_QUOTA_BACKUP_STAGING_GIB:-14}
+    volumes:
+      - ../object-storage/bootstrap.sh:/bootstrap/bootstrap.sh:ro
+      - ../object-storage/policies:/bootstrap/policies:ro
+    networks:
+      - control-edge
+    entrypoint: ["/bin/sh", "/bootstrap/bootstrap.sh"]
+    mem_limit: 256m
+    cpus: "0.5"
+    pids_limit: 128
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"

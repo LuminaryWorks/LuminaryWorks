@@ -6,12 +6,14 @@ import { OutboxEventEntity } from "../../database/entities/outbox-event.entity";
 import { ProductEntity } from "../../database/entities/product.entity";
 import { SubscriptionEntity } from "../../database/entities/subscription.entity";
 import { AuditModule } from "../audit/audit.module";
+import { EntitlementsModule } from "../entitlements/entitlements.module";
 import { AdminController } from "./admin.controller";
 import { AdminService } from "./admin.service";
 
 @Module({
   imports: [
     AuditModule,
+    EntitlementsModule,
     TypeOrmModule.forFeature([
       SubscriptionEntity,
       GrantEntity,

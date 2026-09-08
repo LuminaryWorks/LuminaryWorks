@@ -8,9 +8,15 @@ import { LicenseEntity } from "../../database/entities/license.entity";
 import { OutboxEventEntity } from "../../database/entities/outbox-event.entity";
 import { ProductEntity } from "../../database/entities/product.entity";
 import { SubscriptionEntity } from "../../database/entities/subscription.entity";
+import { TrialCleanupJobEntity } from "../../database/entities/trial-cleanup-job.entity";
 import { TrialRedemptionEntity } from "../../database/entities/trial-redemption.entity";
 import { AuditService } from "../audit/audit.service";
-import { trialNotifyDedupeKey } from "../notify/outbox-policy";
+import { LegalService } from "../legal/legal.service";
+import {
+  trialLifecyclePayload,
+  trialNotifyDedupeKey,
+  trialScheduleAnchors,
+} from "./trial-lifecycle";
 
 export interface EnsureTrialInput {
   logtoSub: string;
@@ -35,6 +41,7 @@ export class TrialsService {
     @InjectRepository(ProductEntity)
     private readonly products: Repository<ProductEntity>,
     private readonly audit: AuditService,
+    private readonly legal: LegalService,
   ) {}
 
   async ensureTrial(input: EnsureTrialInput): Promise<{
@@ -42,6 +49,7 @@ export class TrialsService {
     subscriptionId: string;
     startsAt: string;
     endsAt: string;
+    trialRedemptionId: string | null;
     skippedReason?: string;
   }> {
     await assertTrialPlanAllowed(this.products, input.productCode, "trial");
@@ -85,8 +93,11 @@ export class TrialsService {
         subscriptionId: existing.subscriptionId,
         startsAt: existing.startsAt.toISOString(),
         endsAt: existing.endsAt.toISOString(),
+        trialRedemptionId: existing.id,
       };
     }
+
+    await this.legal.assertCurrentPolicyAccepted(input.logtoSub);
 
     try {
       const created = await this.dataSource.transaction(async (manager) => {
@@ -104,6 +115,7 @@ export class TrialsService {
             subscriptionId: raced.subscriptionId,
             startsAt: raced.startsAt,
             endsAt: raced.endsAt,
+            trialRedemptionId: raced.id,
           };
         }
 
@@ -139,7 +151,7 @@ export class TrialsService {
           }),
         );
 
-        await manager.save(
+        const redemption = await manager.save(
           manager.create(TrialRedemptionEntity, {
             logtoSub: input.logtoSub,
             productCode: input.productCode,
@@ -149,7 +161,18 @@ export class TrialsService {
           }),
         );
 
-        const t3 = new Date(endsAt.getTime() - 3 * 24 * 60 * 60 * 1000);
+        const policyVersion = this.legal.currentPolicyVersion();
+        const payload = trialLifecyclePayload({
+          trialRedemptionId: redemption.id,
+          subscriptionId: sub.id,
+          logtoSub: input.logtoSub,
+          productCode: input.productCode,
+          startsAt,
+          endsAt,
+          policyVersion,
+        });
+        const anchors = trialScheduleAnchors(startsAt, endsAt);
+
         await manager.save(
           manager.create(OutboxEventEntity, {
             eventType: "trial.expiring",
@@ -157,16 +180,26 @@ export class TrialsService {
               input.logtoSub,
               input.productCode,
               "trial.expiring",
-              t3,
+              anchors.t3,
             ),
-            payload: {
-              logtoSub: input.logtoSub,
-              productCode: input.productCode,
-              subscriptionId: sub.id,
-              endsAt: endsAt.toISOString(),
-            },
+            payload,
             status: "pending",
-            scheduledFor: t3 > startsAt ? t3 : startsAt,
+            scheduledFor: anchors.t3,
+            attempts: 0,
+          }),
+        );
+        await manager.save(
+          manager.create(OutboxEventEntity, {
+            eventType: "trial.expiring_t1",
+            dedupeKey: trialNotifyDedupeKey(
+              input.logtoSub,
+              input.productCode,
+              "trial.expiring_t1",
+              anchors.t1,
+            ),
+            payload,
+            status: "pending",
+            scheduledFor: anchors.t1,
             attempts: 0,
           }),
         );
@@ -177,17 +210,48 @@ export class TrialsService {
               input.logtoSub,
               input.productCode,
               "trial.expired",
-              endsAt,
+              anchors.expired,
             ),
-            payload: {
-              logtoSub: input.logtoSub,
-              productCode: input.productCode,
-              subscriptionId: sub.id,
-              endsAt: endsAt.toISOString(),
-            },
+            payload,
             status: "pending",
-            scheduledFor: endsAt,
+            scheduledFor: anchors.expired,
             attempts: 0,
+          }),
+        );
+        const purgeEvent = await manager.save(
+          manager.create(OutboxEventEntity, {
+            eventType: "trial.purge",
+            dedupeKey: trialNotifyDedupeKey(
+              input.logtoSub,
+              input.productCode,
+              "trial.purge",
+              anchors.purge,
+            ),
+            payload,
+            status: "pending",
+            scheduledFor: anchors.purge,
+            attempts: 0,
+          }),
+        );
+        await manager.save(
+          manager.create(TrialCleanupJobEntity, {
+            trialRedemptionId: redemption.id,
+            subscriptionId: sub.id,
+            logtoSub: input.logtoSub,
+            productCode: input.productCode,
+            policyVersion,
+            startsAt,
+            endsAt,
+            scheduledFor: anchors.purge,
+            status: "pending",
+            attempts: 0,
+            lastError: null,
+            deliveredAt: null,
+            ackedAt: null,
+            ackPayload: null,
+            outboxEventId: purgeEvent.id,
+            organizationId: input.organizationId ?? null,
+            deploymentId: input.deploymentId ?? null,
           }),
         );
 
@@ -196,6 +260,7 @@ export class TrialsService {
           subscriptionId: sub.id,
           startsAt,
           endsAt,
+          trialRedemptionId: redemption.id,
         };
       });
 
@@ -213,6 +278,7 @@ export class TrialsService {
         subscriptionId: created.subscriptionId,
         startsAt: created.startsAt.toISOString(),
         endsAt: created.endsAt.toISOString(),
+        trialRedemptionId: created.trialRedemptionId,
       };
     } catch (err) {
       // Unique violation race → return existing
@@ -225,6 +291,7 @@ export class TrialsService {
           subscriptionId: again.subscriptionId,
           startsAt: again.startsAt.toISOString(),
           endsAt: again.endsAt.toISOString(),
+          trialRedemptionId: again.id,
         };
       }
       throw err;
@@ -239,6 +306,7 @@ export class TrialsService {
     subscriptionId: string;
     startsAt: string;
     endsAt: string;
+    trialRedemptionId: string | null;
     skippedReason?: string;
   }> {
     const existing = await this.redemptions.findOne({
@@ -250,6 +318,7 @@ export class TrialsService {
         subscriptionId: existing.subscriptionId,
         startsAt: existing.startsAt.toISOString(),
         endsAt: existing.endsAt.toISOString(),
+        trialRedemptionId: existing.id,
         skippedReason: reason,
       };
     }
@@ -258,6 +327,7 @@ export class TrialsService {
       subscriptionId: "",
       startsAt: new Date(0).toISOString(),
       endsAt: new Date(0).toISOString(),
+      trialRedemptionId: null,
       skippedReason: reason,
     };
   }

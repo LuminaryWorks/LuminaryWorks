@@ -1,7 +1,7 @@
 # LuminaryWorks 订阅与权益体系（Subscription & Entitlement）
 
-> **状态**：Accepted · **决策日**：2024-04-28 · **冻结实现契约**  
-> **关联**：[identity-and-permissions.md](./identity-and-permissions.md) · [migration-matrix.md](./migration-matrix.md) · [notification-service.md](./notification-service.md) · [ai-platform.md](./ai-platform.md) · [products/index.md](./products/index.md) · [composable-deployment.md](./composable-deployment.md)  
+> **状态**：Accepted · **决策日**：2024-04-28 · **修订**：2026-09-07（存储 / Doris / 支付地域 / Trial 清理 / 无可售 Free）
+> **关联**：[identity-and-permissions.md](./identity-and-permissions.md) · [payment-platform.md](./payment-platform.md) · [decisions/2026-09-storage-doris-payment.md](./decisions/2026-09-storage-doris-payment.md) · [legal/README.md](./legal/README.md) · [migration-matrix.md](./migration-matrix.md) · [notification-service.md](./notification-service.md) · [ai-platform.md](./ai-platform.md) · [products/index.md](./products/index.md) · [composable-deployment.md](./composable-deployment.md)
 > **草案来源**：`LuminaryWorks_Identity_Entitlement_Design.md`（设计输入）；`test.md` 中若干主张已被本规范**显式否决**（见 §0.2），不以 `test.md` 为权威。
 
 ## 0. 决策摘要（TL;DR）
@@ -19,6 +19,14 @@
 | D-ENT-9 | 关键付费能力：Entitlement 不可确认时 **fail closed** | 短 TTL cache + 有限离线宽限（可配置） |
 | D-ENT-10 | 迁移：`shadow_read` → 灰度 enforcement → 全量；可逆 feature flag | 旧字段保留至审计通过 |
 | D-ENT-11 | 中央 Entitlement HTTP **冻结端口 `3040`**；产品 `ENTITLEMENT_BASE_URL` / Manifest `services.entitlement.url` 不得再指向历史 `7090` | `ENTITLEMENT_PORT` · Compose 服务名 `entitlement` |
+| D-ENT-12 | **无永久 Free**：不存在 `planCode=free`；无有效权益仅登录、账单、公共演示 | UI 不得把「无套餐」写成 Free 会员 |
+| D-ENT-13 | 对象存储 = 自建 MinIO 兼容 API；Hosted SaaS 用官方 AIStor Free **单节点**；禁止公有云 S3/R2；私有化 **不得**再分发 AIStor 二进制 | [ADR](./decisions/2026-09-storage-doris-payment.md) |
+| D-ENT-14 | Doris 按需共享演示：FE+BE cgroup **合计** 25% 内存（24 GB → 6 GB），不停止其他服务；低于官方最低规格，仅 **Pilot** | `analytical.shared_demo` / `analytical.dedicated_service` |
+| D-ENT-15 | 支付在中央编排：服务端定价、原始 body 验签、可配置 provider；内置能力 ≠ 运营启用 | [payment-platform.md](./payment-platform.md) |
+| D-ENT-16 | 可信地理路由：CN hosted 默认已启用支付宝；海外展示已启用渠道；IP **不是**加密合规的充分证明 | CN 加密渠道：IP 或 billing country 任一为 CN 即拒绝 |
+| D-ENT-17 | Trial 到期 **立即阻断**；产品数据 **异步永久删除**；保留身份 / 账单 / 审计 | T-3、T-1、`trial.purge`；见 [legal](./legal/README.md) |
+| D-ENT-18 | 注册与首次激活 Trial 须显式接受版本化政策；未接受当前 Trial 政策不得 `ensure` | `policyVersion` + `acceptedAt` + ip / ua / `logtoSub` |
+| D-ENT-19 | 目录可含六产品 `productCode`；`sellable` 与 `trialPolicy` 独立。VistaCast / SyncroBrain 默认可配置、**不可售、无 Trial**，直至就绪决策 | DoerFlow 保持 `trialPolicy=disabled` |
 
 核心原则：**身份统一，权益中央，资源权限产品私有；商业能力与 ACL 永不混装进 Token。**
 
@@ -26,7 +34,10 @@
 
 | 文档 | 角色 |
 |------|------|
-| **本文** | 订阅 / 套餐 / 配额 / License / Partner / HTTP 契约的**唯一权威** |
+| **本文** | 订阅 / 套餐 / 配额 / License / Partner / Trial 清理 / HTTP 权益契约的**唯一权威** |
+| [payment-platform.md](./payment-platform.md) | 支付 adapter、订单状态、验签、市场路由、provider 矩阵 |
+| [decisions/2026-09-storage-doris-payment.md](./decisions/2026-09-storage-doris-payment.md) | 存储 / Doris / 支付地域 / AIStor 许可证事实 |
+| [legal/README.md](./legal/README.md) | 条款 / 隐私 / Trial 删除工程模板（非法律意见） |
 | [identity-and-permissions.md](./identity-and-permissions.md) | AuthN（Logto）与**资源** AuthZ（Casbin）；不定义商业套餐 |
 | 各产品 `spec/` | 产品 feature code 清单与本地 Guard 接线；不得另立平行会员事实源 |
 
@@ -42,6 +53,10 @@
 | Casbin matcher：`r.sub.entitlements.contains(p.sub)` | Casbin 只匹配资源策略；商业 feature 由 Entitlement Guard 判定 |
 | 企业 Pro 权限写入 Organization `custom_data` | Organization 订阅 / seat 记在 Entitlement；Logto Org 仅身份与成员关系 |
 | 业务代码大量 `if (isPrivate)` 分支改计费 | `DEPLOYMENT` 主体 + License 解析；部署模式不替代权益引擎 |
+| 永久 Free 档 / `planCode=free` 作为中央套餐 | 无套餐 = `none`：登录 + 账单 + 公共演示；适用产品走 7 天 Trial 或付费 |
+| 公有云 S3 / R2 作为对象权威；CDN 当作「已不占磁盘」 | 自建 MinIO 兼容；CDN 不减少冷数据占用 |
+| 把 AIStor 二进制打进私有化 pack 转售 | 客户自行接受许可证并安装，或提供 MinIO 兼容 endpoint |
+| 客户端提交 `amountCents` 定价；IP 单独证明加密支付合规 | 服务端 catalog；加密渠道同时检查 IP 与 billing country |
 
 ---
 
@@ -119,29 +134,44 @@ flowchart LR
 
 解析上下文：`subject + productCode + optional org/deployment + asOfTime`。
 
-### 3.2 首批产品 code（稳定）
+### 3.2 产品 code、可售卖与 Trial 政策
 
-| `productCode` | 产品 |
-|---------------|------|
-| `dataluminary` | DataLuminary |
-| `blockyedu` | BlockyEdu |
-| `vistaremote` | VistaRemote |
-| `doerflow` | DoerFlow |
+稳定 `productCode`（小写）：
 
-`products.trial_policy`（API 为 `trialPolicy`）只允许 `standard_7d | disabled`。DataLuminary、BlockyEdu、VistaRemote 固定为 `standard_7d`；DoerFlow 固定为 `disabled`。VistaCast / SyncroBrain **不是**本目录的付费 `productCode`（不发布面向用户的中央价格方案）；其跨产品用量挂在 DoerFlow `integration.*` 上。
+| `productCode` | 产品 | `trialPolicy` | `sellable`（Hosted 默认） |
+|---------------|------|---------------|---------------------------|
+| `dataluminary` | DataLuminary | `standard_7d` | `true` |
+| `blockyedu` | BlockyEdu | `standard_7d` | `true` |
+| `vistaremote` | VistaRemote | `standard_7d` | `true` |
+| `doerflow` | DoerFlow | `disabled` | `true`（仅 Pro / Ultra / Enterprise） |
+| `vistacast` | VistaCast | `disabled` | **`false` 直至就绪决策** |
+| `syncrobrain` | SyncroBrain | `disabled` | **`false` 直至就绪决策** |
+
+`products.trial_policy`（API 为 `trialPolicy`）只允许 `standard_7d | disabled`。
+`sellable` 控制 `POST /v1/orders` 与面向用户的价格方案；与 `trialPolicy` **独立**。不可售产品仍可出现在中央目录，供超管配置、AI 计量接线或后续开通，但：
+
+- 不得发布面向用户的价格 / Checkout；
+- 不得发放 Trial；
+- 跨产品用量在就绪前仍走 DoerFlow `integration.*`（不因此把 VistaCast / SyncroBrain 标成已上线 SKU）。
+
+DoerFlow 既有权威规范冻结为无 Trial；**本修订不改变**该政策。VistaCast / SyncroBrain 在产品就绪并另有书面决策之前保持 `sellable=false` 且 `trialPolicy=disabled`。
+
+实现种子目录在代码工作包同步前可能仍只含四码；契约以本表为准，测试与种子滞后视为已知缺口（见 ADR 后果）。
 
 ### 3.3 Plan tiers
 
 | `planCode` | 说明 |
 |------------|------|
-| `trial` | ToC 试用；固定 7 天；每用户每产品至多一次 |
+| `trial` | ToC 试用；固定 7×24 小时；每用户每产品至多一次；**不是**可售 SKU |
 | `pro` | 个人 / 小团队付费档 |
 | `ultra` | 更高付费档；feature/quota **⊇ Pro**（并集超集） |
 | `enterprise` | 合同套餐；可带 seat、自定义 feature 集合；**跳过 Trial** |
 
+**禁止**中央 `planCode=free` 或永久 Free 档。无有效 grant 时有效档标签为 `none`：可登录、看账单、用公共演示，不可使用付费 / Trial 能力。
+
 VistaRemote 现有本地模型为 `free` / `pro` / `enterprise`（见 `vistaremote/shared/src/billing`）。迁移时：
 
-- 本地 `free` + 有效 `trialEndsAt` → 中央 `trial` 或「无付费 + Trial grant」；
+- 本地 `free` + 有效 `trialEndsAt` → 中央 `trial`；无有效 Trial 且无付费 → 中央 `none`（**不要**映射成永久 Free 套餐）；
 - 本地 `pro` → `pro`；
 - 本地 `enterprise` → `enterprise`（合同或历史 perpetual 映射）；
 - 中央新增 `ultra` 为跨产品统一更高档；VistaRemote Ultra feature 集合在迁移表中显式列出（默认可对齐现 Enterprise 能力子集 + 扩展项，以种子目录为准）。
@@ -149,17 +179,19 @@ VistaRemote 现有本地模型为 `free` / `pro` / `enterprise`（见 `vistaremo
 ### 3.4 Feature 与配额
 
 - **Feature**：布尔或枚举能力，稳定 `featureCode`（建议 `domain.action`，如 `webrtc.sfu`、`dashboard.export`）。
-- **Quota**：数值额度 + 周期（`lifetime` | `calendar_month` | `rolling_days` | `concurrent`）。
+- **Quota**：数值额度 + 周期（`lifetime` | `calendar_month` | `calendar_day` | `rolling_days` | `concurrent`）。
+- **计量模式** `meteringMode`：`counter`（默认）或 `gauge`。API / 月度 / 语音等消耗走 `counter` + `consume`；资源个数与字节走 `gauge` + 资源 allocation/release（绝对量上报）。
 - Plan 通过 `plan_features` 绑定：`effect = allow | deny`，`limitValue` 可空（布尔 feature 为空）。
 
 **种子 feature 基线（迁移期，可扩展，不可静默改语义）**：
 
 | 产品 | 示例 `featureCode`（非穷尽） | 来源 |
 |------|------------------------------|------|
-| VistaRemote | `webrtc.sfu`, `recording`, `ai.recording_summarize`, `ai.cloud_infer`, `recording.sfu_server`, `telemetry.enterprise` | 现有 `ProductFeature` |
+| VistaRemote | `webrtc.sfu`, `recording`, `ai.recording_summarize`, `ai.cloud_infer`, `recording.sfu_server`, `telemetry.enterprise`；建议对象配额 Trial 100 MiB / Pro 1 GiB / Ultra 5 GiB（Ultra 最长保留 30 天） | 现有 `ProductFeature`；超额存储包在独立 MinIO 节点前不可售 |
 | BlockyEdu | `code.execute.pro`, `ai.copilot`, `ai.tutor`, `ai.voice`, `ai.voice.trial.seconds`, `ai.voice.monthly.seconds`, `ai.voice.purchased.seconds`, 班级/学员额度类 quota | `code_pro` / memberTier 迁移；口语分钟 ≠ 7 天 Trial |
-| DataLuminary | `dashboard.export`, `ai.analysis`, `storage.bytes`, `dashboard.count` 等 | 商业能力与容量门禁 |
-| DoerFlow | `agent.publish`, `skill.register`, `task.publish`, `ai.strategy.run`, `settlement.merkle_batch`, `admin.ops.read`；`agent.limit`, `task.publish.monthly`, `api.request.monthly` 配额；跨产品 `integration.provider.register`, `integration.event.submit`, `integration.event.monthly`, `integration.api.monthly` | 托管平台能力 + 生态 integration 门禁。**Pro 不开放 provider/event 写**；Ultra 小额、Enterprise 高额。**协议费、Job 单价、Escrow、Gas 不进入 Entitlement。** 不新增 VistaCast / SyncroBrain 面向用户 SKU；`trialPolicy=disabled` 不变 |
+| DataLuminary | `dashboard.export`, `ai.analysis`, `storage.bytes`, `dashboard.count`，`analytical.shared_demo`, `analytical.dedicated_service` 等 | 商业能力与容量门禁；共享 Doris 为 Pilot，专属 Doris 仅人工开通 |
+| DoerFlow | `agent.publish`, `skill.register`, `task.publish`, `ai.strategy.run`, `settlement.merkle_batch`, `admin.ops.read`；`agent.limit`, `task.publish.monthly`, `api.request.monthly` 配额；跨产品 `integration.provider.register`, `integration.event.submit`, `integration.event.monthly`, `integration.api.monthly` | 托管平台能力 + 生态 integration 门禁。**Pro 不开放 provider/event 写**；Ultra 小额、Enterprise 高额。**协议费、Job 单价、Escrow、Gas 不进入 Entitlement。** `trialPolicy=disabled` 不变。VistaCast / SyncroBrain 在 `sellable=false` 期间不发布 ToC 价格方案 |
+| VistaCast / SyncroBrain | 就绪后的 feature 另表冻结；当前目录可占位 `productCode` | **默认可配置、不可售、无 Trial**；不得把 stub 能力标成 SKU |
 
 ### 3.5 DoerFlow 跨产品 integration（种子可增，语义冻结）
 
@@ -191,18 +223,23 @@ VistaCast server 与 SyncroBrain gateway 以 M2M 调用 DoerFlow API 时，除 L
 | `standard_7d` | 按下表执行一次性 7 天 Trial |
 | `disabled` | `POST /v1/trials/ensure` 返回 `PRODUCT_TRIAL_DISABLED`；不得创建 redemption、subscription、grant 或 Trial outbox 事件；订单、Partner redemption、Admin/manual grant 均不得为该产品发放 `trial` |
 
-DoerFlow 为无试用、付费优先产品，固定 `disabled`，目录只含 Pro / Ultra / Enterprise。客户端必须依据目录 `trialPolicy` 或快照 `trial.eligible=false` 隐藏 Trial CTA 与倒计时。
+DoerFlow 为无试用、付费优先产品，固定 `disabled`，目录只含 Pro / Ultra / Enterprise。客户端必须依据目录 `trialPolicy` 或快照 `trial.eligible=false` 隐藏 Trial CTA 与倒计时。VistaCast / SyncroBrain 在 `sellable=false` 期间同样不得展示 Trial CTA。
 
 | 规则 | 值 |
 |------|-----|
-| 时长 | **7×24 小时**（从 `startsAt` 起算；服务端时钟权威） |
+| 时长 | **7×24 小时**（从 `startsAt` 起算；服务端时钟权威；界面展示精确 `endsAt`） |
 | 发放时机 | 用户**首次进入**某产品受控面（首次需鉴权的业务会话或显式 `POST /trials/ensure`） |
+| 政策接受 | 该产品第一次激活 Trial 前必须显式接受当前版本《服务条款》《隐私政策》《Trial 与数据删除政策》；Entitlement 保存 `policyVersion` / `acceptedAt` / `ip` / `userAgent` / `logtoSub`。未接受 → 不得创建 Trial |
 | 唯一性 | **once per (`logtoSub`, `productCode`)**；用 `trial_redemptions` 或等价唯一约束防重放 |
 | 企业 / 私有 | `ORGANIZATION` 有效企业订阅或 `DEPLOYMENT` 有效 License 存在时：**不创建** Trial |
-| 到期后 | 仍可登录、看账户/账单、走升级；受控业务 API 返回 §9 错误 |
+| `endsAt` 到达 | **立即**从解析中去掉 Trial grant；受控业务 API 返回 §9 `402`；仍可登录、看账户/账单、走升级 |
+| 物理清理 | 异步投递签名 `trial.purge`；删除该 Trial 的产品私有资源、同步任务/检查点、Doris 表、MinIO 对象与上传。**保留** Logto 身份、订单、支付、审计、Trial 兑换/用量。不可恢复 |
+| 通知 | T-3、T-1、到期；已升级则取消待发通知与 purge |
 | Trial 能力 | 默认授予该产品 **Pro 等价 feature 集**（产品可在目录中收窄，须文档化） |
 
-幂等：`standard_7d` 产品的 `ensureTrial` 多次调用返回同一 subscription/grant，不延长期限。现有三个产品的一次性规则不因 DoerFlow 接入而改变。
+幂等：`standard_7d` 产品的 `ensureTrial` 多次调用返回同一 subscription/grant，不延长期限。现有三个产品的一次性规则不因 DoerFlow 接入而改变。清理必须带 `trialRedemptionId` / billing owner；不得按模糊 `creator` 删除已转入付费组织的资源。付款与 purge 互斥：有效付费则取消清理；purge 完成后付款不能伪造数据恢复。
+
+法律文案模板：[legal/README.md](./legal/README.md)（非法律意见）。
 
 ---
 
@@ -258,15 +295,20 @@ DoerFlow 为无试用、付费优先产品，固定 `disabled`，目录只含 Pr
 2. 来源可包括：Trial grant、个人 Pro/Ultra subscription、Bundle 拆分 grant、Partner redemption、Org 企业订阅、Deployment License。
 3. **布尔 feature**：任一来源 `allow` 且无显式 `deny` 覆盖 → `true`。（同 feature 上 `deny` 优先于 `allow`。）
 4. **Quota**：默认 **取各来源 limit 的最大值**（`max`）；目录可对特定 feature 声明 `quotaMerge=sum`（须种子标注）。`remaining = limit - usage`（usage 来自 `usage_counters`）。
-5. **Effective plan label**（展示用）：按优先级 `enterprise > ultra > pro > trial > none`；不影响 feature 并集计算。
-6. 过期 / 撤销：**立即**从解析中消失；cache TTL 必须短于或等于配置上限（默认 ≤ 60s）。
+5. **Effective plan label**（展示用）：按优先级 `enterprise > ultra > pro > trial > none`；`none` **不是** Free 套餐。不影响 feature 并集计算。
+6. 过期 / 撤销：**立即**从解析中消失；cache TTL 必须短于或等于配置上限（默认 ≤ 60s）。Trial 过期同时使受控 API 失败，不等待 purge 完成。
 7. 写入一律带 `source`、`sourceRef`、审计日志；人工发放走管理 API + audit。
+8. `endsAt` 空视为长期仅适用于企业合同 / License 等显式来源；**ToC 付费订阅必须有具体 `endsAt`**（30 / 365 天）。禁止签发无到期的个人 Free/Pro。
 
 ### 7.1 配额消费
 
-- `POST /v1/entitlements/consume`：**原子**增减；并发下用行锁 / 条件更新。
+- `POST /v1/entitlements/consume`：**原子**增减；并发下用行锁 / 条件更新。仅用于 `meteringMode=counter`。
+- `POST /v1/entitlements/allocations`：对单个 `resourceId` **原子 upsert 绝对量**（看板=1、对象=bytes、Doris 数据集=当前逻辑字节）；计算 delta、锁 `usage_counters`、校验当前权益 limit，总额不得为负。同一 amount 重复提交幂等。
+- `POST /v1/entitlements/allocations/release`：释放该资源占用；重复释放幂等。
 - 幂等键：`Idempotency-Key` 或 body `idempotencyKey`；同一键重复返回首次结果。
-- 不足：不部分扣减；返回 `ENTITLEMENT_QUOTA_EXCEEDED`。
+- 不足：不部分扣减 / 不部分占用；返回 `ENTITLEMENT_QUOTA_EXCEEDED`。
+- 快照 `used/remaining` 以 `usage_counters` 为聚合快路径；gauge 的 allocation 与聚合必须同事务更新。`POST /v1/admin/usage/reconcile` 可从 `resource_allocations` 重建 gauge 聚合。
+- 档位 limit 下调到低于当前 used：已占用资源保留，`remaining=0`，禁止继续增加。
 
 ---
 
@@ -304,13 +346,24 @@ Base path（SaaS）：`/v1`。管理端与 Partner 端使用独立 audience / sc
 |--------|------|------|
 | `GET` | `/v1/entitlements` | 当前主体在 `productCode`（+ org）下的有效权益快照 |
 | `POST` | `/v1/entitlements/check` | 批量 `{ featureCode, need? }[]` → allow/deny + reason |
-| `POST` | `/v1/entitlements/consume` | 原子配额消费 |
-| `POST` | `/v1/trials/ensure` | 幂等发放 ToC Trial |
-| `GET` | `/v1/catalog/plans` | 产品套餐目录；每个产品返回 `trialPolicy` |
+| `POST` | `/v1/entitlements/consume` | 原子配额消费（counter） |
+| `POST` | `/v1/entitlements/allocations` | 原子 gauge 资源占用 / 绝对量上报 |
+| `POST` | `/v1/entitlements/allocations/release` | 释放 gauge 资源占用 |
+| `POST` | `/v1/trials/ensure` | 幂等发放 ToC Trial；缺少当前政策接受则拒绝 |
+| `GET` | `/v1/policies/current` | 当前必接受政策版本、文档 URL 与是否已接受 |
+| `POST` | `/v1/policies/accept` | 记录版本化条款 / 隐私 / Trial 删除政策接受 |
+| `GET` | `/v1/catalog/plans` | 产品套餐目录；每个产品返回 `trialPolicy`、`sellable` |
 | `GET` | `/v1/catalog/features` | feature 定义 |
-| `POST` | `/v1/orders` | 创建订单（支付适配器抽象） |
-| `POST` | `/v1/orders/{id}/pay` | 支付回执 / 适配器回调入口（服务端） |
+| `POST` | `/v1/orders` | 创建订单；**仅** `offeringId` 等；拒绝客户端权威 `amountCents` |
+| `POST` | `/v1/payments/webhooks/:provider/:configId` | 公开回调：原始 body 验签 → 幂等 → 履约 |
+| `POST` | `/v1/orders/{id}/pay` | 内部/适配器确认入口（服务端）；不得作为未验签的浏览器支付完成口 |
 | `POST` | `/v1/admin/grants` | 人工合同发放（admin scope） |
+| `POST` | `/v1/admin/usage/reconcile` | 从 allocations 重建 gauge `usage_counters` |
+| `GET` | `/v1/admin/cleanup-jobs` | Trial 清理任务列表 |
+| `POST` | `/v1/admin/cleanup-jobs/{id}/retry` | 重试失败的 `trial.purge` |
+| `POST` | `/v1/admin/cleanup-jobs/{id}/cancel` | 取消 pending 清理 |
+| `GET` | `/v1/admin/policy-acceptances` | 政策接受只读 |
+| `GET` | `/v1/admin/audit` | 审计只读 |
 | `POST` | `/v1/partner/redemptions` | Partner 兑换 |
 | `GET` | `/health` | 存活（进程；不探测依赖） |
 | `GET` | `/ready` | 依赖就绪（DB）；失败返回非 2xx |
@@ -326,12 +379,13 @@ Base path（SaaS）：`/v1`。管理端与 Partner 端使用独立 audience / sc
   "organizationId": null,
   "effectivePlan": "pro",
   "trial": { "active": false, "endsAt": null, "consumed": true, "eligible": false },
+  "sellable": true,
   "features": {
     "webrtc.sfu": { "allowed": true, "sources": ["subscription:sub_…"] },
     "ai.cloud_infer": { "allowed": false, "reason": "ENTITLEMENT_FEATURE_REQUIRED" }
   },
   "quotas": {
-    "device.limit": { "limit": 10, "used": 3, "remaining": 7, "period": "lifetime" }
+    "device.limit": { "limit": 10, "used": 3, "remaining": 7, "period": "lifetime", "meteringMode": "gauge" }
   },
   "asOf": "2024-04-28T15:00:00.000Z"
 }
@@ -364,6 +418,10 @@ Base path（SaaS）：`/v1`。管理端与 Partner 端使用独立 audience / sc
 | `ENTITLEMENT_LICENSE_EXPIRED` | 402 | License 过期（含超出 grace） |
 | `ENTITLEMENT_SERVICE_UNAVAILABLE` | 503 | 中央服务不可达且无合法离线缓存（关键路径 fail closed） |
 | `PRODUCT_TRIAL_DISABLED` | 402 | 产品策略禁止 Trial；调用方不得重试创建或改走其他发放入口 |
+| `PRODUCT_NOT_SELLABLE` | 402 | 目录可配置但不可售（如就绪前的 VistaCast / SyncroBrain） |
+| `TRIAL_POLICY_NOT_ACCEPTED` | 400 | 缺少当前版本 Trial 删除政策的显式接受 |
+| `DORIS_WARMING` | 202 | 共享 Doris 正在按需启动（业务码可放 body） |
+| `DORIS_DEMO_BUSY` | 503 | 共享演示排队满 / 超时 / OOM / 限流 |
 | `UNAUTHORIZED` | 401 | 身份无效 |
 | `FORBIDDEN` | 403 | **仅**资源 ACL（Casbin）；产品层使用，非 Entitlement 服务主码 |
 
@@ -377,20 +435,23 @@ Base path（SaaS）：`/v1`。管理端与 Partner 端使用独立 audience / sc
 
 ---
 
-## 10. 通知（Trial T-3 与到期）
+## 10. 通知（Trial T-3、T-1 与到期）
 
 依赖 [notification-service.md](./notification-service.md) 与 `@luminaryworks/notification`；Entitlement 服务侧用 **transactional outbox** 投递，避免双写丢失。
 
 | 事件 | 时机 | 渠道（适配器） |
 |------|------|----------------|
 | `trial.expiring` | 到期前 **3 天**（T-3） | 站内信、Email、APP Push（按用户偏好） |
-| `trial.expired` | `endsAt` 到达后 | 同上 |
+| `trial.expiring_t1` | 到期前 **1 天**（T-1） | 同上 |
+| `trial.expired` | `endsAt` 到达后（访问已阻断） | 同上 |
+| `trial.purge` | 到期后投递；产品侧异步永久删除 | 内部签名 outbox，非营销通知 |
 
 规则：
 
 - 同一 `(user, product, eventType, scheduledFor)` **至多成功发送一次**；失败可重试，成功去重。
-- 已升级为付费 / 已有企业权益：取消待发 Trial 通知。
-- 文案与品牌由产品模板提供；共享包只做传输。
+- 已升级为付费 / 已有企业权益：取消待发 Trial 通知 **与** pending purge。
+- 界面在 Trial 有效期内持续展示倒计时、精确 `endsAt` 与导出入口。
+- 文案与品牌由产品模板提供；共享包只做传输。法律含义以 [legal](./legal/README.md) 版本为准。
 
 ---
 
@@ -400,22 +461,26 @@ PostgreSQL。表名稳定；列可增不可静默改语义。
 
 | 表 | 用途 |
 |----|------|
-| `products` | `code` 唯一；`trial_policy = standard_7d | disabled` |
-| `features` | `product_id` + `code`；类型 bool/quota |
-| `plans` | `product_id` + `code`（trial/pro/ultra/enterprise/…） |
+| `products` | `code` 唯一；`trial_policy = standard_7d | disabled`；`sellable` 布尔 |
+| `features` | `product_id` + `code`；类型 bool/quota；quota 可带 `metering_mode=counter|gauge`（默认 counter） |
+| `plans` | `product_id` + `code`（trial/pro/ultra/enterprise；**无 free**） |
 | `plan_features` | plan↔feature；limit / effect / quota_merge |
 | `bundles` / `bundle_items` | 联合 SKU |
-| `subscriptions` | subject、plan、状态、起止、source |
+| `catalog_revisions` / `offerings` | 服务端定价快照；见支付规范 |
+| `subscriptions` | subject、plan、状态、起止、source；ToC 付费必须有 `endsAt` |
 | `grants` | 细粒度或覆盖型授权（partner/manual/license 投影） |
 | `organization_seats` | seat 限额与占用 |
-| `usage_counters` | 配额用量 |
+| `usage_counters` | 配额用量聚合（counter 与 gauge 快路径） |
+| `resource_allocations` | gauge 资源占用；唯一键 `(subject_kind, subject_id, product_code, feature_code, resource_id)`；`amount >= 0` |
 | `trial_redemptions` | `(logto_sub, product_code)` 唯一 |
+| `policy_acceptances` | `(logto_sub, policy_kind, policy_version)` + ip / ua |
+| `trial_cleanup_jobs` | Trial 物理清理；`endsAt` 调度；投递/ack 状态 |
 | `promotion_redemptions` | `(subject, product_code, promotion_code)` 唯一；口语注册 300 秒等 once-grant |
 | `partners` / `partner_benefits` | 合作方与权益模板 |
 | `redemptions` | 兑换记录与幂等键 |
 | `licenses` | 已签发 / 已激活 License 元数据 |
-| `orders` / `webhook_events` | 订单与支付回调 |
-| `outbox_events` | 通知与对外事件 |
+| `orders` / `payment_attempts` / `payment_provider_configs` / `provider_webhook_events` | 订单与支付；细节 [payment-platform.md](./payment-platform.md) |
+| `outbox_events` | 通知、`trial.purge` 与对外事件 |
 | `audit_logs` | 写入审计链 |
 
 `subscriptions.status`：`active` | `canceled` | `expired` | `pending`。  
@@ -427,7 +492,7 @@ PostgreSQL。表名稳定；列可增不可静默改语义。
 
 目标包：`shared/packages/entitlement-client`（`@luminaryworks/entitlement-client`）。
 
-能力：NestJS module、短 TTL cache、批量 check、quota consume、License 本地校验 fallback、统一错误 DTO。
+能力：NestJS module、短 TTL cache、批量 check、quota consume、gauge allocate/release、License 本地校验 fallback、统一错误 DTO。
 
 产品 Guard 顺序（示意）：
 
@@ -440,7 +505,8 @@ LuminaryJwtAuthGuard → EntitlementGuard(feature) → PermissionGuard(Casbin)
 | **DataLuminary** | DataTalk：`JwtAuthGuard` + `PermissionGuard` 之间插入 Entitlement；Casbin 继续管 dashboard/space/dataset；高级分析/导出/容量走 feature/quota。DataView：Trial 倒计时、Pro/Ultra 升级、企业视图。Space ↔ Logto Org 显式映射 + seat。 |
 | **BlockyEdu** | `edu-server` / `server` 接入 client；`memberTier` / `code_pro` 等改为 feature code；课程班级作业 ACL 仍 Casbin。双前端 Trial/升级 UX；OIDC 未稳时保留 legacy 登录开关。 |
 | **VistaRemote** | 以 `shared/src/billing` catalog 为迁移基线；`server` billing 改为中央适配器，保持 `GET /billing/entitlements` 等 DTO 兼容；SFU/AI/录制门禁走 entitlement；设备会话归属仍 Casbin/ABAC。 |
-| **DoerFlow** | Logto JWT → Entitlement（含 `integration.*`，`trialPolicy=disabled`）→ Casbin；平台套餐不含协议费 / Escrow / Gas；钱包/SIWE 另轨。 |
+| **DoerFlow** | Logto JWT → Entitlement（含 `integration.*`，`trialPolicy=disabled`）→ Casbin；平台套餐不含协议费 / Escrow / Gas；钱包/SIWE 另轨。无 Trial CTA。 |
+| **VistaCast / SyncroBrain** | 目录可占位；`sellable=false` 时不接线 Checkout / Trial；跨产品 commerce 仍走 DoerFlow `integration.*`。就绪前不得宣称已售。 |
 
 ---
 
@@ -472,24 +538,68 @@ LuminaryJwtAuthGuard → EntitlementGuard(feature) → PermissionGuard(Casbin)
 - 不在 Logto / JWT 中存放商业 entitlements。
 - 不用 Entitlement 表存储产品资源 ACL。
 - 不强制六产品同一套本地角色表。
-- 不在本服务内实现完整支付渠道（仅订单抽象与适配器接口）。
-- 不为 VistaCast / SyncroBrain 凭空发布面向用户的中央价格方案；跨产品用量走 DoerFlow `integration.*`。
+- 不在产品仓实现平行支付验签或客户端定价；中央编排见 [payment-platform.md](./payment-platform.md)。
+- 不为 VistaCast / SyncroBrain 在 `sellable=false` 时发布面向用户的中央价格方案或 Trial；跨产品用量走 DoerFlow `integration.*`。
 - 不把协议费、Job 单价、Escrow 或 Gas 编进套餐 feature。
+- 不引入公有云 S3 / R2 作为对象权威；不把 CDN 计为冷数据容量减免。
+- 不把 AIStor 二进制打进私有化 pack 转售。
+- 不为启动 Doris 停止其他服务；不把 6 GB 共享 Doris 标成生产 SLA。
+- 不发明永久 Free 档。
 
 ---
 
-## 15. 实现冻结检查清单
+## 15. 对象存储（MinIO 兼容）
+
+权威决策：[decisions/2026-09-storage-doris-payment.md](./decisions/2026-09-storage-doris-payment.md)。
+
+- Hosted SaaS：官方 AIStor Free **单节点**；内部 S3 兼容 API；禁止公有云 S3 / R2。
+- 后续只改 MinIO endpoint 迁独立节点；应用契约 `put/get/delete/head/presign/listPrefix` 不变。
+- 私有化：客户自行安装并接受许可证，或提供自有 endpoint；**禁止**在私有 pack 中再分发 AIStor。
+- CDN 降低回源，**不**减少磁盘占用。Trial 对象随 purge 删除。
+- 建议 bucket 与产品隔离：`luminary-media`、`vistaremote-recordings`、`vistacast-recordings`、`blockyedu-media`、`dataluminary-media`、`backup-staging`。
+
+## 16. 共享 Doris 演示（Pilot）
+
+- 按需启动；FE+BE cgroup 合计 ≤ 主机内存 25%（24 GB → 6 GB；默认 FE 2 GB + BE 4 GB；2 vCPU；同步并发 1）。
+- **不得**为启动 Doris 停止 ThingsBoard、媒体、AI、TURN 或其他服务。空闲 30 分钟可关停。
+- 低于 Apache Doris 官方最低参考（约 FE 8 GB + BE 16 GB），只能标 **Pilot**，无 HA/SLA。
+- Trial/Pro/Ultra 默认可申请 `analytical.shared_demo`；`analytical.dedicated_service` 仅人工开通。
+- 升温：`202` + `DORIS_WARMING`；忙：`DORIS_DEMO_BUSY`，文案导向购买专属 Doris。
+
+## 17. 支付编排
+
+细节只在 [payment-platform.md](./payment-platform.md)。此处冻结与权益的交叉点：
+
+- 服务端 offering 定价；付费成功写入带具体 `endsAt` 的 30/365 天订阅。
+- Hosted `CN` 默认已启用支付宝；海外为全部运营启用渠道；加密渠道双重阻断 CN。
+- 内置 adapter ≠ `enabled`。
+
+## 18. 实现冻结检查清单
 
 在编写 `services/entitlement` 与产品适配前，下列项视为已冻结（变更需改本文件并 bump 决策日）：
 
 1. 三层顺序与「权益不进 JWT」  
 2. Subject 三种类与 Trial 唯一性规则  
-3. Plan 档位命名：`trial` / `pro` / `ultra` / `enterprise`  
+3. Plan 档位命名：`trial` / `pro` / `ultra` / `enterprise`（**无 free**）；`none` 仅展示
 4. 错误码表与 `402` vs `403` 分工  
 5. License 不绕过 Casbin  
 6. Bundle 拆分与 Partner 幂等兑换形状  
-7. T-3 / 到期通知事件名与去重键  
+7. T-3 / T-1 / 到期通知事件名与去重键；`trial.purge` 签名 outbox
 8. `ENTITLEMENT_MODE` 三态迁移  
 9. 监听端口 `3040`（不作 `7090`）；`GET /version` 契约  
+10. 无永久 Free；ToC 付费必须有 `endsAt`
+11. 产品 `sellable` 与 `trialPolicy` 分离；DoerFlow 无 Trial；VistaCast / SyncroBrain 默认不可售
+12. 服务端定价与原始 body 支付验签（见支付规范）
+13. 版本化政策接受后方可激活 Trial
+14. MinIO 兼容自建存储；AIStor 不随私有包再分发；Doris 6 GB Pilot
 
 OpenAPI 以本契约为准生成；种子目录可增 feature，不得改变已发布 code 语义。
+
+## 19. 相关文档
+
+- [payment-platform.md](./payment-platform.md)
+- [decisions/2026-09-storage-doris-payment.md](./decisions/2026-09-storage-doris-payment.md)
+- [legal/README.md](./legal/README.md)
+- [products/index.md](./products/index.md)
+- [identity-and-permissions.md](./identity-and-permissions.md)
+- [composable-deployment.md](./composable-deployment.md)

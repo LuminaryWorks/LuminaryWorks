@@ -1,4 +1,5 @@
 import dataSource from "../src/database/data-source";
+import { DEFAULT_LEGAL_POLICY_VERSION, LEGAL_DOCUMENT_KEYS } from "../src/common/legal-policy";
 import {
   ConsumeIdempotencyEntity,
   FeatureEntity,
@@ -7,12 +8,14 @@ import {
   OrganizationSeatEntity,
   PlanEntity,
   PlanFeatureEntity,
+  PolicyAcceptanceEntity,
   ProductEntity,
   SubscriptionEntity,
   TrialRedemptionEntity,
   UsageCounterEntity,
 } from "../src/database/entities";
 import { EntitlementsService } from "../src/modules/entitlements/entitlements.service";
+import { LegalService } from "../src/modules/legal/legal.service";
 import { TrialsService } from "../src/modules/trials/trials.service";
 
 const describeDatabase = process.env.RUN_DB_INTEGRATION === "1" ? describe : describe.skip;
@@ -45,11 +48,15 @@ describeDatabase("product trial policy database integration", () => {
   });
 
   afterAll(async () => {
+    await dataSource.query(`DELETE FROM policy_acceptances WHERE logto_sub IN ($1, $2)`, [
+      disabledSubject,
+      standardSubject,
+    ]);
     await dataSource.query(`DELETE FROM outbox_events WHERE payload->>'productCode' IN ($1, $2)`, [
       disabledCode,
       standardCode,
     ]);
-    for (const table of ["trial_redemptions", "grants", "subscriptions"]) {
+    for (const table of ["trial_cleanup_jobs", "trial_redemptions", "grants", "subscriptions"]) {
       await dataSource.query(`DELETE FROM ${table} WHERE product_code IN ($1, $2)`, [
         disabledCode,
         standardCode,
@@ -66,7 +73,18 @@ describeDatabase("product trial policy database integration", () => {
     const subscriptions = dataSource.getRepository(SubscriptionEntity);
     const grants = dataSource.getRepository(GrantEntity);
     const licenses = dataSource.getRepository(LicenseEntity);
+    const legal = new LegalService(
+      {
+        getOrThrow: () => ({
+          legalPolicyVersion: DEFAULT_LEGAL_POLICY_VERSION,
+          legalPublicBaseUrl: "https://example.test/legal",
+        }),
+      } as never,
+      dataSource.getRepository(PolicyAcceptanceEntity),
+      { record: jest.fn() } as never,
+    );
     return {
+      legal,
       trials: new TrialsService(
         dataSource,
         dataSource.getRepository(TrialRedemptionEntity),
@@ -74,6 +92,7 @@ describeDatabase("product trial policy database integration", () => {
         licenses,
         products,
         { record: jest.fn() } as never,
+        legal,
       ),
       entitlements: new EntitlementsService(
         dataSource,
@@ -138,7 +157,13 @@ describeDatabase("product trial policy database integration", () => {
   });
 
   it("preserves once-only seven-day behavior for standard products", async () => {
-    const { trials, entitlements } = services();
+    const { trials, entitlements, legal } = services();
+    await legal.accept({
+      logtoSub: standardSubject,
+      policyVersion: DEFAULT_LEGAL_POLICY_VERSION,
+      documentKeys: [...LEGAL_DOCUMENT_KEYS],
+      actor: standardSubject,
+    });
     const before = await entitlements.resolve({
       subjectKind: "USER",
       subjectId: standardSubject,

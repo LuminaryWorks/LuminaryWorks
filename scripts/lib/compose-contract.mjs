@@ -247,6 +247,18 @@ export function checkComposeConfig(config, options = {}) {
 
     issues.push(...imageIssues(name, service ?? {}, hardened));
 
+    const imageName = String(service?.image ?? "").trim();
+    if (/(?:^|\/)minio\/minio(?::|@|$)/.test(imageName) && !/aistor\/minio/.test(imageName)) {
+      issues.push(
+        issue(
+          "error",
+          "forbidden_minio_ce",
+          name,
+          `Image "${imageName}" is unmaintained MinIO Community Edition; use quay.io/minio/aistor/minio with a RELEASE pin or digest.`,
+        ),
+      );
+    }
+
     const ports = normalizePorts(service?.ports);
     const datastore = isDatastore(name, service ?? {});
 

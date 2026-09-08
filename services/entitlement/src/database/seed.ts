@@ -6,7 +6,7 @@ async function seed() {
   await dataSource.initialize();
   await applyCatalog(dataSource);
   // eslint-disable-next-line no-console
-  console.log("Seed complete: products, plans, features, sample bundle");
+  console.log("Seed complete: products, plans, features, sample bundle, published offerings");
   await dataSource.destroy();
 }
 

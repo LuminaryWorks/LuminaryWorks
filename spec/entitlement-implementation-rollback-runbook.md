@@ -45,6 +45,8 @@ pnpm run build && node dist/main.js
 
 Outbox workers are multi-instance safe: claim uses `SELECT … FOR UPDATE SKIP LOCKED` with lease expiry recovery (`OUTBOX_CLAIM_SQL`). Configure `outboxLeaseSeconds` / `outboxWorkerId` if needed.
 
+Trial cleanup: set `ENTITLEMENT_LEGAL_POLICY_VERSION` (default `lw-legal-v2026-09-07`) and `ENTITLEMENT_TRIAL_PURGE_TARGETS` as a JSON object of `productCode → { url, secret }` (placeholders only in examples). Missing purge targets retry / dead-letter and never mark `trial.purge` sent. Paid fulfillment cancels pending T-3 / T-1 / expired / purge work under the same per-user/product advisory lock.
+
 Do **not** commit `.env`, PEM private keys, or filled `ENTITLEMENT_LICENSE_PRIVATE_KEY`.
 
 ## Product env flags
@@ -108,6 +110,7 @@ Decision: **GO for `shadow_read`**. **Conditional GO for canary `enforce`** only
 | Central outage under enforce | Fail closed (402/503). Optionally raise offline grace only after confirming subject-keyed cache. |
 | Schema | Do **not** drop legacy plan/trial columns until audit window closes. Migration scripts are idempotent / dry-run capable. |
 | Outbox lease stuck | Expired `locked_until` rows are reclaimed by the next worker; cancel clears processing leases. |
+| Legal / purge | Additive `policy_acceptances` + `trial_cleanup_jobs` (1730700000000). Revert that migration only if unsafe; prefer canceling cleanup jobs and setting product `ENTITLEMENT_MODE=off`. |
 
 Central service rollback: stop traffic to products (`off`), then revert service deploy. DB migrations are additive for LW-ENT; revert only with `migration:revert` if a new migration is unsafe.
 
@@ -121,6 +124,7 @@ Central service rollback: stop traffic to products (`off`), then revert service 
 - [x] Simulate-paid disabled by default (`BILLING_ALLOW_SIMULATE_PAID` unset)
 - [x] Multiple entitlement service replicas: outbox claim lease indexes present (`migration:run`)
 - [x] DoerFlow privileged task/payment paths bind wallet/service identity and enforce Casbin after commercial allow
+- [x] Versioned legal accept + Trial T-1 / `trial.purge` control-plane contract (HMAC + ack; no product purge handlers in this change)
 - [ ] Target environment: complete live Logto + chain E2E and observe shadow-diff soak before full enforce
 
 ## Related docs

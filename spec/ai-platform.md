@@ -71,7 +71,7 @@ DataLuminary MVP **不得** 在 DataTalk 另造一套日后必须拆除的 Provi
 
 ## 5. 商业与权限
 
-- Free：产品可展示 AI 入口，点击走 **升级 / upsell**，不隐藏入口。BlockyEdu 口语另有一次性 300 秒体验（不是 7 天 Trial）。
+- 无有效付费 / Trial（展示档 `none`，**不是**永久 Free 套餐）：产品可展示 AI 入口，点击走 **升级 / upsell**，不隐藏入口。BlockyEdu 口语另有一次性 300 秒体验（不是 7 天 Trial）。
 - Pro / Ultra / 企业 / License：用户或组织可配置 BYOK；ToC 口语默认托管路由。
 - Feature 例：DataLuminary `ai.analysis`（已冻结）；BlockyEdu `ai.voice` + `ai.voice.*.seconds`。新产品 feature 先写入 [subscription-and-entitlement.md](./subscription-and-entitlement.md)。
 - 无资源权限时：产品对话框提示 **申请访问**，不由中央平台代判。

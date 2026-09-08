@@ -160,6 +160,27 @@ test("digest-pinned images pass without comment", () => {
   assert.deepEqual(codes(issues), []);
 });
 
+test("rejects unmaintained minio/minio Community Edition images", () => {
+  const { issues } = checkComposeConfig(
+    config({ storage: { image: "minio/minio:latest" } }),
+    { stage: "dev" },
+  );
+  assert.ok(codes(issues).includes("forbidden_minio_ce"));
+  const aistor = checkComposeConfig(
+    config({
+      "object-storage": {
+        image:
+          "quay.io/minio/aistor/minio@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      },
+    }),
+    { stage: "dev" },
+  );
+  assert.equal(
+    aistor.issues.some((issue) => issue.code === "forbidden_minio_ce"),
+    false,
+  );
+});
+
 test("a service with neither image nor build is rejected", () => {
   const { issues } = checkComposeConfig(config({ identity: {} }));
   assert.ok(codes(issues).includes("image_missing"));

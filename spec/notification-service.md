@@ -1,7 +1,7 @@
 # LuminaryWorks Notification（一期：共享邮件模块）
 
 > **状态**：Accepted（一期） · **范围**：平台级消息能力抽象  
-> **相关**：[ecosystem-refactoring.md](./ecosystem-refactoring.md) · [migration-matrix.md](./migration-matrix.md)
+> **相关**：[ecosystem-refactoring.md](./ecosystem-refactoring.md) · [migration-matrix.md](./migration-matrix.md) · [subscription-and-entitlement.md](./subscription-and-entitlement.md)（Trial T-3 / T-1 / 到期事件由 Entitlement outbox 投递）
 
 ## 0. 决策摘要
 

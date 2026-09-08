@@ -1,8 +1,21 @@
 import { Injectable } from "@nestjs/common";
 import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
-import { DataSource, In, type Repository } from "typeorm";
-import type { PlanCode, QuotaMerge, QuotaPeriod, SubjectKind } from "../../common/constants";
+import { DataSource, In, type EntityManager, type Repository } from "typeorm";
+import type {
+  MeteringMode,
+  PlanCode,
+  QuotaMerge,
+  QuotaPeriod,
+  SubjectKind,
+} from "../../common/constants";
 import { EntitlementException } from "../../common/errors";
+import {
+  applyGaugeDelta,
+  assertMeteringMode,
+  bigintToNumber,
+  parseNonNegativeInt,
+  remainingOf,
+} from "../../common/quota-math";
 import { ConsumeIdempotencyEntity } from "../../database/entities/consume-idempotency.entity";
 import { FeatureEntity } from "../../database/entities/feature.entity";
 import { GrantEntity } from "../../database/entities/grant.entity";
@@ -11,7 +24,9 @@ import { OrganizationSeatEntity } from "../../database/entities/organization-sea
 import { PlanEntity } from "../../database/entities/plan.entity";
 import { PlanFeatureEntity } from "../../database/entities/plan-feature.entity";
 import { ProductEntity } from "../../database/entities/product.entity";
+import { ResourceAllocationEntity } from "../../database/entities/resource-allocation.entity";
 import { SubscriptionEntity } from "../../database/entities/subscription.entity";
+import { TrialRedemptionEntity } from "../../database/entities/trial-redemption.entity";
 import { UsageCounterEntity } from "../../database/entities/usage-counter.entity";
 import {
   type ActiveSource,
@@ -24,6 +39,7 @@ import {
   periodKeyFor,
   pickEffectivePlan,
   type ResolveContext,
+  type AllocationMutationResult,
 } from "./resolution";
 
 @Injectable()
@@ -88,8 +104,9 @@ export class EntitlementsService {
       quotas[code] = {
         limit,
         used,
-        remaining: limit == null ? null : Math.max(0, limit - used),
+        remaining: remainingOf(limit, used),
         period: q.period,
+        meteringMode: q.meteringMode,
         sources: q.sources,
       };
     }
@@ -104,6 +121,9 @@ export class EntitlementsService {
         source: "trial",
       },
     });
+    const trialRedemption = await this.dataSource.getRepository(TrialRedemptionEntity).findOne({
+      where: { logtoSub: ctx.subjectId, productCode: ctx.productCode },
+    });
 
     return {
       productCode: ctx.productCode,
@@ -116,7 +136,9 @@ export class EntitlementsService {
         endsAt: trialSub?.endsAt?.toISOString() ?? null,
         consumed: trialConsumed,
         eligible: product.trialPolicy === "standard_7d" && !trialConsumed,
+        trialRedemptionId: trialRedemption?.id ?? null,
       },
+      sellable: product.sellable,
       features: merged.features,
       quotas,
       asOf: asOf.toISOString(),
@@ -201,6 +223,7 @@ export class EntitlementsService {
         { productCode: input.ctx.productCode, featureCode: input.featureCode },
       );
     }
+    assertMeteringMode(quota.meteringMode, "counter", input.featureCode);
     if (quota.remaining != null && quota.remaining < input.amount) {
       throw new EntitlementException("ENTITLEMENT_QUOTA_EXCEEDED", "Quota exceeded", {
         productCode: input.ctx.productCode,
@@ -233,35 +256,14 @@ export class EntitlementsService {
           lock: { mode: "pessimistic_write" },
         });
         if (!row) {
-          try {
-            row = await manager.save(
-              manager.create(UsageCounterEntity, {
-                subjectKind: input.ctx.subjectKind,
-                subjectId: input.ctx.subjectId,
-                productCode: input.ctx.productCode,
-                featureCode: input.featureCode,
-                periodKey: pk,
-                period: quota.period,
-                used: "0",
-                limitValue: quota.limit == null ? null : String(quota.limit),
-              }),
-            );
-          } catch {
-            // Concurrent first insert — re-select under lock
-            row = await manager.findOneOrFail(UsageCounterEntity, {
-              where: {
-                subjectKind: input.ctx.subjectKind,
-                subjectId: input.ctx.subjectId,
-                productCode: input.ctx.productCode,
-                featureCode: input.featureCode,
-                periodKey: pk,
-              },
-              lock: { mode: "pessimistic_write" },
-            });
-          }
-          row = await manager.findOneOrFail(UsageCounterEntity, {
-            where: { id: row.id },
-            lock: { mode: "pessimistic_write" },
+          row = await this.lockOrCreateUsageCounter(manager, {
+            subjectKind: input.ctx.subjectKind,
+            subjectId: input.ctx.subjectId,
+            productCode: input.ctx.productCode,
+            featureCode: input.featureCode,
+            periodKey: pk,
+            period: quota.period,
+            limitValue: quota.limit,
           });
         }
 
@@ -304,6 +306,163 @@ export class EntitlementsService {
       }
       throw err;
     }
+  }
+
+  async allocate(input: {
+    ctx: ResolveContext;
+    featureCode: string;
+    resourceId: string;
+    amount: number | string;
+    ownerKind?: string | null;
+    ownerId?: string | null;
+    source?: string | null;
+    sourceRef?: string | null;
+    idempotencyKey?: string;
+  }): Promise<AllocationMutationResult> {
+    return this.mutateGauge({
+      ...input,
+      nextAmount: parseNonNegativeInt(input.amount),
+      idempotencyPrefix: "alloc:",
+    });
+  }
+
+  async release(input: {
+    ctx: ResolveContext;
+    featureCode: string;
+    resourceId: string;
+    idempotencyKey?: string;
+  }): Promise<AllocationMutationResult> {
+    return this.mutateGauge({
+      ...input,
+      nextAmount: 0n,
+      idempotencyPrefix: "rel:",
+    });
+  }
+
+  async reconcileGaugeUsage(
+    filter: {
+      subjectKind?: SubjectKind;
+      subjectId?: string;
+      productCode?: string;
+      featureCode?: string;
+    } = {},
+  ): Promise<{
+    rebuilt: number;
+    items: Array<{
+      subjectKind: SubjectKind;
+      subjectId: string;
+      productCode: string;
+      featureCode: string;
+      periodKey: string;
+      used: number;
+      allocationCount: number;
+    }>;
+  }> {
+    const gaugeFeatures = await this.loadGaugeFeatures(filter.productCode, filter.featureCode);
+    if (gaugeFeatures.length === 0) return { rebuilt: 0, items: [] };
+
+    return this.dataSource.transaction(async (manager) => {
+      const items: Array<{
+        subjectKind: SubjectKind;
+        subjectId: string;
+        productCode: string;
+        featureCode: string;
+        periodKey: string;
+        used: number;
+        allocationCount: number;
+      }> = [];
+
+      const asOf = new Date();
+      for (const feature of gaugeFeatures) {
+        const period = feature.quotaPeriod ?? "lifetime";
+        const periodKey = periodKeyFor(period, asOf);
+        const allocQb = manager
+          .createQueryBuilder(ResourceAllocationEntity, "a")
+          .select("a.subject_kind", "subjectKind")
+          .addSelect("a.subject_id", "subjectId")
+          .addSelect("a.product_code", "productCode")
+          .addSelect("a.feature_code", "featureCode")
+          .addSelect("COUNT(*)::int", "allocationCount")
+          .addSelect("COALESCE(SUM(a.amount), 0)", "used")
+          .where("a.product_code = :productCode", { productCode: feature.productCode })
+          .andWhere("a.feature_code = :featureCode", { featureCode: feature.code })
+          .groupBy("a.subject_kind")
+          .addGroupBy("a.subject_id")
+          .addGroupBy("a.product_code")
+          .addGroupBy("a.feature_code");
+        if (filter.subjectKind) {
+          allocQb.andWhere("a.subject_kind = :subjectKind", { subjectKind: filter.subjectKind });
+        }
+        if (filter.subjectId) {
+          allocQb.andWhere("a.subject_id = :subjectId", { subjectId: filter.subjectId });
+        }
+        const sums = await allocQb.getRawMany<{
+          subjectKind: SubjectKind;
+          subjectId: string;
+          productCode: string;
+          featureCode: string;
+          allocationCount: number | string;
+          used: string;
+        }>();
+
+        const seen = new Set<string>();
+        for (const row of sums) {
+          const used = parseNonNegativeInt(String(row.used), "used");
+          const usage = await this.lockOrCreateUsageCounter(manager, {
+            subjectKind: row.subjectKind,
+            subjectId: row.subjectId,
+            productCode: row.productCode,
+            featureCode: row.featureCode,
+            periodKey,
+            period,
+            limitValue: null,
+          });
+          usage.used = String(used);
+          await manager.save(usage);
+          const key = `${row.subjectKind}:${row.subjectId}:${row.productCode}:${row.featureCode}:${periodKey}`;
+          seen.add(key);
+          items.push({
+            subjectKind: row.subjectKind,
+            subjectId: row.subjectId,
+            productCode: row.productCode,
+            featureCode: row.featureCode,
+            periodKey,
+            used: bigintToNumber(used),
+            allocationCount: Number(row.allocationCount),
+          });
+        }
+
+        const usageQb = manager
+          .createQueryBuilder(UsageCounterEntity, "u")
+          .where("u.product_code = :productCode", { productCode: feature.productCode })
+          .andWhere("u.feature_code = :featureCode", { featureCode: feature.code })
+          .andWhere("u.period_key = :periodKey", { periodKey });
+        if (filter.subjectKind) {
+          usageQb.andWhere("u.subject_kind = :subjectKind", { subjectKind: filter.subjectKind });
+        }
+        if (filter.subjectId) {
+          usageQb.andWhere("u.subject_id = :subjectId", { subjectId: filter.subjectId });
+        }
+        const usageRows = await usageQb.getMany();
+        for (const usage of usageRows) {
+          const key = `${usage.subjectKind}:${usage.subjectId}:${usage.productCode}:${usage.featureCode}:${usage.periodKey}`;
+          if (seen.has(key)) continue;
+          usage.used = "0";
+          await manager.save(usage);
+          items.push({
+            subjectKind: usage.subjectKind,
+            subjectId: usage.subjectId,
+            productCode: usage.productCode,
+            featureCode: usage.featureCode,
+            periodKey: usage.periodKey,
+            used: 0,
+            allocationCount: 0,
+          });
+        }
+      }
+
+      return { rebuilt: items.length, items };
+    });
   }
 
   async assertSeatAvailable(
@@ -446,9 +605,219 @@ export class EntitlementsService {
     return sources;
   }
 
+  private async mutateGauge(input: {
+    ctx: ResolveContext;
+    featureCode: string;
+    resourceId: string;
+    nextAmount: bigint;
+    ownerKind?: string | null;
+    ownerId?: string | null;
+    source?: string | null;
+    sourceRef?: string | null;
+    idempotencyKey?: string;
+    idempotencyPrefix: string;
+  }): Promise<AllocationMutationResult> {
+    const resourceId = input.resourceId.trim();
+    if (!resourceId) {
+      throw new EntitlementException("VALIDATION_ERROR", "resourceId is required");
+    }
+    const storedKey = input.idempotencyKey
+      ? `${input.idempotencyPrefix}${input.idempotencyKey}`
+      : undefined;
+    if (storedKey) {
+      const existing = await this.idempotency.findOne({ where: { idempotencyKey: storedKey } });
+      if (existing) return existing.response as unknown as AllocationMutationResult;
+    }
+
+    const snapshot = await this.resolve(input.ctx);
+    const quota = snapshot.quotas[input.featureCode];
+    if (!quota) {
+      throw new EntitlementException(
+        "ENTITLEMENT_FEATURE_REQUIRED",
+        `No quota entitlement for ${input.featureCode}`,
+        { productCode: input.ctx.productCode, featureCode: input.featureCode },
+      );
+    }
+    assertMeteringMode(quota.meteringMode, "gauge", input.featureCode);
+
+    const asOf = input.ctx.asOf ?? new Date();
+    const pk = periodKeyFor(quota.period, asOf);
+    const limit = quota.limit == null ? null : BigInt(quota.limit);
+
+    try {
+      return await this.dataSource.transaction(async (manager) => {
+        if (storedKey) {
+          const existing = await manager.findOne(ConsumeIdempotencyEntity, {
+            where: { idempotencyKey: storedKey },
+            lock: { mode: "pessimistic_write" },
+          });
+          if (existing) return existing.response as unknown as AllocationMutationResult;
+        }
+
+        const usage = await this.lockOrCreateUsageCounter(manager, {
+          subjectKind: input.ctx.subjectKind,
+          subjectId: input.ctx.subjectId,
+          productCode: input.ctx.productCode,
+          featureCode: input.featureCode,
+          periodKey: pk,
+          period: quota.period,
+          limitValue: quota.limit,
+        });
+
+        const allocation = await manager.findOne(ResourceAllocationEntity, {
+          where: {
+            subjectKind: input.ctx.subjectKind,
+            subjectId: input.ctx.subjectId,
+            productCode: input.ctx.productCode,
+            featureCode: input.featureCode,
+            resourceId,
+          },
+          lock: { mode: "pessimistic_write" },
+        });
+        const previousAmount = allocation ? parseNonNegativeInt(allocation.amount, "amount") : 0n;
+        const next = applyGaugeDelta({
+          currentUsed: parseNonNegativeInt(usage.used, "used"),
+          previousAmount,
+          nextAmount: input.nextAmount,
+          limit,
+        });
+        const usedNumber = bigintToNumber(next.used);
+        const amountNumber = bigintToNumber(input.nextAmount);
+        const response: AllocationMutationResult = {
+          featureCode: input.featureCode,
+          resourceId,
+          amount: amountNumber,
+          previousAmount: bigintToNumber(previousAmount),
+          used: usedNumber,
+          remaining: remainingOf(quota.limit, usedNumber),
+          limit: quota.limit,
+          meteringMode: "gauge",
+          unchanged: next.unchanged,
+          released: input.nextAmount === 0n,
+        };
+
+        if (!next.unchanged) {
+          usage.used = String(next.used);
+          usage.limitValue = quota.limit == null ? null : String(quota.limit);
+          await manager.save(usage);
+          if (input.nextAmount === 0n) {
+            if (allocation) await manager.remove(allocation);
+          } else if (allocation) {
+            allocation.amount = String(input.nextAmount);
+            allocation.ownerKind = input.ownerKind ?? allocation.ownerKind;
+            allocation.ownerId = input.ownerId ?? allocation.ownerId;
+            allocation.source = input.source ?? allocation.source;
+            allocation.sourceRef = input.sourceRef ?? allocation.sourceRef;
+            await manager.save(allocation);
+          } else {
+            await manager.save(
+              manager.create(ResourceAllocationEntity, {
+                subjectKind: input.ctx.subjectKind,
+                subjectId: input.ctx.subjectId,
+                productCode: input.ctx.productCode,
+                featureCode: input.featureCode,
+                resourceId,
+                amount: String(input.nextAmount),
+                ownerKind: input.ownerKind ?? null,
+                ownerId: input.ownerId ?? null,
+                source: input.source ?? null,
+                sourceRef: input.sourceRef ?? null,
+              }),
+            );
+          }
+        } else {
+          usage.limitValue = quota.limit == null ? null : String(quota.limit);
+          await manager.save(usage);
+        }
+
+        if (storedKey) {
+          await manager.save(
+            manager.create(ConsumeIdempotencyEntity, {
+              idempotencyKey: storedKey,
+              response: { ...response },
+            }),
+          );
+        }
+        return response;
+      });
+    } catch (err) {
+      if (storedKey) {
+        const again = await this.idempotency.findOne({ where: { idempotencyKey: storedKey } });
+        if (again) return again.response as unknown as AllocationMutationResult;
+      }
+      throw err;
+    }
+  }
+
+  private async lockOrCreateUsageCounter(
+    manager: EntityManager,
+    input: {
+      subjectKind: SubjectKind;
+      subjectId: string;
+      productCode: string;
+      featureCode: string;
+      periodKey: string;
+      period: QuotaPeriod;
+      limitValue: number | null;
+    },
+  ): Promise<UsageCounterEntity> {
+    await manager.query(
+      `
+      INSERT INTO usage_counters (
+        id, subject_kind, subject_id, product_code, feature_code, period_key, period,
+        used, limit_value, version, created_at, updated_at
+      ) VALUES (
+        gen_random_uuid(), $1, $2, $3, $4, $5, $6, '0', $7, 1, now(), now()
+      )
+      ON CONFLICT (subject_kind, subject_id, product_code, feature_code, period_key)
+      DO NOTHING
+      `,
+      [
+        input.subjectKind,
+        input.subjectId,
+        input.productCode,
+        input.featureCode,
+        input.periodKey,
+        input.period,
+        input.limitValue == null ? null : String(input.limitValue),
+      ],
+    );
+    return manager.findOneOrFail(UsageCounterEntity, {
+      where: {
+        subjectKind: input.subjectKind,
+        subjectId: input.subjectId,
+        productCode: input.productCode,
+        featureCode: input.featureCode,
+        periodKey: input.periodKey,
+      },
+      lock: { mode: "pessimistic_write" },
+    });
+  }
+
+  private async loadGaugeFeatures(productCode?: string, featureCode?: string) {
+    const products = productCode
+      ? await this.products.find({ where: { code: productCode } })
+      : await this.products.find();
+    const out: Array<{ productCode: string; code: string; quotaPeriod: QuotaPeriod | null }> = [];
+    for (const product of products) {
+      const rows = await this.features.find({
+        where: {
+          productId: product.id,
+          kind: "quota",
+          meteringMode: "gauge",
+          ...(featureCode ? { code: featureCode } : {}),
+        },
+      });
+      for (const row of rows) {
+        out.push({ productCode: product.code, code: row.code, quotaPeriod: row.quotaPeriod });
+      }
+    }
+    return out;
+  }
+
   private async loadCatalogQuotas(
     productCode: string,
-  ): Promise<Map<string, { period: QuotaPeriod; merge: QuotaMerge }>> {
+  ): Promise<Map<string, { period: QuotaPeriod; merge: QuotaMerge; meteringMode: MeteringMode }>> {
     const product = await this.products.findOne({ where: { code: productCode } });
     if (!product) return new Map();
     const rows = await this.features.find({ where: { productId: product.id, kind: "quota" } });
@@ -458,6 +827,7 @@ export class EntitlementsService {
         {
           period: row.quotaPeriod ?? "lifetime",
           merge: row.quotaMerge ?? "max",
+          meteringMode: row.meteringMode ?? "counter",
         },
       ]),
     );

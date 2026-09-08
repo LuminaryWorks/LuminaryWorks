@@ -95,7 +95,7 @@
 | 层 | BlockyEdu 要点 |
 |----|----------------|
 | 身份 | 统一 Logto `sub`；`edu-app-web` / `code-app-web` 在 OIDC 未稳时可保留 legacy 登录开关 |
-| 权益 | 迁移 `memberTier` / `code_pro` 等为 feature code；ToC Trial 每用户每产品一次（**7 天，不变**）；口语另有一次性 300 秒 `ai.voice.trial.seconds`、Pro 月度 1800 秒、分钟包 `ai.voice.purchased.seconds`；规划 `create.preview.*` / `create.publish.*` 等 |
+| 权益 | 迁移 `memberTier` / `code_pro` 等为 feature code；ToC Trial 每用户每产品一次（**7×24 小时，须政策接受**）；**无永久 Free**；口语另有一次性 300 秒 `ai.voice.trial.seconds`、Pro 月度 1800 秒、分钟包 `ai.voice.purchased.seconds`；规划 `create.preview.*` / `create.publish.*` 等 |
 | 资源 | 课程、班级、作业、workspace / Artifact 仍由角色 + Casbin 控制；**禁止**用 role 名推断会员档 |
 | 迁移 | account membership / wallet → 中央 subscription/order/grant；双读比对后再停本地会员主写 |
 
@@ -148,5 +148,6 @@
 ## 8. 相关文档
 
 - 文档站产品页：[docs/docs/products/blockyedu.md](../../docs/docs/products/blockyedu.md)
+- 权益 / Trial：[subscription-and-entitlement.md](../subscription-and-entitlement.md) · [legal/README.md](../legal/README.md)
 - 实现仓蓝图：`blockyedu` → `docs/roadmap/ai-creation-platform-blueprint.md`
 - 实现仓规格：`blockyedu` → `spec/product-spec.md` · `spec/create-platform-spec.md`

@@ -34,6 +34,9 @@ export class ProductEntity {
   })
   trialPolicy!: TrialPolicy;
 
+  @Column({ type: "boolean", default: true })
+  sellable!: boolean;
+
   @OneToMany(
     () => FeatureEntity,
     (f) => f.product,

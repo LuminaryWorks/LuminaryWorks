@@ -2,7 +2,7 @@
 
 > **状态**：Frozen（形态与契约冻结；实现分阶段） · **方法**：VibeCode Spec-Driven
 > **实现**：[`@luminaryworks/control-manifest`](https://github.com/LuminaryWorks/shared/tree/master/packages/control-manifest) · [`deploy/`](../deploy/README.md)
-> **相关**：[repository-relationships.md](./repository-relationships.md) · [ecosystem-refactoring.md](./ecosystem-refactoring.md) · [identity-and-permissions.md](./identity-and-permissions.md) · [subscription-and-entitlement.md](./subscription-and-entitlement.md)
+> **相关**：[repository-relationships.md](./repository-relationships.md) · [ecosystem-refactoring.md](./ecosystem-refactoring.md) · [identity-and-permissions.md](./identity-and-permissions.md) · [subscription-and-entitlement.md](./subscription-and-entitlement.md) · [decisions/2026-09-storage-doris-payment.md](./decisions/2026-09-storage-doris-payment.md)
 
 本文冻结 LuminaryWorks **联邦式产品套件**的部署形态与跨产品契约：六个产品继续各自拥有运行时、数据库、ACL 与发布节奏，同时通过**可选**共享控制面、版本化契约和场景编排实现组合部署。
 

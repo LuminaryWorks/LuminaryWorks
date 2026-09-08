@@ -1,0 +1,38 @@
+# Private MinIO-compatible origin for CDN / Caddy.
+#
+# Daily Hosted SaaS: publish only this hostname (or the CDN hostname that
+# origins here). MinIO API stays on 127.0.0.1:9000. Console (9001) is NOT
+# proxied — use an SSH tunnel.
+#
+# Browser clients must use short-lived presigned PUT/GET (query-string
+# signature). Caddy does not validate AWS SigV4; the origin does.
+# Do not enable directory listing. CDN cache does not reduce origin disk
+# (see spec/decisions/2026-09-storage-doris-payment.md D-STOR-3).
+
+media-origin.example.com {
+	encode gzip
+
+	@listing {
+		method PROPFIND
+	}
+	respond @listing 405
+
+	reverse_proxy 127.0.0.1:9000 {
+		header_up Host {upstream_hostport}
+		flush_interval -1
+	}
+
+	# Default: do not treat origin objects as long-lived public cache.
+	header Cache-Control "private, max-age=60"
+	header -Server
+}
+
+# Optional public thumbnails — enable only when the operator has an explicit
+# public prefix and is willing to serve it unsigned. Commented out on purpose.
+# thumbs.example.com {
+#	encode gzip
+#	reverse_proxy 127.0.0.1:9000 {
+#		header_up Host {upstream_hostport}
+#	}
+#	header Cache-Control "public, max-age=3600"
+# }

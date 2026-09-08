@@ -24,6 +24,10 @@ export function hmacSha256Base64Url(secret: string, message: string | Buffer): s
   return createHmac("sha256", secret).update(message).digest("base64url");
 }
 
+export function hmacSha256Base64(secret: string, message: string | Buffer): string {
+  return createHmac("sha256", secret).update(message).digest("base64");
+}
+
 export function randomToken(bytes = 32): string {
   return randomBytes(bytes).toString("base64url");
 }

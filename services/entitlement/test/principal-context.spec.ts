@@ -1,6 +1,7 @@
 import {
   resolveTrustedDeploymentId,
   resolveTrustedOrganizationId,
+  resolveTrustedSubject,
 } from "../src/auth/principal-context";
 import type { AuthPrincipal } from "../src/auth/auth.types";
 import { EntitlementException } from "../src/common/errors";
@@ -41,5 +42,18 @@ describe("principal context trust boundary", () => {
     expect(() => resolveTrustedDeploymentId(user(), "dep_1")).toThrow(EntitlementException);
     expect(resolveTrustedDeploymentId(service(), "dep_1")).toBe("dep_1");
     expect(resolveTrustedDeploymentId(user(), undefined)).toBeUndefined();
+  });
+
+  it("never trusts a caller-supplied subjectId; users bind to token sub", () => {
+    expect(resolveTrustedSubject(user()).subjectId).toBe("user_1");
+    expect(resolveTrustedSubject(user()).subjectKind).toBe("USER");
+    expect(resolveTrustedSubject(service()).subjectId).toBe("user_1");
+    expect(() =>
+      resolveTrustedSubject({
+        subjectId: "service:internal",
+        kind: "service",
+        scopes: ["entitlement:admin"],
+      }),
+    ).toThrow(EntitlementException);
   });
 });

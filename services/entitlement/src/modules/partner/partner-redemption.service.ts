@@ -12,6 +12,7 @@ import { PartnerBenefitEntity } from "../../database/entities/partner-benefit.en
 import { RedemptionEntity } from "../../database/entities/redemption.entity";
 import { SubscriptionEntity } from "../../database/entities/subscription.entity";
 import { AuditService } from "../audit/audit.service";
+import { cancelTrialLifecycle } from "../trials/trial-lifecycle";
 import type { CreateRedemptionDto } from "./partner.dto";
 import { PartnerWebhookService } from "./partner-webhook.service";
 
@@ -176,25 +177,12 @@ export class PartnerRedemptionService {
           );
         }
 
+        if (row.logtoSub && planCode !== "trial") {
+          await cancelTrialLifecycle(manager, row.logtoSub, productCode);
+        }
+
         return { row, created: true as const };
       });
-
-      // Partner paid grant cancels pending Trial notifications for that user+product (§10).
-      if (redemption.created && redemption.row.logtoSub && redemption.row.productCode) {
-        await this.dataSource
-          .createQueryBuilder()
-          .update(OutboxEventEntity)
-          .set({ status: "canceled" })
-          .where("status IN (:...st)", { st: ["pending", "failed"] })
-          .andWhere("event_type IN (:...types)", {
-            types: ["trial.expiring", "trial.expired"],
-          })
-          .andWhere("payload->>'logtoSub' = :sub", { sub: redemption.row.logtoSub })
-          .andWhere("payload->>'productCode' = :productCode", {
-            productCode: redemption.row.productCode,
-          })
-          .execute();
-      }
 
       await this.audit.record({
         actor: input.actor,

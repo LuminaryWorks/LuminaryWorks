@@ -28,6 +28,9 @@
     "node": ">=24.0.0"
   },
   "dependencies": {
+    "@coinbase/cdp-sdk": "^1.55.0",
+    "@fastify/cors": "^11.2.0",
+    "@fastify/static": "^10.1.2",
     "@luminaryworks/notification": "^0.2.0",
     "@nestjs/common": "^11.1.28",
     "@nestjs/config": "^4.0.4",
@@ -36,7 +39,10 @@
     "@nestjs/swagger": "^11.4.6",
     "@nestjs/terminus": "^11.1.1",
     "@nestjs/typeorm": "^11.0.3",
-    "@fastify/static": "^10.1.2",
+    "@okxweb3/x402-core": "^0.1.0",
+    "@okxweb3/x402-evm": "^0.2.1",
+    "@okxweb3/x402-fastify": "^0.1.1",
+    "bitpay-sdk": "8.0.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "fastify": "5.11.3",
@@ -44,6 +50,7 @@
     "pg": "^8.22.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "stripe": "^22.6.1",
     "typeorm": "^0.3.27",
     "uuid": "^11.1.0"
   },

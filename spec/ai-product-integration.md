@@ -1,6 +1,6 @@
 # 六产品 AI 集成指南
 
-> **状态**：Accepted · **关联**：[ai-platform.md](./ai-platform.md)
+> **状态**：Accepted · **关联**：[ai-platform.md](./ai-platform.md) · [subscription-and-entitlement.md](./subscription-and-entitlement.md)
 
 ## 1. 接入清单
 
@@ -70,7 +70,7 @@ DataLuminary MCP 属于产品协议面，不升级为中央 AI Platform 的通�
 
 - 设备、MQTT、规则引擎不迁出。
 - 事件可桥到 DataLuminary 数据集；LLM 摘要走中央平台。
-- Entitlement 若缺 `syncrobrain` productCode，先补目录再接线（**仅** AI 计量；不得因此发布 SyncroBrain ToC 价格方案。跨产品 commerce 走 DoerFlow `integration.*`）。
+- Entitlement 若缺 `syncrobrain` productCode，先补目录再接线（**仅** AI 计量；`sellable` 仍为 false，不得因此发布 SyncroBrain ToC 价格或 Trial。跨产品 commerce 走 DoerFlow `integration.*`）。详见 [subscription-and-entitlement.md §3.2](./subscription-and-entitlement.md)。
 
 ## 7. DoerFlow
 

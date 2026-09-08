@@ -60,10 +60,10 @@ WebRTC · NestJS · TypeORM · PostgreSQL · React / Electron / RN · Redis
 | 层 | VistaRemote 要点 |
 |----|------------------|
 | 身份 | 可选 `@luminaryworks/auth-core` 统一登录；本地 profile 映射 Logto `sub` |
-| 权益 | 以 `shared/src/billing` feature catalog 为迁移基线；中央适配后保持 `GET /billing/entitlements` 与多端 DTO 兼容；档位对齐 `trial` / `pro` / `ultra` / `enterprise` |
+| 权益 | 以 `shared/src/billing` feature catalog 为迁移基线；中央适配后保持 `GET /billing/entitlements` 与多端 DTO 兼容；档位对齐 `trial` / `pro` / `ultra` / `enterprise`。本地历史 `free` **不得**映射为永久 Free 套餐（有效 Trial → `trial`，否则 → `none`） |
 | 门禁 | SFU、AI、录制、批量远控、`device.limit` 配额走 Entitlement；设备 / 会话 / 文件归属仍 Casbin/ABAC |
 | 私有化 | 签名 License 授予合同能力；**不**关闭身份校验或资源 ACL |
-| 迁移 | 内存订单与 `User.plan` / `trialEndsAt` / `planExpiresAt` → 中央；shadow-read 后停本地会员主写；Trial T-3 / 到期通知接邮件、站内 SSE、Push |
+| 迁移 | 内存订单与 `User.plan` / `trialEndsAt` / `planExpiresAt` → 中央；shadow-read 后停本地会员主写；Trial T-3 / T-1 / 到期通知接邮件、站内 SSE、Push；到期立即 402，对象异步 purge |
 
 ### 6.1 产品接线（已落地）
 
@@ -116,4 +116,4 @@ WebRTC · NestJS · TypeORM · PostgreSQL · React / Electron / RN · Redis
 
 - 实现仓：`../VistaRemote/spec/`
 - 生态：[domain-and-branding.md §4.5](../domain-and-branding.md#45-vistaremote--vistaremote-组织)
-- 权益：[subscription-and-entitlement.md](../subscription-and-entitlement.md)
+- 权益：[subscription-and-entitlement.md](../subscription-and-entitlement.md) · [legal/README.md](../legal/README.md)

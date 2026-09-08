@@ -11,9 +11,11 @@ import { CatalogModule } from "./modules/catalog/catalog.module";
 import { EntitlementsModule } from "./modules/entitlements/entitlements.module";
 import { HealthModule } from "./modules/health/health.module";
 import { LicenseModule } from "./modules/license/license.module";
+import { LegalModule } from "./modules/legal/legal.module";
 import { NotifyModule } from "./modules/notify/notify.module";
 import { OrdersModule } from "./modules/orders/orders.module";
 import { PartnerModule } from "./modules/partner/partner.module";
+import { PaymentsModule } from "./modules/payments/payments.module";
 import { PromotionsModule } from "./modules/promotions/promotions.module";
 import { TrialsModule } from "./modules/trials/trials.module";
 
@@ -40,11 +42,13 @@ import { TrialsModule } from "./modules/trials/trials.module";
     EntitlementsModule,
     TrialsModule,
     OrdersModule,
+    PaymentsModule,
     PromotionsModule,
     AdminModule,
     HealthModule,
     PartnerModule,
     LicenseModule,
+    LegalModule,
     NotifyModule,
   ],
   providers: [

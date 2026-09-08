@@ -66,7 +66,7 @@ DoerFlow 拥有目录、Job、Receipt authorize/capture/void、账本与 Merkle 
 
 M2M **没有** OIDC redirect/callback；产品 SPA 仍走 PKCE。Management API M2M 仅 identity 运维，不得进入产品仓。JWT 只携带 `issuer + sub`（及 org 准入）；`sourceTenantId` / offering 由 DoerFlow 本地映射持久化，不进中央权益表。
 
-平台套餐门禁（中央 Entitlement，见 [subscription-and-entitlement.md](../subscription-and-entitlement.md)）：`integration.provider.register`、`integration.event.submit`、`integration.event.monthly`、`integration.api.monthly`。**Pro 不开放** provider/event 写（计划上省略这些 feature，禁止用 `deny` 以免并集被覆盖）；**Ultra** 小额月配额（1 万事件 / 10 万 API 调用）；**Enterprise** 高额（10 万事件 / 1000 万 API 调用）。**不**覆盖协议费、Job 单价、Escrow 或 Gas。VistaCast / SyncroBrain **不**在中央目录售卖独立 ToC 价格方案。
+平台套餐门禁（中央 Entitlement，见 [subscription-and-entitlement.md](../subscription-and-entitlement.md)）：`integration.provider.register`、`integration.event.submit`、`integration.event.monthly`、`integration.api.monthly`。**Pro 不开放** provider/event 写（计划上省略这些 feature，禁止用 `deny` 以免并集被覆盖）；**Ultra** 小额月配额（1 万事件 / 10 万 API 调用）；**Enterprise** 高额（10 万事件 / 1000 万 API 调用）。**不**覆盖协议费、Job 单价、Escrow 或 Gas。VistaCast / SyncroBrain 可在中央目录占位，**就绪前不售卖**独立 ToC 价格方案，也 **不发放 Trial**。
 
 ## 身份、权益与协议经济
 
@@ -137,4 +137,5 @@ M2M **没有** OIDC redirect/callback；产品 SPA 仍走 PKCE。Management API 
 
 - [DoerFlow `spec/ROADMAP.md`](https://github.com/DoerFlow/DoerFlow/blob/main/spec/ROADMAP.md)
 - [LuminaryWorks `spec/domain-and-branding.md`](../domain-and-branding.md)
+- [LuminaryWorks `spec/legal/README.md`](../legal/README.md)（工程模板，非法律意见）
 - [LuminaryWorks `docs` 产品页 — DoerFlow](https://docs.luminaryworks.dev/products/doerflow)

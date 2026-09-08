@@ -84,6 +84,12 @@ function parseArgs(argv) {
     }
   }
   if (options.compose.length === 0) options.compose = [...DEFAULTS.compose];
+  if (
+    options.profiles.includes("object-storage") &&
+    !options.compose.some((file) => String(file).includes("object-storage"))
+  ) {
+    options.compose.push("deploy/compose/control-plane.object-storage.yaml");
+  }
   return options;
 }
 
@@ -94,7 +100,9 @@ function printHelp() {
   --no-manifest       Skip manifest validation
   -f, --compose <p>   Compose file (repeatable; default ${DEFAULTS.compose.join(", ")})
   --env-file <path>   Env file for Compose interpolation (default ${DEFAULTS.envFile} when present)
-  --profile <name>    Compose profile to include (repeatable, e.g. ai, observability)
+  --profile <name>    Compose profile to include (repeatable, e.g. ai, observability, object-storage)
+                      object-storage also adds deploy/compose/control-plane.object-storage.yaml
+                      and fails without AISTOR license/image/root/product secrets
   --stage <stage>     Override the stage used for Compose checks (dev|lab|pilot|production)
   --no-compose        Skip Compose checks
   --strict            Treat warnings as failures, and fail when Docker is unavailable

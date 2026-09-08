@@ -223,10 +223,11 @@ describe("mergeFeatureMaps", () => {
 
 describe("periodKeyFor", () => {
   const asOf = new Date("2026-07-28T15:00:00.000Z");
-  it("buckets calendar month and lifetime", () => {
+  it("buckets calendar month, calendar day, and lifetime", () => {
     expect(periodKeyFor("lifetime", asOf)).toBe("lifetime");
     expect(periodKeyFor("concurrent", asOf)).toBe("lifetime");
     expect(periodKeyFor("calendar_month", asOf)).toBe("2026-07");
+    expect(periodKeyFor("calendar_day", asOf)).toBe("2026-07-28");
     expect(periodKeyFor("rolling_days", asOf)).toBe("2026-07-28");
   });
 });
@@ -332,19 +333,22 @@ describe("DoerFlow integration resolution", () => {
     expect(merged.features["agent.publish"]?.allowed).toBe(true);
   });
 
-  it("allows Ultra modest integration write and monthly quotas", () => {
-    const merged = mergeFeatureMaps([subscriptionSource("ultra-1", "ultra")], planFeatures);
-    expect(merged.features[DOERFLOW_INTEGRATION_FEATURE_CODES.providerRegister]?.allowed).toBe(
+  it("does not sell Ultra integration writes; Enterprise keeps them", () => {
+    const ultra = mergeFeatureMaps([subscriptionSource("ultra-1", "ultra")], planFeatures);
+    expect(ultra.features[DOERFLOW_INTEGRATION_FEATURE_CODES.providerRegister]).toBeUndefined();
+    expect(ultra.features[DOERFLOW_INTEGRATION_FEATURE_CODES.eventSubmit]).toBeUndefined();
+    expect(ultra.quotas[DOERFLOW_INTEGRATION_FEATURE_CODES.eventMonthly]).toBeUndefined();
+    const enterprise = mergeFeatureMaps(
+      [subscriptionSource("ent-1", "enterprise")],
+      planFeatures,
+    );
+    expect(enterprise.features[DOERFLOW_INTEGRATION_FEATURE_CODES.providerRegister]?.allowed).toBe(
       true,
     );
-    expect(merged.features[DOERFLOW_INTEGRATION_FEATURE_CODES.eventSubmit]?.allowed).toBe(true);
-    expect(merged.quotas[DOERFLOW_INTEGRATION_FEATURE_CODES.eventMonthly]?.limit).toBe(
-      DOERFLOW_INTEGRATION_QUOTAS.ultra.eventMonthly,
+    expect(enterprise.quotas[DOERFLOW_INTEGRATION_FEATURE_CODES.eventMonthly]?.limit).toBe(
+      DOERFLOW_INTEGRATION_QUOTAS.enterprise.eventMonthly,
     );
-    expect(merged.quotas[DOERFLOW_INTEGRATION_FEATURE_CODES.apiMonthly]?.limit).toBe(
-      DOERFLOW_INTEGRATION_QUOTAS.ultra.apiMonthly,
-    );
-    expect(merged.quotas[DOERFLOW_INTEGRATION_FEATURE_CODES.eventMonthly]?.period).toBe(
+    expect(enterprise.quotas[DOERFLOW_INTEGRATION_FEATURE_CODES.eventMonthly]?.period).toBe(
       "calendar_month",
     );
   });

@@ -1,0 +1,68 @@
+name: Deploy remote
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Compose target to start
+        type: choice
+        options:
+          - control-plane
+          - agent-commerce
+          - smart-site
+        default: control-plane
+      public_host:
+        description: Browser-reachable host (leave empty to use DEPLOY_HOST)
+        required: false
+        type: string
+
+# github.com cannot reach a LAN UTM VM. Use this workflow against a public
+# host (Hetzner) or move the job to a self-hosted runner on the private machine.
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-remote-${{ github.event.inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install rsync
+        run: sudo apt-get update -y && sudo apt-get install -y rsync
+
+      - name: Write deploy SSH key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          test -n "$DEPLOY_SSH_KEY"
+          mkdir -p "$HOME/.ssh"
+          umask 077
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/deploy_key"
+
+      - name: Deploy
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PUBLIC_HOST: ${{ github.event.inputs.public_host }}
+        run: |
+          test -n "$DEPLOY_HOST"
+          test -n "$DEPLOY_USER"
+          extra=()
+          if [[ -n "$DEPLOY_PUBLIC_HOST" ]]; then
+            extra+=(--public-host "$DEPLOY_PUBLIC_HOST")
+          fi
+          node scripts/remote-deploy.mjs \
+            --host "$DEPLOY_HOST" \
+            --user "$DEPLOY_USER" \
+            --key "$HOME/.ssh/deploy_key" \
+            --target "${{ github.event.inputs.target }}" \
+            "${extra[@]}"

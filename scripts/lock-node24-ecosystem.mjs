@@ -16,6 +16,7 @@ const roots = [
   metaRoot,
   path.join(metaRoot, "shared"),
   path.join(metaRoot, "services", "entitlement"),
+  path.join(metaRoot, "apps", "control-console"),
   ...["DataLuminary", "BlockyEdu", "DoerFlow", "VistaRemote", "VistaCast", "SyncroBrain"].map(
     (d) => productDir(d),
   ),

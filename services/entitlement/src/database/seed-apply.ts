@@ -1,15 +1,24 @@
-import type { DataSource } from "typeorm";
+import type { DataSource, Repository } from "typeorm";
 import { BundleEntity } from "./entities/bundle.entity";
 import { BundleItemEntity } from "./entities/bundle-item.entity";
+import { CatalogRevisionEntity } from "./entities/catalog-revision.entity";
 import { FeatureEntity } from "./entities/feature.entity";
+import { OfferingEntity } from "./entities/offering.entity";
 import { PlanEntity } from "./entities/plan.entity";
 import { PlanFeatureEntity } from "./entities/plan-feature.entity";
 import { ProductEntity } from "./entities/product.entity";
-import { CATALOG, SAMPLE_BUNDLE, type ProductSeed } from "./seed-catalog";
+import {
+  CATALOG,
+  SAMPLE_BUNDLE,
+  SEED_OFFERINGS,
+  type OfferingSeed,
+  type ProductSeed,
+} from "./seed-catalog";
 
 export async function applyCatalog(
   dataSource: Pick<DataSource, "getRepository">,
   catalog: ProductSeed[] = CATALOG,
+  offerings: OfferingSeed[] = SEED_OFFERINGS,
 ): Promise<void> {
   const products = dataSource.getRepository(ProductEntity);
   const features = dataSource.getRepository(FeatureEntity);
@@ -17,6 +26,8 @@ export async function applyCatalog(
   const planFeatures = dataSource.getRepository(PlanFeatureEntity);
   const bundles = dataSource.getRepository(BundleEntity);
   const bundleItems = dataSource.getRepository(BundleItemEntity);
+  const revisions = dataSource.getRepository(CatalogRevisionEntity);
+  const offeringRows = dataSource.getRepository(OfferingEntity);
 
   for (const productSeed of catalog) {
     let product = await products.findOne({ where: { code: productSeed.code } });
@@ -27,12 +38,14 @@ export async function applyCatalog(
           name: productSeed.name,
           active: true,
           trialPolicy: productSeed.trialPolicy,
+          sellable: productSeed.sellable,
         }),
       );
     } else {
       product.name = productSeed.name;
       product.active = true;
       product.trialPolicy = productSeed.trialPolicy;
+      product.sellable = productSeed.sellable;
       product = await products.save(product);
     }
 
@@ -50,6 +63,7 @@ export async function applyCatalog(
             kind: f.kind,
             quotaPeriod: f.quotaPeriod ?? null,
             quotaMerge: f.quotaMerge ?? "max",
+            meteringMode: f.meteringMode ?? "counter",
             description: null,
           }),
         );
@@ -58,6 +72,7 @@ export async function applyCatalog(
         row.kind = f.kind;
         row.quotaPeriod = f.quotaPeriod ?? row.quotaPeriod;
         row.quotaMerge = f.quotaMerge ?? row.quotaMerge;
+        row.meteringMode = f.meteringMode ?? row.meteringMode ?? "counter";
         row = await features.save(row);
       }
       featureByCode.set(f.code, row);
@@ -145,5 +160,67 @@ export async function applyCatalog(
         }),
       );
     }
+  }
+
+  await applySeedOfferings(revisions, offeringRows, offerings);
+}
+
+async function applySeedOfferings(
+  revisions: Pick<Repository<CatalogRevisionEntity>, "find" | "findOne" | "save" | "create">,
+  offeringRows: Pick<Repository<OfferingEntity>, "find" | "findOne" | "save" | "create">,
+  offerings: OfferingSeed[],
+): Promise<void> {
+  let published = await revisions.findOne({ where: { status: "published" } });
+  if (!published) {
+    const existing = await revisions.find();
+    const nextVersion =
+      existing.reduce((max, row) => (row.version > max ? row.version : max), 0) + 1;
+    published = await revisions.save(
+      revisions.create({
+        version: nextVersion,
+        status: "published",
+        notes: "seed",
+        publishedAt: new Date(),
+        supersededAt: null,
+      }),
+    );
+  }
+
+  const wantedSkus = new Set(offerings.map((row) => row.sku));
+  for (const seed of offerings) {
+    const row = await offeringRows.findOne({
+      where: { revisionId: published.id, sku: seed.sku },
+    });
+    if (!row) {
+      await offeringRows.save(
+        offeringRows.create({
+          sku: seed.sku,
+          productCode: seed.productCode,
+          planCode: seed.planCode,
+          interval: seed.interval,
+          currency: seed.currency,
+          amountMinor: seed.amountMinor,
+          market: seed.market,
+          active: seed.active,
+          revisionId: published.id,
+        }),
+      );
+      continue;
+    }
+    row.productCode = seed.productCode;
+    row.planCode = seed.planCode;
+    row.interval = seed.interval;
+    row.currency = seed.currency;
+    row.amountMinor = seed.amountMinor;
+    row.market = seed.market;
+    row.active = seed.active;
+    await offeringRows.save(row);
+  }
+
+  const attached = await offeringRows.find({ where: { revisionId: published.id } });
+  for (const row of attached) {
+    if (wantedSkus.has(row.sku)) continue;
+    row.active = false;
+    await offeringRows.save(row);
   }
 }

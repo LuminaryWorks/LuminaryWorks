@@ -11,12 +11,18 @@ import type { NotifyAdapter, NotifyMessage } from "./notify-adapter";
 import { NOTIFY_ADAPTERS } from "./notify-adapter";
 import { leaseExpiresAt, nextStatusAfterFailure, OUTBOX_CLAIM_SQL } from "./outbox-claim";
 import { outboxBackoffSeconds } from "./outbox-policy";
+import { deliverTrialPurge, type TrialPurgeFetch } from "./trial-purge";
+import { trialNotifyCopy, TRIAL_LIFECYCLE_EVENT_TYPES } from "../trials/trial-lifecycle";
 
 @Injectable()
 export class OutboxService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(OutboxService.name);
   private timer: NodeJS.Timeout | null = null;
   private running = false;
+  purgeFetch: TrialPurgeFetch = async (url, init) => {
+    const res = await fetch(url, init);
+    return { status: res.status, text: () => res.text() };
+  };
 
   constructor(
     private readonly config: ConfigService,
@@ -46,7 +52,7 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
     if (this.timer) clearInterval(this.timer);
   }
 
-  /** Cancel pending trial notifications after paid upgrade (also used from OrdersService). */
+  /** Cancel pending trial notifications and purge after paid upgrade. */
   async cancelTrialNotifications(logtoSub: string, productCode: string): Promise<number> {
     const result = await this.outbox
       .createQueryBuilder()
@@ -54,7 +60,7 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
       .set({ status: "canceled", lockedUntil: null, lockedBy: null })
       .where("status IN (:...st)", { st: ["pending", "failed", "processing"] })
       .andWhere("event_type IN (:...types)", {
-        types: ["trial.expiring", "trial.expired"],
+        types: [...TRIAL_LIFECYCLE_EVENT_TYPES],
       })
       .andWhere("payload->>'logtoSub' = :sub", { sub: logtoSub })
       .andWhere("payload->>'productCode' = :productCode", { productCode })
@@ -104,12 +110,27 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
     try {
       if (event.eventType.startsWith("partner.")) {
         await this.deliverPartnerWebhook(event);
-      } else if (event.eventType === "trial.expiring" || event.eventType === "trial.expired") {
+        event.status = "sent";
+      } else if (
+        event.eventType === "trial.expiring" ||
+        event.eventType === "trial.expiring_t1" ||
+        event.eventType === "trial.expired"
+      ) {
         await this.deliverTrialNotify(event);
+        event.status = "sent";
+      } else if (event.eventType === "trial.purge") {
+        const outcome = await deliverTrialPurge({
+          dataSource: this.dataSource,
+          event,
+          targets: conf.trialPurgeTargets,
+          fetchImpl: this.purgeFetch,
+          timeoutMs: conf.trialPurgeTimeoutMs,
+        });
+        event.status = outcome === "canceled" ? "canceled" : "sent";
       } else {
         this.logger.warn(`No handler for outbox event_type=${event.eventType}; marking sent`);
+        event.status = "sent";
       }
-      event.status = "sent";
       event.lastError = null;
       event.nextAttemptAt = null;
       event.lockedUntil = null;
@@ -170,23 +191,23 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
     const logtoSub = String(event.payload.logtoSub ?? "");
     const productCode = String(event.payload.productCode ?? "");
     if (!logtoSub || !productCode) throw new Error("Invalid trial notify payload");
+    if (
+      event.eventType !== "trial.expiring" &&
+      event.eventType !== "trial.expiring_t1" &&
+      event.eventType !== "trial.expired"
+    ) {
+      throw new Error(`Invalid trial notify type ${event.eventType}`);
+    }
 
     const pref = await this.prefs.getOrDefault(logtoSub);
-    const title =
-      event.eventType === "trial.expiring"
-        ? `Your ${productCode} trial ends in 3 days`
-        : `Your ${productCode} trial has ended`;
-    const body =
-      event.eventType === "trial.expiring"
-        ? `Upgrade to Pro to keep premium features after ${String(event.payload.endsAt ?? "")}.`
-        : `Upgrade to Pro to restore premium features for ${productCode}.`;
+    const copy = trialNotifyCopy(event.eventType, productCode, String(event.payload.endsAt ?? ""));
 
     const message: NotifyMessage = {
       eventType: event.eventType,
       logtoSub,
       productCode,
-      title,
-      body,
+      title: copy.title,
+      body: copy.body,
       emailAddress: pref.emailAddress,
       pushTokens: pref.pushTokens,
       metadata: event.payload,

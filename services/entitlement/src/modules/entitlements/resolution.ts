@@ -1,4 +1,10 @@
-import type { PlanCode, QuotaMerge, QuotaPeriod, SubjectKind } from "../../common/constants";
+import type {
+  MeteringMode,
+  PlanCode,
+  QuotaMerge,
+  QuotaPeriod,
+  SubjectKind,
+} from "../../common/constants";
 
 export interface ResolveContext {
   subjectKind: SubjectKind;
@@ -20,6 +26,7 @@ export interface QuotaSnapshot {
   used: number;
   remaining: number | null;
   period: QuotaPeriod;
+  meteringMode: MeteringMode;
   sources: string[];
 }
 
@@ -28,6 +35,8 @@ export interface TrialSnapshot {
   endsAt: string | null;
   consumed: boolean;
   eligible: boolean;
+  /** Active or consumed redemption id for product trial resource registries. */
+  trialRedemptionId: string | null;
 }
 
 export interface EntitlementSnapshotDto {
@@ -37,6 +46,7 @@ export interface EntitlementSnapshotDto {
   organizationId: string | null;
   effectivePlan: PlanCode | "none";
   trial: TrialSnapshot;
+  sellable: boolean;
   features: Record<string, FeatureSnapshot>;
   quotas: Record<string, QuotaSnapshot>;
   asOf: string;
@@ -52,6 +62,19 @@ export interface CheckResultItem {
   allowed: boolean;
   reason?: string;
   remaining?: number | null;
+}
+
+export interface AllocationMutationResult {
+  featureCode: string;
+  resourceId: string;
+  amount: number;
+  previousAmount: number;
+  used: number;
+  remaining: number | null;
+  limit: number | null;
+  meteringMode: "gauge";
+  unchanged: boolean;
+  released: boolean;
 }
 
 export interface ActiveSource {
@@ -93,7 +116,10 @@ export function pickEffectivePlan(plans: Array<PlanCode | null | undefined>): Pl
 export function mergeFeatureMaps(
   sources: ActiveSource[],
   planFeaturesByPlan: Map<PlanCode, PlanFeatureDef[]>,
-  catalogQuotas: Map<string, { period: QuotaPeriod; merge: QuotaMerge }> = new Map(),
+  catalogQuotas: Map<
+    string,
+    { period: QuotaPeriod; merge: QuotaMerge; meteringMode?: MeteringMode }
+  > = new Map(),
 ): {
   features: Record<string, FeatureSnapshot>;
   quotas: Record<
@@ -102,6 +128,7 @@ export function mergeFeatureMaps(
       limit: number | null;
       period: QuotaPeriod;
       merge: QuotaMerge;
+      meteringMode: MeteringMode;
       sources: string[];
     }
   >;
@@ -114,6 +141,7 @@ export function mergeFeatureMaps(
       limits: number[];
       period: QuotaPeriod;
       merge: QuotaMerge;
+      meteringMode: MeteringMode;
       sources: string[];
     }
   >();
@@ -123,7 +151,7 @@ export function mergeFeatureMaps(
     if (src.planCode) {
       const defs = planFeaturesByPlan.get(src.planCode) ?? [];
       for (const def of defs) {
-        applyDef(def, label, boolAllow, boolDeny, quotaLimits);
+        applyDef(def, label, boolAllow, boolDeny, quotaLimits, catalogQuotas);
       }
     }
     for (const [code, override] of Object.entries(src.features ?? {})) {
@@ -133,12 +161,14 @@ export function mergeFeatureMaps(
           limits: [],
           period: catalog?.period ?? "lifetime",
           merge: catalog?.merge ?? "max",
+          meteringMode: catalog?.meteringMode ?? "counter",
           sources: [],
         };
         existing.limits.push(Number(override.limitValue));
         existing.sources.push(label);
         if (catalog?.period) existing.period = catalog.period;
         if (catalog?.merge) existing.merge = catalog.merge;
+        if (catalog?.meteringMode) existing.meteringMode = catalog.meteringMode;
         quotaLimits.set(code, existing);
       } else if (override.effect === "deny") {
         const set = boolDeny.get(code) ?? new Set();
@@ -178,6 +208,7 @@ export function mergeFeatureMaps(
       limit: number | null;
       period: QuotaPeriod;
       merge: QuotaMerge;
+      meteringMode: MeteringMode;
       sources: string[];
     }
   > = {};
@@ -192,6 +223,7 @@ export function mergeFeatureMaps(
       limit,
       period: q.period,
       merge: q.merge,
+      meteringMode: q.meteringMode ?? "counter",
       sources: q.sources,
     };
   }
@@ -210,20 +242,28 @@ function applyDef(
       limits: number[];
       period: QuotaPeriod;
       merge: QuotaMerge;
+      meteringMode: MeteringMode;
       sources: string[];
     }
   >,
+  catalogQuotas: Map<
+    string,
+    { period: QuotaPeriod; merge: QuotaMerge; meteringMode?: MeteringMode }
+  >,
 ): void {
   if (def.kind === "quota") {
+    const catalog = catalogQuotas.get(def.featureCode);
     const existing = quotaLimits.get(def.featureCode) ?? {
       limits: [],
       period: def.quotaPeriod ?? "lifetime",
       merge: def.quotaMerge,
+      meteringMode: catalog?.meteringMode ?? "counter",
       sources: [],
     };
     if (def.limitValue != null) existing.limits.push(def.limitValue);
     existing.period = def.quotaPeriod ?? existing.period;
     existing.merge = def.quotaMerge ?? existing.merge;
+    if (catalog?.meteringMode) existing.meteringMode = catalog.meteringMode;
     existing.sources.push(label);
     quotaLimits.set(def.featureCode, existing);
     return;
@@ -250,6 +290,6 @@ export function periodKeyFor(period: QuotaPeriod, asOf: Date): string {
   if (period === "calendar_month") {
     return `${asOf.getUTCFullYear()}-${String(asOf.getUTCMonth() + 1).padStart(2, "0")}`;
   }
-  // rolling_days: bucket by UTC day of asOf (usage window enforced at consume time)
+  // calendar_day and rolling_days: UTC day bucket of asOf
   return asOf.toISOString().slice(0, 10);
 }

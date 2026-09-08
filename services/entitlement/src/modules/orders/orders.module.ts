@@ -8,18 +8,16 @@ import { ProductEntity } from "../../database/entities/product.entity";
 import { SubscriptionEntity } from "../../database/entities/subscription.entity";
 import { WebhookEventEntity } from "../../database/entities/webhook-event.entity";
 import { AuditModule } from "../audit/audit.module";
-import {
-  ContractPaymentAdapter,
-  ManualPaymentAdapter,
-  MockPaymentAdapter,
-} from "../payments/adapters";
-import { PAYMENT_ADAPTERS } from "../payments/payment-adapter";
+import { CatalogModule } from "../catalog/catalog.module";
+import { PaymentsModule } from "../payments/payments.module";
 import { OrdersController } from "./orders.controller";
 import { OrdersService } from "./orders.service";
 
 @Module({
   imports: [
     AuditModule,
+    CatalogModule,
+    PaymentsModule,
     TypeOrmModule.forFeature([
       OrderEntity,
       BundleEntity,
@@ -31,21 +29,7 @@ import { OrdersService } from "./orders.service";
     ]),
   ],
   controllers: [OrdersController],
-  providers: [
-    MockPaymentAdapter,
-    ManualPaymentAdapter,
-    ContractPaymentAdapter,
-    {
-      provide: PAYMENT_ADAPTERS,
-      useFactory: (
-        mock: MockPaymentAdapter,
-        manual: ManualPaymentAdapter,
-        contract: ContractPaymentAdapter,
-      ) => [mock, manual, contract],
-      inject: [MockPaymentAdapter, ManualPaymentAdapter, ContractPaymentAdapter],
-    },
-    OrdersService,
-  ],
+  providers: [OrdersService],
   exports: [OrdersService],
 })
 export class OrdersModule {}

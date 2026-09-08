@@ -42,6 +42,64 @@ export const PRODUCT_COMPOSE_SETS = {
   blockyedu: [["deploy/edu/docker-compose.yml", "deploy/edu/docker-compose.dev.yml"]],
 };
 
+/**
+ * Customer / private offline packs prefer *prod* overlays (no host-published
+ * Postgres). Fall back to the lab compose set when a product has not split prod yet.
+ */
+export const PRODUCT_PACK_COMPOSE_SETS = {
+  vistacast: [
+    ["deploy/docker-compose.yml", "deploy/docker-compose.prod.yml"],
+    ["deploy/docker-compose.core.yml", "deploy/docker-compose.prod.yml"],
+    ["deploy/docker-compose.yml", "deploy/docker-compose.dev.yml"],
+  ],
+  syncrobrain: [
+    ["deploy/docker-compose.core.yml", "deploy/docker-compose.prod.yml"],
+    ["deploy/docker-compose.core.yml", "deploy/docker-compose.private.yml"],
+    ["deploy/docker-compose.core.yml", "deploy/docker-compose.dev.yml"],
+  ],
+  doerflow: [
+    ["deploy/docker-compose.core.yml", "deploy/docker-compose.prod.yml"],
+    ["deploy/docker-compose.core.yml", "deploy/docker-compose.dev.yml"],
+  ],
+  vistaremote: [
+    ["deploy/compose/docker-compose.core.yml", "deploy/compose/docker-compose.prod.yml"],
+    ["deploy/docker-compose.core.yml", "deploy/docker-compose.prod.yml"],
+    ["deploy/compose/docker-compose.core.yml", "deploy/compose/docker-compose.dev.yml"],
+  ],
+  dataluminary: [
+    [
+      "deploy/standalone/compose.core.yml",
+      "deploy/standalone/compose.db.yml",
+      "deploy/standalone/compose.prod.yml",
+    ],
+    [
+      "deploy/standalone/compose.core.yml",
+      "deploy/standalone/compose.db.yml",
+      "deploy/standalone/compose.dev.yml",
+    ],
+  ],
+  blockyedu: [
+    ["deploy/edu/docker-compose.yml", "deploy/edu/docker-compose.prod.yml"],
+    ["deploy/edu/docker-compose.yml", "deploy/edu/docker-compose.dev.yml"],
+  ],
+};
+
+export const PACK_PRODUCT_KEYS = [
+  "vistacast",
+  "syncrobrain",
+  "doerflow",
+  "vistaremote",
+  "dataluminary",
+  "blockyedu",
+];
+
+export function resolveProductPackCompose(product, options = {}) {
+  return resolveProductCompose(product, {
+    ...options,
+    composeSets: options.composeSets ?? PRODUCT_PACK_COMPOSE_SETS,
+  });
+}
+
 /** Optional overlays that join the shared control-plane network — they do not start it. */
 export const PRODUCT_CONTROL_PLANE_OVERLAYS = {
   vistacast: ["deploy/docker-compose.control-plane.yml"],

@@ -1,7 +1,7 @@
 # LuminaryWorks 身份与权限体系（Identity & Authorization）
 
 > **状态**：Accepted · **决策日**：2024-04-24 · **修订**：2026-09-01（冻结默认 Logto；ZITADEL 为预留插件）
-> **关联**：[ecosystem-refactoring.md](./ecosystem-refactoring.md) · [subscription-and-entitlement.md](./subscription-and-entitlement.md) · [composable-deployment.md](./composable-deployment.md) · **[iam-provider-selection.md](./iam-provider-selection.md)**（Logto vs ZITADEL **已冻结**） · [identity 仓](https://github.com/LuminaryWorks/identity) · 开发者文档 [unified-login](https://github.com/LuminaryWorks/docs)
+> **关联**：[ecosystem-refactoring.md](./ecosystem-refactoring.md) · [subscription-and-entitlement.md](./subscription-and-entitlement.md) · [composable-deployment.md](./composable-deployment.md) · **[iam-provider-selection.md](./iam-provider-selection.md)**（Logto vs ZITADEL **已冻结**） · [legal/README.md](./legal/README.md) · [identity 仓](https://github.com/LuminaryWorks/identity) · 开发者文档 [unified-login](https://github.com/LuminaryWorks/docs)
 
 ## 0. 决策摘要（TL;DR）
 

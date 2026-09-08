@@ -1,0 +1,119 @@
+{
+  "app": {
+    "title": "LuminaryWorks Control Console",
+    "subtitle": "Central superadmin console for catalog, payments, legal, and capacity. This is not the Logto Admin Console.",
+    "notLogtoAdmin": "Logto Admin Console stays on the Identity admin port. This app only calls Entitlement admin APIs."
+  },
+  "nav": {
+    "overview": "Overview",
+    "catalog": "Catalog",
+    "providers": "Payment providers",
+    "orders": "Orders",
+    "cleanup": "Trial cleanup",
+    "legal": "Legal & audit",
+    "capacity": "Capacity",
+    "logout": "Sign out",
+    "language": "Language"
+  },
+  "auth": {
+    "title": "Operator sign-in",
+    "subtitle": "Use the hosted Identity login. Social connectors are disabled on this console.",
+    "notConfigured": "Identity is not configured",
+    "notConfiguredDesc": "Runtime /config.json needs issuer and clientId. Register LuminaryWorks Control Console in identity/apps.json, then set CONTROL_CONSOLE_IDP_CLIENT_ID. No client secret belongs in the browser.",
+    "callback": "Completing sign-in…",
+    "callbackError": "Sign-in callback failed",
+    "required": "Sign in required",
+    "reauth": "Session expired. Sign in again."
+  },
+  "errors": {
+    "code": "Error code",
+    "unauthorized": "Authentication required (401). Sign in again.",
+    "paymentRequired": "Commercial entitlement failed (402). This is not a permission error.",
+    "forbidden": "Forbidden (403). Your token lacks entitlement:admin or Casbin/admin policy denied the action.",
+    "generic": "Request failed"
+  },
+  "common": {
+    "save": "Save",
+    "create": "Create",
+    "publish": "Publish",
+    "rollback": "Roll back",
+    "enable": "Enable",
+    "disable": "Disable",
+    "rotate": "Rotate credentials",
+    "test": "Test",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "refund": "Refund",
+    "reconcile": "Reconcile",
+    "manualConfirm": "Manual confirm",
+    "loading": "Loading…",
+    "empty": "No rows",
+    "notConfigured": "Not configured",
+    "filter": "Filter",
+    "page": "Page",
+    "refresh": "Refresh",
+    "details": "Details",
+    "reason": "Reason",
+    "ticket": "Ticket",
+    "amount": "Amount (minor units)",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "confirm": {
+    "title": "Confirm destructive action",
+    "publish": "Publish this catalog revision? Live offerings will change.",
+    "rollback": "Roll back to this revision? The current published catalog will be replaced.",
+    "enable": "Enable this provider? Checkout will use it only after test success and your merchant contract. The console does not invent enabled state.",
+    "disable": "Disable this provider? New checkouts will stop using it.",
+    "rotate": "Rotate credentials? Previous credentials stay retiring until the configured window ends.",
+    "refund": "Issue a refund and revoke paid entitlements for this order?",
+    "manualConfirm": "Manually confirm this order? Use only for mock/manual/contract providers.",
+    "retryJob": "Retry this trial cleanup job?",
+    "cancelJob": "Cancel this trial cleanup job?",
+    "typeEnable": "ENABLE"
+  },
+  "overview": {
+    "title": "Overview",
+    "entitlement": "Entitlement service",
+    "identityBoundary": "Auth boundary: OIDC PKCE (no browser client secret). Access tokens must include resource https://entitlement.luminaryworks.dev and scope entitlement:admin. Logto Admin on :3002 is a different application."
+  },
+  "catalog": {
+    "title": "Catalog revisions",
+    "draftJson": "Draft offerings JSON",
+    "invalidJson": "Offerings JSON is invalid",
+    "notes": "Notes",
+    "createDraft": "Create draft",
+    "copyPublished": "Copy published offerings"
+  },
+  "providers": {
+    "title": "Payment providers",
+    "credentials": "Credentials JSON (write-only; never read back)",
+    "credentialsHint": "Paste a JSON object of string fields. The textarea is cleared after a successful save or rotate. Values are not stored in the browser.",
+    "metadata": "Metadata JSON (non-secret)",
+    "enabledFromApi": "Enabled state comes from Entitlement. This console does not guess merchant approval or HA.",
+    "create": "Create provider config"
+  },
+  "orders": {
+    "title": "Orders & payments",
+    "orders": "Orders",
+    "attempts": "Attempts",
+    "refunds": "Refunds"
+  },
+  "cleanup": {
+    "title": "Trial cleanup jobs"
+  },
+  "legal": {
+    "title": "Legal acceptances & audit",
+    "acceptances": "Policy acceptances",
+    "audit": "Audit log",
+    "docs": "Legal documents"
+  },
+  "capacity": {
+    "title": "Capacity",
+    "entitlementReady": "Entitlement readiness",
+    "doris": "Doris Pilot",
+    "storage": "Internal object storage",
+    "noHa": "This page reports configured probes only. It does not claim high availability."
+  }
+}

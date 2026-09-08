@@ -9,7 +9,7 @@ import {
 
 /**
  * Transactional outbox for notifications / partner webhooks.
- * Event types: trial.expiring, trial.expired, subscription.*, grant.*, partner.*, order.*
+ * Event types: trial.expiring, trial.expiring_t1, trial.expired, trial.purge, subscription.*, grant.*, partner.*, order.*
  */
 @Entity({ name: "outbox_events" })
 export class OutboxEventEntity {

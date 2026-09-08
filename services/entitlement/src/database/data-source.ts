@@ -6,6 +6,10 @@ import { Todo3Extensions1730100000000 } from "./migrations/1730100000000-Todo3Ex
 import { OutboxLeaseClaim1730200000000 } from "./migrations/1730200000000-OutboxLeaseClaim";
 import { ProductTrialPolicy1730300000000 } from "./migrations/1730300000000-ProductTrialPolicy";
 import { PromotionRedemptions1730400000000 } from "./migrations/1730400000000-PromotionRedemptions";
+import { PricedCatalog1730500000000 } from "./migrations/1730500000000-PricedCatalog";
+import { ResourceAllocations1730600000000 } from "./migrations/1730600000000-ResourceAllocations";
+import { PolicyAcceptanceAndCleanup1730700000000 } from "./migrations/1730700000000-PolicyAcceptanceAndCleanup";
+import { PaymentPlatform1730800000000 } from "./migrations/1730800000000-PaymentPlatform";
 
 const url =
   process.env.ENTITLEMENT_DATABASE_URL ??
@@ -21,6 +25,10 @@ export default new DataSource({
     OutboxLeaseClaim1730200000000,
     ProductTrialPolicy1730300000000,
     PromotionRedemptions1730400000000,
+    PricedCatalog1730500000000,
+    ResourceAllocations1730600000000,
+    PolicyAcceptanceAndCleanup1730700000000,
+    PaymentPlatform1730800000000,
   ],
   synchronize: false,
 });

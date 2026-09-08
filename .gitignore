@@ -5,6 +5,8 @@
 .env.*
 /node_modules/
 services/**/node_modules/
+apps/**/node_modules/
+apps/**/dist/
 
 # 嵌套独立仓（各自 Git，由 MetaRepo 编排，不纳入根提交）
 /identity/
@@ -20,6 +22,11 @@ services/**/node_modules/
 /deploy/helm/**/charts/
 /deploy/helm/**/Chart.lock
 /deploy/helm/**/*.tgz
+/dist/
+
+# AIStor Free license (operator-obtained; never commit; not in packs)
+/deploy/object-storage/*.license
+/deploy/object-storage/minio.license
 
 
 # test

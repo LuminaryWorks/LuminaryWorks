@@ -1,0 +1,58 @@
+{
+  "contractVersion": 1,
+  "authority": "aistor-bucket-quota",
+  "budgetBytes": 128849018880,
+  "budgetLabel": "120GiB",
+  "cdnDoesNotReduceDisk": true,
+  "hardEnforcement": "aistor-bucket-quota",
+  "hostWatermark": "second-guard",
+  "hostDfHonesty": "df on a Docker named volume often reports the backing filesystem (commonly all of /var/lib/docker), not isolated object-bytes. Prefer mc du / quota info via --used-bytes.",
+  "entitlementHttpEndpoint": false,
+  "entitlementHttpEndpointReason": "Hard cap is AIStor bucket quota. Host watermarks are a second guard. Entitlement must not mount docker.sock or the MinIO data volume. Products enforce S3 quota errors and this JSON locally until a later internal endpoint is wired to the same schema.",
+  "defaultQuotaGiB": {
+    "vistaremote-recordings": 40,
+    "vistacast-recordings": 40,
+    "backup-staging": 14,
+    "dataluminary-media": 10,
+    "luminary-media": 8,
+    "blockyedu-media": 8
+  },
+  "watermarks": {
+    "70": {
+      "ratio": 0.7,
+      "admit": {
+        "trialRecording": false,
+        "trialObjectWrite": true,
+        "objectWrite": true,
+        "objectDelete": true
+      },
+      "action": "stop_new_trial_recording"
+    },
+    "80": {
+      "ratio": 0.8,
+      "admit": {
+        "trialRecording": false,
+        "trialObjectWrite": false,
+        "objectWrite": true,
+        "objectDelete": true
+      },
+      "action": "stop_all_trial_object_writes"
+    },
+    "90": {
+      "ratio": 0.9,
+      "admit": {
+        "trialRecording": false,
+        "trialObjectWrite": false,
+        "objectWrite": false,
+        "objectDelete": true
+      },
+      "action": "stop_all_non_delete_object_writes"
+    }
+  },
+  "statusCommand": "node scripts/object-storage-status.mjs",
+  "productWiring": "Honor S3 quota / InsufficientCapacity errors from the origin. Also poll or exec the status JSON on the host. Deny PUT when the matching admit.* flag is false. Always allow DELETE and trial.purge.",
+  "docs": [
+    "deploy/object-storage/README.md",
+    "spec/decisions/2026-09-storage-doris-payment.md"
+  ]
+}

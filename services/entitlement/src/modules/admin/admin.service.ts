@@ -9,7 +9,12 @@ import { OrganizationSeatEntity } from "../../database/entities/organization-sea
 import { OutboxEventEntity } from "../../database/entities/outbox-event.entity";
 import { ProductEntity } from "../../database/entities/product.entity";
 import { SubscriptionEntity } from "../../database/entities/subscription.entity";
+import { TrialCleanupJobEntity } from "../../database/entities/trial-cleanup-job.entity";
+import { PolicyAcceptanceEntity } from "../../database/entities/policy-acceptance.entity";
+import { AuditLogEntity } from "../../database/entities/audit-log.entity";
 import { AuditService } from "../audit/audit.service";
+import { EntitlementsService } from "../entitlements/entitlements.service";
+import { cancelTrialLifecycle } from "../trials/trial-lifecycle";
 
 @Injectable()
 export class AdminService {
@@ -27,6 +32,7 @@ export class AdminService {
     @InjectRepository(ProductEntity)
     private readonly products: Repository<ProductEntity>,
     private readonly audit: AuditService,
+    private readonly entitlements: EntitlementsService,
   ) {}
 
   async createGrant(input: {
@@ -107,21 +113,11 @@ export class AdminService {
       }
     }
 
-    // Paid / enterprise / partner-style grants cancel pending Trial notifications (§10).
+    // Paid / enterprise / partner-style grants cancel pending Trial notifications and purge (§10).
     if (input.subjectKind === "USER" && input.planCode && input.planCode !== "trial") {
-      await this.outbox
-        .createQueryBuilder()
-        .update(OutboxEventEntity)
-        .set({ status: "canceled" })
-        .where("status IN (:...st)", { st: ["pending", "failed"] })
-        .andWhere("event_type IN (:...types)", {
-          types: ["trial.expiring", "trial.expired"],
-        })
-        .andWhere("payload->>'logtoSub' = :sub", { sub: input.subjectId })
-        .andWhere("payload->>'productCode' = :productCode", {
-          productCode: input.productCode,
-        })
-        .execute();
+      await this.dataSource.transaction(async (manager) => {
+        await cancelTrialLifecycle(manager, input.subjectId, input.productCode);
+      });
     }
 
     await this.audit.record({
@@ -208,5 +204,173 @@ export class AdminService {
       seat.seatUsed += 1;
       return manager.save(seat);
     });
+  }
+
+  async reconcileGaugeUsage(filter: {
+    subjectKind?: SubjectKind;
+    subjectId?: string;
+    productCode?: string;
+    featureCode?: string;
+    actor?: string;
+    requestId?: string;
+  }) {
+    const result = await this.entitlements.reconcileGaugeUsage(filter);
+    await this.audit.record({
+      actor: filter.actor ?? "admin",
+      action: "admin.usage.reconcile",
+      resourceType: "usage_counters",
+      resourceId: filter.productCode ?? "*",
+      requestId: filter.requestId,
+      payload: {
+        rebuilt: result.rebuilt,
+        subjectKind: filter.subjectKind,
+        subjectId: filter.subjectId,
+        productCode: filter.productCode,
+        featureCode: filter.featureCode,
+      },
+    });
+    return result;
+  }
+
+  async listCleanupJobs(filter: {
+    status?: string;
+    productCode?: string;
+    logtoSub?: string;
+    limit?: number;
+  }) {
+    const jobs = this.dataSource.getRepository(TrialCleanupJobEntity);
+    const qb = jobs.createQueryBuilder("j").orderBy("j.scheduled_for", "ASC");
+    if (filter.status) {
+      qb.andWhere("j.status = :status", { status: filter.status });
+    }
+    if (filter.productCode) {
+      qb.andWhere("j.product_code = :productCode", { productCode: filter.productCode });
+    }
+    if (filter.logtoSub) {
+      qb.andWhere("j.logto_sub = :sub", { sub: filter.logtoSub });
+    }
+    qb.take(Math.min(Math.max(filter.limit ?? 100, 1), 500));
+    return qb.getMany();
+  }
+
+  async retryCleanupJob(id: string, actor: string, requestId?: string) {
+    const outbox = this.outbox;
+    return this.dataSource.transaction(async (manager) => {
+      const job = await manager.findOne(TrialCleanupJobEntity, { where: { id } });
+      if (!job) {
+        throw new EntitlementException("NOT_FOUND", "Cleanup job not found");
+      }
+      if (job.status === "acked") {
+        throw new EntitlementException("CONFLICT", "Cleanup job already acknowledged");
+      }
+      if (job.status === "canceled") {
+        throw new EntitlementException("CONFLICT", "Cleanup job was canceled");
+      }
+      job.status = "pending";
+      job.lastError = null;
+      job.attempts = 0;
+      await manager.save(job);
+
+      if (job.outboxEventId) {
+        const event =
+          (await manager.findOne(OutboxEventEntity, { where: { id: job.outboxEventId } })) ??
+          (await outbox.findOne({ where: { id: job.outboxEventId } }));
+        if (event && event.status !== "sent") {
+          event.status = "pending";
+          event.attempts = 0;
+          event.nextAttemptAt = new Date();
+          event.lastError = null;
+          event.deadLetteredAt = null;
+          event.lockedUntil = null;
+          event.lockedBy = null;
+          await manager.save(event);
+        }
+      }
+
+      await this.audit.record({
+        actor,
+        action: "admin.cleanup.retry",
+        resourceType: "trial_cleanup_job",
+        resourceId: job.id,
+        requestId,
+        payload: { productCode: job.productCode, logtoSub: job.logtoSub },
+      });
+      return job;
+    });
+  }
+
+  async cancelCleanupJob(id: string, actor: string, requestId?: string) {
+    return this.dataSource.transaction(async (manager) => {
+      const job = await manager.findOne(TrialCleanupJobEntity, { where: { id } });
+      if (!job) {
+        throw new EntitlementException("NOT_FOUND", "Cleanup job not found");
+      }
+      if (job.status === "acked") {
+        throw new EntitlementException("CONFLICT", "Cleanup job already acknowledged");
+      }
+      job.status = "canceled";
+      job.lastError = "canceled_by_admin";
+      await manager.save(job);
+      if (job.outboxEventId) {
+        await manager
+          .createQueryBuilder()
+          .update(OutboxEventEntity)
+          .set({ status: "canceled", lockedUntil: null, lockedBy: null })
+          .where("id = :id", { id: job.outboxEventId })
+          .andWhere("status IN (:...st)", { st: ["pending", "failed", "processing", "dead"] })
+          .execute();
+      }
+      await this.audit.record({
+        actor,
+        action: "admin.cleanup.cancel",
+        resourceType: "trial_cleanup_job",
+        resourceId: job.id,
+        requestId,
+        payload: { productCode: job.productCode, logtoSub: job.logtoSub },
+      });
+      return job;
+    });
+  }
+
+  async listPolicyAcceptances(filter: {
+    logtoSub?: string;
+    policyVersion?: string;
+    limit?: number;
+  }) {
+    const rows = this.dataSource.getRepository(PolicyAcceptanceEntity);
+    const qb = rows.createQueryBuilder("p").orderBy("p.accepted_at", "DESC");
+    if (filter.logtoSub) {
+      qb.andWhere("p.logto_sub = :sub", { sub: filter.logtoSub });
+    }
+    if (filter.policyVersion) {
+      qb.andWhere("p.policy_version = :version", { version: filter.policyVersion });
+    }
+    qb.take(Math.min(Math.max(filter.limit ?? 100, 1), 500));
+    return qb.getMany();
+  }
+
+  async listAudit(filter: {
+    actor?: string;
+    action?: string;
+    resourceType?: string;
+    resourceId?: string;
+    limit?: number;
+  }) {
+    const rows = this.dataSource.getRepository(AuditLogEntity);
+    const qb = rows.createQueryBuilder("a").orderBy("a.created_at", "DESC");
+    if (filter.actor) {
+      qb.andWhere("a.actor = :actor", { actor: filter.actor });
+    }
+    if (filter.action) {
+      qb.andWhere("a.action = :action", { action: filter.action });
+    }
+    if (filter.resourceType) {
+      qb.andWhere("a.resource_type = :resourceType", { resourceType: filter.resourceType });
+    }
+    if (filter.resourceId) {
+      qb.andWhere("a.resource_id = :resourceId", { resourceId: filter.resourceId });
+    }
+    qb.take(Math.min(Math.max(filter.limit ?? 100, 1), 500));
+    return qb.getMany();
   }
 }

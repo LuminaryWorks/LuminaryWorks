@@ -56,7 +56,7 @@ Cloud Lite **可独立交付**；DoerFlow 不进入默认 Build。启用后仍�
 | 卖方 offering | `syncrobrain.telemetry-digest.v1`、`syncrobrain.incident-report.v1`（时间窗/批次摘要，不逐点建任务） |
 | 处置 | Incident 进入 open/escalated 或外部 WorkOrder 策略命中时，经 M2M 创建付费 Task；**任何设备命令**必须经过 Entitlement + Casbin + **Safety Kernel**，不得由 DoerFlow 直接下发 |
 | 身份 | Logto M2M `SyncroBrain Gateway` → audience `https://api.doerflow.local`；scopes `integration.provider.register`、`integration.event.submit`、`integration.callback.read`。无 OIDC callback。 |
-| 商业 | **不**在中央 Entitlement 增加 SyncroBrain 面向用户价格方案；平台用量走 DoerFlow `integration.*`（Pro 不开放 provider/event 写）。协议费 / Job 单价 / Escrow / Gas 不属于套餐 |
+| 商业 | **不**在 `sellable=false` 期间发布 SyncroBrain 面向用户价格或 Trial；中央目录可占位 `productCode=syncrobrain`。平台用量走 DoerFlow `integration.*`（Pro 不开放 provider/event 写）。协议费 / Job 单价 / Escrow / Gas 不属于套餐 |
 | 回调 | HMAC CloudEvents 写关联记录；**不**自动 close Incident |
 | 协议 | 仅 REST + OIDC client_credentials + HMAC CloudEvents；禁止 runtime import、共享 DB、ThingsBoard MQTT 直通或出站 TB 凭据 |  
 
@@ -114,4 +114,5 @@ ThingsBoard CE、EMQX OSS、NestJS 编排层、PostgreSQL · MQTT / REST
 ## 8. 相关文档
 
 - 实现仓：`spec/platform-vision.md`、`spec/architecture.md`
+- 权益：[subscription-and-entitlement.md](../subscription-and-entitlement.md)（`productCode=syncrobrain` 默认可配置、不可售、无 Trial）
 - 生态：[domain-and-branding.md §4.5](../domain-and-branding.md#45-syncrobrain--syncrobraincom)

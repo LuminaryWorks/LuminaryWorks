@@ -32,8 +32,8 @@
 | EMQX / ThingsBoard | — | — | — | — | ✅ | **私有** | syncrobrain | — |
 | media-platform | — | ✅ | — | 复用? | 摄像头 | **候选** | 评估 P3 | — |
 | Notify（Email） | ✅ 接入中 | 分散 | 分散 | 分散 | 分散 | **共享包** | `shared/notification` | 一期包 / 后期服务 |
-| File | 分散 | 分散 | 分散 | 分散 | 分散 | **候选** | 抽象接口 P3 | — |
-| 订阅 / 权益（Trial·Pro·Ultra·企业·License） | 待接入 | 本地 memberTier 等 | **接入中：无 Trial；双身份客户端 + membership/402** | — | — | **共享服务** | `services/entitlement` + `shared/entitlement-client` | LW-ENT |
+| File | 分散 | 分散 | 分散 | 分散 | 分散 | **共享契约** | 自建 MinIO 兼容（Hosted：AIStor Free 单节点）；禁止公有云 S3/R2 | 见 [decisions/2026-09-storage-doris-payment.md](./decisions/2026-09-storage-doris-payment.md) |
+| 订阅 / 权益（Trial·Pro·Ultra·企业·License） | 待接入 | 本地 memberTier 等 | **接入中：无 Trial；双身份客户端 + membership/402** | 目录可占位；默认不可售 / 无 Trial | 目录可占位；默认不可售 / 无 Trial | **共享服务** | `services/entitlement` + `shared/entitlement-client` | LW-ENT |
 | 资源 ACL（Casbin） | ✅ / 规划 | ✅ / 规划 | 规划 | 规划 | 规划 | **产品私有** | 各产品 PermissionService | 与 IAM 规范一致 |
 | LLM / embed / BYOK vault | DataInsight 适配 | 直连多厂商 | — | 规划 | 规划 | **共享网关** | 后期 `services/ai-platform` + `shared/ai-client` | LW-AI |
 | 领域智能（问数 / 教辅 / 录制 / CV / 链上） | DataTalk DataInsight | BlockyEdu prompts | ChainSkill | ONNX/CV | 规则/遥测 | **产品私有** | 各产品 orchestrator | 与 [ai-platform.md](./ai-platform.md) 一致 |
@@ -67,9 +67,9 @@ DataLuminary 旧 compose **保留至 LW-S2**，标注 deprecated，避免破坏�
 | BlockyEdu `memberTier` / `code_pro` 等商业判断 | feature code + 中央 subscription/grant；Casbin 保留课程/班级 ACL |
 | DataLuminary 高级分析 / 导出 / 容量门禁 | Entitlement Guard + 本地 Space ACL（Casbin） |
 | DoerFlow 平台 API / quotas | `platform/membership` + Pro/Ultra/Enterprise；钱包/SIWE 与 Logto 分离；协议费不迁入套餐 |
-| 各产品自建 Trial 字段 | 每用户每产品一次 7 天 Trial；`ENTITLEMENT_MODE=shadow_read` → `enforce` |
+| 各产品自建 Trial 字段 | 适用产品每用户每产品一次 7×24 小时 Trial；DoerFlow `disabled`；VistaCast / SyncroBrain 就绪前无 Trial；`ENTITLEMENT_MODE=shadow_read` → `enforce` |
 
-权威契约与错误码：[subscription-and-entitlement.md](./subscription-and-entitlement.md)。矩阵列暂以五产品表展示；VistaRemote 作为第六产品线在权益规范中单列接入。
+权威契约与错误码：[subscription-and-entitlement.md](./subscription-and-entitlement.md)。支付：[payment-platform.md](./payment-platform.md)。VistaCast / SyncroBrain 默认可配置、不可售。
 
 ## AI 平台迁移（规划 LW-AI）
 
@@ -87,4 +87,4 @@ DataLuminary 旧 compose **保留至 LW-S2**，标注 deprecated，避免破坏�
 1. 跨产品接口变更 → 先改 `LuminaryWorks/spec` 或 `docs/develop/`
 2. 共享包 breaking → Semver major + 五消费方 PR
 3. 新产品接入生态 → 在 `identity/apps.json` 注册 + 更新本矩阵
-4. 商业套餐 / feature code / 权益错误码变更 → 先改 [subscription-and-entitlement.md](./subscription-and-entitlement.md)
+4. 商业套餐 / feature code / 权益错误码变更 → 先改 [subscription-and-entitlement.md](./subscription-and-entitlement.md)；支付渠道契约 → [payment-platform.md](./payment-platform.md)

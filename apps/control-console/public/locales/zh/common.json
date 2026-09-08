@@ -1,0 +1,119 @@
+{
+  "app": {
+    "title": "LuminaryWorks 控制台",
+    "subtitle": "目录、支付、法律与容量的中央超管控制台。这不是 Logto Admin Console。",
+    "notLogtoAdmin": "Logto Admin Console 仍在 Identity 管理端口。本应用只调用 Entitlement 管理 API。"
+  },
+  "nav": {
+    "overview": "总览",
+    "catalog": "目录",
+    "providers": "支付渠道",
+    "orders": "订单",
+    "cleanup": "试用清理",
+    "legal": "法律与审计",
+    "capacity": "容量",
+    "logout": "退出",
+    "language": "语言"
+  },
+  "auth": {
+    "title": "运营登录",
+    "subtitle": "使用统一 Identity 登录。本控制台关闭社交登录按钮。",
+    "notConfigured": "未配置 Identity",
+    "notConfiguredDesc": "运行时 /config.json 需要 issuer 与 clientId。在 identity/apps.json 注册 LuminaryWorks Control Console，并设置 CONTROL_CONSOLE_IDP_CLIENT_ID。浏览器不得持有 client secret。",
+    "callback": "正在完成登录…",
+    "callbackError": "登录回调失败",
+    "required": "需要登录",
+    "reauth": "会话已过期，请重新登录。"
+  },
+  "errors": {
+    "code": "错误码",
+    "unauthorized": "需要认证（401）。请重新登录。",
+    "paymentRequired": "商业授权失败（402）。这不是权限错误。",
+    "forbidden": "禁止（403）。令牌缺少 entitlement:admin，或管理策略拒绝了该操作。",
+    "generic": "请求失败"
+  },
+  "common": {
+    "save": "保存",
+    "create": "创建",
+    "publish": "发布",
+    "rollback": "回滚",
+    "enable": "启用",
+    "disable": "停用",
+    "rotate": "轮换凭证",
+    "test": "测试",
+    "retry": "重试",
+    "cancel": "取消",
+    "confirm": "确认",
+    "refund": "退款",
+    "reconcile": "对账",
+    "manualConfirm": "人工确认",
+    "loading": "加载中…",
+    "empty": "无记录",
+    "notConfigured": "未配置",
+    "filter": "筛选",
+    "page": "页",
+    "refresh": "刷新",
+    "details": "详情",
+    "reason": "原因",
+    "ticket": "工单",
+    "amount": "金额（最小货币单位）",
+    "status": "状态",
+    "actions": "操作"
+  },
+  "confirm": {
+    "title": "确认破坏性操作",
+    "publish": "发布该目录版本？线上售卖项会立即变化。",
+    "rollback": "回滚到该版本？当前已发布目录将被替换。",
+    "enable": "启用该渠道？仅在测试通过且商户已签约后用于结账。控制台不会臆造启用状态。",
+    "disable": "停用该渠道？新结账将不再使用它。",
+    "rotate": "轮换凭证？旧凭证会在配置的窗口内处于 retiring。",
+    "refund": "对该订单退款并撤销已支付权益？",
+    "manualConfirm": "人工确认该订单？仅用于 mock/manual/contract 渠道。",
+    "retryJob": "重试该试用清理任务？",
+    "cancelJob": "取消该试用清理任务？",
+    "typeEnable": "ENABLE"
+  },
+  "overview": {
+    "title": "总览",
+    "entitlement": "Entitlement 服务",
+    "identityBoundary": "认证边界：OIDC PKCE（浏览器无 client secret）。访问令牌须带资源 https://entitlement.luminaryworks.dev 与范围 entitlement:admin。:3002 上的 Logto Admin 是另一套应用。"
+  },
+  "catalog": {
+    "title": "目录版本",
+    "draftJson": "草稿售卖项 JSON",
+    "invalidJson": "售卖项 JSON 无效",
+    "notes": "备注",
+    "createDraft": "创建草稿",
+    "copyPublished": "复制已发布售卖项"
+  },
+  "providers": {
+    "title": "支付渠道",
+    "credentials": "凭证 JSON（只写，永不回读）",
+    "credentialsHint": "粘贴字符串字段组成的 JSON。保存或轮换成功后立即清空。浏览器不保存这些值。",
+    "metadata": "元数据 JSON（非密钥）",
+    "enabledFromApi": "启用状态以 Entitlement 返回值为准。本控制台不猜测商户审核或高可用。",
+    "create": "创建渠道配置"
+  },
+  "orders": {
+    "title": "订单与支付",
+    "orders": "订单",
+    "attempts": "支付尝试",
+    "refunds": "退款"
+  },
+  "cleanup": {
+    "title": "试用清理任务"
+  },
+  "legal": {
+    "title": "法律接受与审计",
+    "acceptances": "政策接受记录",
+    "audit": "审计日志",
+    "docs": "法律文档"
+  },
+  "capacity": {
+    "title": "容量",
+    "entitlementReady": "Entitlement 就绪",
+    "doris": "Doris Pilot",
+    "storage": "内部对象存储",
+    "noHa": "本页只报告已配置的探测。不会声称高可用。"
+  }
+}

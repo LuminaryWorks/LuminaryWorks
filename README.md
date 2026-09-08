@@ -148,7 +148,10 @@ Nest 共享库（如 `@luminaryworks/entitlement-client`）**源码是 ES import
 | 文档 | 说明 |
 |------|------|
 | [spec/identity-and-permissions.md](./spec/identity-and-permissions.md) | **身份与权限**：Logto AuthN + Experience Headless + Casbin 资源 AuthZ |
-| [spec/subscription-and-entitlement.md](./spec/subscription-and-entitlement.md) | **订阅与权益**：Trial / Pro / Ultra / 企业 seat / License / Partner（权益不进 JWT） |
+| [spec/subscription-and-entitlement.md](./spec/subscription-and-entitlement.md) | **订阅与权益**：Trial / Pro / Ultra / 企业 seat / License / Partner（权益不进 JWT；无永久 Free） |
+| [spec/payment-platform.md](./spec/payment-platform.md) | **支付平台**：adapter、服务端定价、验签回调、市场路由 |
+| [spec/decisions/2026-09-storage-doris-payment.md](./spec/decisions/2026-09-storage-doris-payment.md) | **决策**：AIStor Free、Doris Pilot、支付地域、Trial 清理 |
+| [spec/legal/README.md](./spec/legal/README.md) | **法律工程模板**（中英条款 / 隐私 / Trial 删除；非法律意见） |
 | [spec/domain-and-branding.md](./spec/domain-and-branding.md) | **域名与品牌决策**（六产品 + VistaCast/VistaRemote 并存） |
 | [spec/github-org-migration.md](./spec/github-org-migration.md) | **GitHub 组织迁移**与 remote 更新 |
 | [spec/products/](./spec/products/index.md) | **六产品规划**摘要 |

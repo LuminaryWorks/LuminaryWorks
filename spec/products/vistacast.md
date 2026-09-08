@@ -131,7 +131,7 @@ VistaCast 是 **固定摄像头 AI 事件** 平台。P2P 预览与告警不是 V
 | 卖方 offering | `vistacast.alert-evidence.v1`、`vistacast.footfall-report.v1`（有诚实证据的能力）；stub / 人脸 / staff / fall-smoke **默认不可变现**，**禁止**把 stub 标成生产变现 |
 | 处置 | 满足租户策略、severity、预算的 `alert.v1` 经 M2M 提交 DoerFlow Task；回调只记录外部处置，ack/resolve 仍走本产品 Casbin |
 | 身份 | Logto M2M `VistaCast Service` → audience `https://api.doerflow.local`；scopes `integration.provider.register`、`integration.event.submit`、`integration.callback.read` |
-| 商业 | **不**在中央 Entitlement 增加 VistaCast 面向用户价格方案；用量走 DoerFlow `integration.*` feature/quota（Pro 不开放 provider/event 写）。协议费 / Job 单价 / Escrow / Gas 不属于套餐 |
+| 商业 | **不**在 `sellable=false` 期间发布 VistaCast 面向用户价格或 Trial；中央目录可占位 `productCode=vistacast`。用量走 DoerFlow `integration.*` feature/quota（Pro 不开放 provider/event 写）。协议费 / Job 单价 / Escrow / Gas 不属于套餐 |
 | 隐私 | 禁止原始视频、人脸模板、RTSP 凭据出站；只传引用、摘要、hash、短期授权 URL |
 | 协议 | 仅 REST + OIDC client_credentials + HMAC CloudEvents；禁止跨仓 runtime import / 共享 DB |
 
@@ -143,7 +143,7 @@ VistaCast 是 **固定摄像头 AI 事件** 平台。P2P 预览与告警不是 V
 
 - 自有 PostgreSQL、Casbin `cast.*`、ONVIF/RTSP 凭据、边缘 `ai` 仓
 - 身份：Logto Headless 或外部 OIDC；本地账密仅开发回退
-- 权益：本产品**不是**中央 ToC `productCode`；可完全不连 Entitlement `:3040`
+- 权益：中央可占位 `productCode=vistacast`，默认 `sellable=false` 且 `trialPolicy=disabled`；可完全不连 Entitlement `:3040`。就绪前 **不得** Checkout / Trial |
 - AI：实时 CV **不走**中央 LLM；`ai=off` / 边缘 stub / 本地 ONNX
 
 ### 可选兄弟产品
@@ -191,3 +191,4 @@ VistaCast 是 **固定摄像头 AI 事件** 平台。P2P 预览与告警不是 V
 | MQTT topic | [mqtt-topics.md](../mqtt-topics.md) |
 | 兄弟产品 | [vistaremote.md](./vistaremote.md) · [syncrobrain.md](./syncrobrain.md) |
 | 品牌 | [domain-and-branding.md §4.4](../domain-and-branding.md) |
+| 权益 / 售卖 | [subscription-and-entitlement.md §3.2](../subscription-and-entitlement.md) · [legal/README.md](../legal/README.md) |

@@ -1,6 +1,7 @@
 import { Controller, Get, Query } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { Public } from "../../auth/decorators";
+import type { BillingMarket } from "../../common/catalog-pricing";
 import { QUOTA_PACK_SKUS } from "../../common/voice-packs";
 import { CatalogService } from "./catalog.service";
 
@@ -19,6 +20,15 @@ export class CatalogController {
   @Get("features")
   listFeatures(@Query("productCode") productCode?: string) {
     return this.catalog.listFeatures(productCode);
+  }
+
+  @Public()
+  @Get("offerings")
+  listOfferings(
+    @Query("productCode") productCode?: string,
+    @Query("market") market?: BillingMarket,
+  ) {
+    return this.catalog.listPublishedOfferings({ productCode, market });
   }
 
   @Public()

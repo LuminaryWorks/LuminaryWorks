@@ -11,6 +11,7 @@ const disabledProduct = {
   name: "DoerFlow",
   active: true,
   trialPolicy: "disabled",
+  sellable: true,
 };
 
 function expectDisabled(promise: Promise<unknown>) {
@@ -32,6 +33,10 @@ describe("DoerFlow disabled trial policy", () => {
   it("rejects ensure before opening a transaction or writing audit", async () => {
     const dataSource = { transaction: jest.fn() };
     const audit = { record: jest.fn() };
+    const legal = {
+      assertCurrentPolicyAccepted: jest.fn(),
+      currentPolicyVersion: jest.fn().mockReturnValue("lw-legal-v2026-09-07"),
+    };
     const service = new TrialsService(
       dataSource as never,
       { findOne: jest.fn() } as never,
@@ -39,6 +44,7 @@ describe("DoerFlow disabled trial policy", () => {
       { findOne: jest.fn() } as never,
       { findOne: jest.fn().mockResolvedValue(disabledProduct) } as never,
       audit as never,
+      legal as never,
     );
 
     await expectDisabled(
@@ -50,6 +56,7 @@ describe("DoerFlow disabled trial policy", () => {
     );
     expect(dataSource.transaction).not.toHaveBeenCalled();
     expect(audit.record).not.toHaveBeenCalled();
+    expect(legal.assertCurrentPolicyAccepted).not.toHaveBeenCalled();
   });
 
   it("rejects a direct trial order before persisting it", async () => {
@@ -66,6 +73,7 @@ describe("DoerFlow disabled trial policy", () => {
       products as never,
       [{ provider: "mock" }] as never,
       { record: jest.fn() } as never,
+      { findPublishedOffering: jest.fn() } as never,
     );
 
     await expectDisabled(
@@ -118,6 +126,7 @@ describe("DoerFlow disabled trial policy", () => {
       {} as never,
       { findOne: jest.fn().mockResolvedValue(disabledProduct) } as never,
       { record: jest.fn() } as never,
+      {} as never,
     );
 
     await expectDisabled(
@@ -145,12 +154,15 @@ describe("DoerFlow disabled trial policy", () => {
       } as never,
       {} as never,
       { find: jest.fn().mockResolvedValue([]) } as never,
+      { findOne: jest.fn() } as never,
+      { find: jest.fn() } as never,
     );
 
     await expect(service.listPlans("doerflow")).resolves.toMatchObject([
       {
         productCode: "doerflow",
         trialPolicy: "disabled",
+        sellable: true,
         plans: [{ code: "pro" }, { code: "ultra" }, { code: "enterprise" }],
       },
     ]);

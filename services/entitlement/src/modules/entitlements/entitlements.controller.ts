@@ -5,11 +5,14 @@ import { CurrentPrincipal } from "../../auth/decorators";
 import {
   resolveTrustedDeploymentId,
   resolveTrustedOrganizationId,
+  resolveTrustedSubject,
 } from "../../auth/principal-context";
 import {
+  AllocateResourceDto,
   CheckEntitlementsDto,
   ConsumeEntitlementDto,
   EntitlementsQueryDto,
+  ReleaseResourceDto,
 } from "../../common/dto";
 import { EntitlementException } from "../../common/errors";
 import { EntitlementsService } from "./entitlements.service";
@@ -28,7 +31,7 @@ export class EntitlementsController {
   ) {
     const deploymentId = resolveTrustedDeploymentId(principal, query.deploymentId);
     const organizationId = resolveTrustedOrganizationId(principal, query.organizationId);
-    const ctx = this.resolveSubject(principal, deploymentId);
+    const ctx = resolveTrustedSubject(principal, deploymentId);
     return this.entitlements.resolve({
       ...ctx,
       productCode: query.productCode,
@@ -42,7 +45,7 @@ export class EntitlementsController {
   async check(@CurrentPrincipal() principal: AuthPrincipal, @Body() body: CheckEntitlementsDto) {
     const deploymentId = resolveTrustedDeploymentId(principal, body.deploymentId);
     const organizationId = resolveTrustedOrganizationId(principal, body.organizationId);
-    const ctx = this.resolveSubject(principal, deploymentId);
+    const ctx = resolveTrustedSubject(principal, deploymentId);
     const results = await this.entitlements.check(
       {
         ...ctx,
@@ -65,7 +68,7 @@ export class EntitlementsController {
   ) {
     const deploymentId = resolveTrustedDeploymentId(principal, body.deploymentId);
     const organizationId = resolveTrustedOrganizationId(principal, body.organizationId);
-    const ctx = this.resolveSubject(principal, deploymentId);
+    const ctx = resolveTrustedSubject(principal, deploymentId);
     return this.entitlements.consume({
       ctx: {
         ...ctx,
@@ -75,6 +78,59 @@ export class EntitlementsController {
       },
       featureCode: body.featureCode,
       amount: body.amount,
+      idempotencyKey: body.idempotencyKey ?? idempotencyHeader,
+    });
+  }
+
+  @Post("allocations")
+  @ApiHeader({ name: "Idempotency-Key", required: false })
+  @ApiHeader({ name: "X-Act-As-Subject", required: false })
+  async allocate(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Body() body: AllocateResourceDto,
+    @Headers("idempotency-key") idempotencyHeader?: string,
+  ) {
+    const deploymentId = resolveTrustedDeploymentId(principal, body.deploymentId);
+    const organizationId = resolveTrustedOrganizationId(principal, body.organizationId);
+    const ctx = resolveTrustedSubject(principal, deploymentId);
+    return this.entitlements.allocate({
+      ctx: {
+        ...ctx,
+        productCode: body.productCode,
+        organizationId,
+        deploymentId,
+      },
+      featureCode: body.featureCode,
+      resourceId: body.resourceId,
+      amount: body.amount,
+      ownerKind: body.ownerKind,
+      ownerId: body.ownerId,
+      source: body.source,
+      sourceRef: body.sourceRef,
+      idempotencyKey: body.idempotencyKey ?? idempotencyHeader,
+    });
+  }
+
+  @Post("allocations/release")
+  @ApiHeader({ name: "Idempotency-Key", required: false })
+  @ApiHeader({ name: "X-Act-As-Subject", required: false })
+  async release(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Body() body: ReleaseResourceDto,
+    @Headers("idempotency-key") idempotencyHeader?: string,
+  ) {
+    const deploymentId = resolveTrustedDeploymentId(principal, body.deploymentId);
+    const organizationId = resolveTrustedOrganizationId(principal, body.organizationId);
+    const ctx = resolveTrustedSubject(principal, deploymentId);
+    return this.entitlements.release({
+      ctx: {
+        ...ctx,
+        productCode: body.productCode,
+        organizationId,
+        deploymentId,
+      },
+      featureCode: body.featureCode,
+      resourceId: body.resourceId,
       idempotencyKey: body.idempotencyKey ?? idempotencyHeader,
     });
   }
@@ -100,31 +156,5 @@ export class EntitlementsController {
       throw new EntitlementException("VALIDATION_ERROR", "productCode is required");
     }
     return this.entitlements.occupySeat(organizationId, body.productCode.trim());
-  }
-
-  /**
-   * Subject identity always comes from verified auth — never trust body.subjectId.
-   * Service/admin may act for a user only via X-Act-As-Subject.
-   */
-  private resolveSubject(
-    principal: AuthPrincipal,
-    deploymentId?: string,
-  ): { subjectKind: "USER" | "DEPLOYMENT"; subjectId: string } {
-    if (deploymentId && principal.kind === "service" && !principal.actAsSubjectId) {
-      return { subjectKind: "DEPLOYMENT", subjectId: deploymentId };
-    }
-    if (principal.kind === "user") {
-      return { subjectKind: "USER", subjectId: principal.subjectId };
-    }
-    if ((principal.kind === "service" || principal.kind === "admin") && principal.actAsSubjectId) {
-      return { subjectKind: "USER", subjectId: principal.actAsSubjectId };
-    }
-    if (principal.kind === "admin") {
-      return { subjectKind: "USER", subjectId: principal.subjectId };
-    }
-    throw new EntitlementException(
-      "FORBIDDEN",
-      "Service credential requires X-Act-As-Subject for user entitlement endpoints",
-    );
   }
 }
