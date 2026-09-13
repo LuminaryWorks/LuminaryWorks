@@ -60,7 +60,7 @@
 | 项 | 要求 |
 |---|---|
 | 操作系统 | Debian 12/13 或 Ubuntu 22.04/24.04，x86_64（amd64）或 ARM64，与安装包架构一致 |
-| 运行时 | **Docker Engine + Compose 插件**。目标机 **不要** 装 Node、不要 `docker compose build` |
+| 运行时 | **Docker Engine + Compose 插件**。目标机都 **不必** 装 Node。**断网镜像包**（`pack:all`）：不要 `docker compose build`。**首次安装源码包**（`pack:luminaryworks`）：主机必须能访问镜像仓库，**会** `compose build` |
 | 磁盘 | 系统盘建议 ≥ 80 GiB；镜像 + 数据卷另计。组合全开建议预留 ≥ 200 GiB |
 | 内存 | **演示（空闲、几乎无用户）**见下表。生产/带摄像头与远程会话仍按组合加大 |
 | CPU | 演示 4 核；生产组合 8 核起 |
@@ -84,7 +84,41 @@ Hosted SaaS 若启用对象存储，另计 **120 GiB** 对象数据卷硬预�
 
 ---
 
-## 4. 交付介质（客户拿到什么）
+## 4. 交付介质（两条路径，不要混用）
+
+`pnpm pack:all` 和 `pnpm pack:luminaryworks` **不是**「一个打全部、一个打 LuminaryWorks」。选错路径会在目标机上要么缺镜像、要么现场编译失败。公网 SaaS 与内网私有化仍是同一套 Compose；变的是 **介质**（源码 kit 还是预构建镜像），不是再做一套安装程序。
+
+| | 首次安装源码包 | 断网离线镜像包 |
+|---|---|---|
+| 命令 | `pnpm pack:luminaryworks` | `pnpm pack:all`（`scripts/pack-release.mjs --target all`） |
+| 什么时候用 | 主机已有 Docker、能出网拉镜像 | 机房断网，或禁止现场 `compose build` |
+| 产物 | **一份** kit：`dist/kits/luminaryworks-install-linux-amd64-<sha>.tar` | **多份** tar：控制面 + 六个产品各一份，在 `dist/packs/` |
+| 包里有什么 | 控制面源码 + 六个产品树 + Compose / env + 安装向导 | 预构建镜像（`docker save`）+ 该栈自己的 Compose + `install.sh` |
+| 包里没有 | Docker 引擎、任何镜像 tar | 完整源码树、安装配置页 |
+| 目标机 | 必须已装 Docker + Compose；**会** pull 并用 Dockerfile **build** | 只要 Docker；**不要**装 Node，**不要** `compose build` |
+| 勾选产品 | 解压后改 `site.json` 的 `products.*.enabled` | 只拷贝 / 只 `docker load` 要装的那几份 tar |
+| 安装 | `sudo bash install.sh`（默认打开配置页） | 每份包各自 `install.sh`：`docker load` → 填 env → `up --no-build --pull never` |
+
+`pack:hk-test` 与 `pack:luminaryworks` 是同一条源码 kit。`pack:control-plane` / `pack:products` 是离线镜像路径的子集（控制面一份，或六个产品各一份）。
+
+**对象存储两条路径都不打进镜像。** AIStor Free **禁止**再分发二进制或许可证。控制面包可能附带 overlay YAML 与说明，但 **不会** `docker save` `quay.io/minio/aistor/*`，也 **不会**放入 `minio.license`。客户须自行下载并接受许可证，或提供自有 MinIO 兼容 endpoint。旧 `minio/minio` 社区版已停止维护，禁止使用。
+
+### 4.1 首次安装源码包（有网、主机已有 Docker）
+
+完整步骤：[`luminaryworks-install/README.md`](luminaryworks-install/README.md)。
+
+```bash
+pnpm pack:luminaryworks
+# 产物：dist/kits/luminaryworks-install-linux-amd64-<sha>.tar
+```
+
+目标机解压后 `sudo bash install.sh`。六个产品仍是独立 Compose 项目，**不会**合成一份 yaml。只勾控制面时，六个产品不会启动；改完 `site.json` 再跑一次 `install.sh` 即可加装。
+
+`site.json` **不要写密码**。管理员密码未填则随机生成，到 `identity/ACCOUNTS.product.env` 或安装完成后的 CSV 查找。
+
+源码 kit 的 tar 大约几十到一百 MiB 是正常的：六个产品源码都在 `products/`，不含 `node_modules` 和镜像。BlockyEdu 勾选后默认 `seed.profile=full-demo`（含 AI 课）并导入全部平台课包；详见 [`luminaryworks-install/README.md`](luminaryworks-install/README.md)。
+
+### 4.2 断网离线镜像包（U 盘 / 内网导入）
 
 套件可以 **一次提供全部六个产品包 + 可选控制面包**。客户 **勾选要装哪些**，不是必须一次全开。
 
@@ -104,16 +138,32 @@ luminaryworks-suite-<arch>-<version>/
 每份产品包都是：预构建镜像（`docker save`）+ 该产品自己的 Compose + `install.sh`。  
 目标机只做：`docker load` → 填 env → `docker compose up -d --no-build --pull never`。
 
-**对象存储不在离线包内。** AIStor Free **禁止**再分发二进制或许可证。控制面包可能附带 overlay YAML 与说明，但 **不会** `docker save` `quay.io/minio/aistor/*`，也 **不会**放入 `minio.license`。客户须自行下载并接受许可证，或提供自有 MinIO 兼容 endpoint。旧 `minio/minio` 社区版已停止维护，禁止使用。
-
 **包从哪来：** 不要在客户服务器上拉仓编译。由供应商 / CI 在能出网的打包机执行：
 
 ```bash
 # 发版机：拉最新仓并构建（六个独立 tar，不是一个巨型 compose）
-node scripts/pack-release.mjs --target all --git-pull
+# OVH / 大多数机房是 amd64。Apple Silicon 笔记本也要打 amd64。
+pnpm pack:all -- --platform linux/amd64 --git-pull
+# 等价：node scripts/pack-release.mjs --target all --platform linux/amd64 --git-pull
 ```
 
 `--git-pull` 只发生在打包机。客户拿到的 `MANIFEST.json` 里有当时的 git SHA，升级 = 换一份新包，不是在现场 `git pull`。
+
+个人 Hosted SaaS（本机打 **离线控制面包**，SSH 推到 OVH，VPS 不编译）——这是 `pack:all` 的子集，**不是** `pack:luminaryworks`：
+
+```bash
+node scripts/pack-release.mjs --target control-plane --platform linux/amd64
+node scripts/remote-deploy.mjs \
+  --host <OVH_IPv4> \
+  --user debian \
+  --key ~/.ssh/id_ed25519_lw_ovh \
+  --pack dist/packs/luminaryworks-control-plane-linux-amd64-<sha>.tar \
+  --public-host <OVH_IPv4>
+```
+
+不要用 GitHub `ubuntu-latest` 去 `compose build`（烧私有仓 2000 分钟，还把编译放到 VPS 上）。GitHub Actions 对个人 OVH 默认拒绝这条路径。
+
+勾选装哪些产品：复制 [`site.example.json`](site.example.json) 为 `site.json`（gitignore），`pnpm site:check`。这里**没有密码**。
 
 目标机 Docker：bootstrap 会先探测官方 Hub，被墙再用 `https://docker.m.daocloud.io`。已经用离线包 `docker load` 的机器不需要 Hub。
 
@@ -121,11 +171,13 @@ node scripts/pack-release.mjs --target all --git-pull
 
 ## 5. 公网 SaaS 部署
 
+先按 §4 选介质。下面 5.2–5.3 的 `cd vistacast` / 各产品各自 `install.sh` 是 **断网离线镜像包** 的装法。首次安装源码包用 kit 里那一个 `install.sh`（见 §4.1），不要按套件目录去 `cd vistacast`。
+
 典型：Hetzner / 云厂商一台 Linux，前面加 TLS 反代（Caddy / Nginx）。产品 Compose **不负责 Let's Encrypt**。
 
 ### 5.1 准备
 
-1. 购买 amd64 云主机，安全组先只放行 `22`。
+1. 购买 amd64 云主机，安全组先放行 `22` 和 `80`（安装配置页默认走 80）。
 2. 解析：`id.example.com`、`app.example.com` 等 A 记录到该 IP。
 3. SSH 公钥登录；不要把口令写进仓库。
 4. 安装 Docker（仅首次）：
@@ -260,7 +312,28 @@ HMAC、M2M 密钥 **按产品复制**，见场景包 `peers.secrets.env`（不�
 
 独立部署且 `identity=external_oidc` 时：人在 **客户 IdP** 里建，不使用上表；产品只配 `IDP_ISSUER`。
 
-### 7.2 控制面 env（若安装控制面）
+### 7.2 初始化内容 ≠ 初始密码
+
+`identity/ACCOUNTS.dev.env` 只是 **Logto 平台用户**（超管、各产品管理员）的实验室口令。生产用 `ACCOUNTS.product.env`（或同名环境变量），**不要**把实验室串 `LuminaryDev!234` 带到 OVH。
+
+课程、演示目录、报表 Demo **不写在 Identity 账号文件里**。集中开关在 [`site.example.json`](site.example.json)（无密钥）：
+
+| 数据 | 配哪里 | 谁执行 |
+|---|---|---|
+| 谁能登录、密码 | `ACCOUNTS.product.env` / `LW_*` | `seed-accounts.mjs`（控制面起来之后） |
+| 套餐目录 | Entitlement 镜像启动时的 catalog seed | 控制面包，无需再填课 |
+| BlockyEdu 演示 LMS | 产品 env `EDU_SEED_PROFILE=full-demo\|none` | 由 `site.json` 打印出的值写入 BlockyEdu `.env` |
+| BlockyEdu 平台课包（含 SyncroBrain 实体课） | `EDU_SEED_PACKS=syncrobrain,dataluminary,…` | 随 edu-server 镜像里的 Markdown 包幂等导入 |
+| DataLuminary 获客 Demo 库 | 产品自己的 `demo:data` 流程，默认 **不上** 生产库 | 不要写进 `data_talk` |
+
+运维怎么填：
+
+- **你自己的 OVH / 少数机器：** 改 env 文件即可。`cp site.example.json site.json` 勾选产品与课包，把 `pnpm site:check` 打印的 `EDU_SEED_*` 抄进 BlockyEdu env；密码只放 `ACCOUNTS.product.env`。
+- **交给客户运维：** 以后可以做 **本机 loopback 向导**（填表 → 写出 `site.json` + 各产品 env）。不要做公网可打开的“安装控制台”，也不要把密码放进 `site.json`。
+
+`pnpm site:check` 会拒绝 JSON 里出现 `password` / `secret` 字段。
+
+### 7.3 控制面 env（若安装控制面）
 
 必改 URL 见 §5.3。安装脚本会生成：
 
@@ -387,6 +460,7 @@ SaaS：
 | [`scenarios/agent-commerce/README.md`](scenarios/agent-commerce/README.md) | 组合编排细节 |
 | [`scenarios/smart-site/README.md`](scenarios/smart-site/README.md) | 上层闭环 |
 | [`HOSTED-SAAS.md`](HOSTED-SAAS.md) | 单 VPS 公网验收：TLS、支付回调、MinIO 水位、Doris Pilot、Trial 清理、回滚 |
+| [`site.example.json`](site.example.json) | 勾选产品与课包（无密钥）；`pnpm site:check` |
 | [`object-storage/README.md`](object-storage/README.md) | AIStor Free 对象存储、CDN、水位、迁移 |
 
 ---

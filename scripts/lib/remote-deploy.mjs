@@ -9,6 +9,20 @@ import { preflightObjectStorageEnv } from "./object-storage.mjs";
 
 export const TARGETS = ["control-plane", "agent-commerce", "smart-site"];
 
+export function hostedComposeBuildRefusal({ githubActions, pack, allowRemoteBuild }) {
+  if (pack) return null;
+  if (allowRemoteBuild) return null;
+  if (!githubActions) return null;
+  return [
+    "GitHub-hosted runners must not docker compose build on the VPS (minutes + VPS CPU).",
+    "On the laptop:",
+    "  node scripts/pack-release.mjs --target control-plane --platform linux/amd64",
+    "  node scripts/remote-deploy.mjs --pack dist/packs/<name>.tar --host \"$DEPLOY_HOST\" --user \"$DEPLOY_USER\" --key ~/.ssh/id_ed25519_lw_ovh",
+    "Escape hatch (not for personal OVH): ALLOW_REMOTE_COMPOSE_BUILD=1",
+  ].join("\n");
+}
+
+
 export const CONTROL_PLANE_SECRET_KEYS = [
   "IDENTITY_DB_PASSWORD",
   "ENTITLEMENT_DB_PASSWORD",
@@ -17,6 +31,7 @@ export const CONTROL_PLANE_SECRET_KEYS = [
   "ENTITLEMENT_PARTNER_TOKEN_SECRET",
   // Compose interpolates profile-gated services too; empty ${VAR:?} fails parse.
   "AI_VAULT_MASTER_KEY",
+  "PAYMENT_CONFIG_MASTER_KEY",
 ];
 
 const DEFAULT_PORTS = {

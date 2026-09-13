@@ -22,8 +22,11 @@ The control plane is **optional**. Every product ships and runs standalone with 
 | `scenarios/contracts/` | Cross-scenario JSON Schema / CloudEvents samples (UTF-8 no BOM). Product senders are **not** in this repo. |
 | `scenarios/ingress/` | Optional same-host HTTP Caddy by hostname. Not Let's Encrypt. Daily work uses per-product host ports. |
 | `helm/` | Per-product chart **skeletons** + umbrella. Not required. Not production. K8s is future. |
+| `luminaryworks-install/` | First-install **source kit** docs (`pnpm pack:luminaryworks`). Not the air-gap image packs |
+| `LOCAL_DOCKER_STACKS.md` | Developer laptop: minimal stacks, stop/destroy, demo-sidecar CPU footguns |
 | `PAYMENTS.md` | Alipay Face-to-Face / PayPal credential, sandbox/live, and callback ops |
 | `HOSTED-SAAS.md` | Single-VPS go-live: TLS, trusted proxy, MinIO watermarks, Doris Pilot, trial purge, N-1 rollback |
+| `WEBSITE-GO-LIVE.md` | 官网上线：`luminaryworks.dev` → Cloudflare Pages；docs 迁回 `docs.luminaryworks.dev`；法律 URL 与 Entitlement |
 
 ## Quick start
 
@@ -65,6 +68,25 @@ node scripts/object-storage-status.mjs --used-bytes 0
 ```
 
 Old `minio/minio` CE is forbidden. Set `AISTOR_MINIO_IMAGE` / `AISTOR_MC_IMAGE` to a Quay tag or digest **you confirmed**; the example file uses a placeholder that fails preflight. Never `latest`. See [`object-storage/README.md`](object-storage/README.md).
+
+## Two pack commands (do not mix)
+
+`pnpm pack:all` and `pnpm pack:luminaryworks` are **different delivery paths**, not “one packs everything, the other packs LuminaryWorks.”
+
+| | `pnpm pack:all` | `pnpm pack:luminaryworks` |
+|---|---|---|
+| Script | `scripts/pack-release.mjs --target all` | `scripts/pack-luminaryworks.mjs` |
+| Use when | Air-gap / the target host must not compile | First install on a host that already has Docker and can reach a registry |
+| Output | `dist/packs/` — **one tar per stack** (control-plane + six products) | **One kit:** `dist/kits/luminaryworks-install-linux-amd64-<sha>.tar` |
+| Pack machine | `compose build` + `docker save` (slow, heavy) | Copy source + Compose + wizard only. **Must not** `docker save` |
+| Inside the tar | Pre-built images + that stack’s Compose + `install.sh` | Control-plane source + six product trees + Compose / env + wizard. **No** Engine, **no** image tarballs |
+| Target host | `docker load` + `compose up --no-build --pull never` | Docker Engine + Compose already installed; **pull** Hub images and **build** from Dockerfiles |
+| Select products | Ship / load only the tars you need | One kit; `site.json` `products.*.enabled` |
+| Install | Each tar’s `install.sh` (`install-from-pack.sh` / product pack script) | `sudo bash install.sh` (wizard by default) |
+
+Same air-gap path as `pack:all`: `pack:control-plane`, `pack:products`, or `node scripts/pack-release.mjs --target doerflow`. `pack:hk-test` is an alias of `pack:luminaryworks`.
+
+Customer handbook (Chinese): [`HANDBOOK.md`](HANDBOOK.md) §4. First-install kit: [`luminaryworks-install/README.md`](luminaryworks-install/README.md). Lab commands: [`OPERATOR.md`](OPERATOR.md). SSH of an air-gap tar: [`remote/README.md`](remote/README.md).
 
 ## Preflight
 

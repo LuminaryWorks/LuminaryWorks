@@ -166,7 +166,7 @@ Product SPA  →  Luminary Auth SDK (@luminaryworks/auth-react)
 
 ### 3.3 多品牌
 
-每个产品独立登录前端（或同一 Passport 按 `client_id` 切换品牌）：Logo、主色、文案、可选登录方式均可不同；认证逻辑复用 Experience API。
+每个产品独立登录前端（或同一 Passport 按 `client_id` 切换品牌）：Logo、文案、可选登录方式可不同；**主色统一为品牌蓝 `#1677ff`**（[`shared/brand`](https://github.com/LuminaryWorks/shared/tree/main/brand)）。认证逻辑复用 Experience API。
 
 ### 3.4 社交登录开关（管理后台）
 

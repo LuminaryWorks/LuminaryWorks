@@ -1,8 +1,28 @@
 # Remote deploy (SSH + CI)
 
-One path for a private host (UTM / customer LAN) and a public SaaS host (Hetzner).
+One path for a private host (UTM / customer LAN) and a public SaaS host (OVH / Hetzner).
 Current runtime is **Compose**, not Helm. **Customers:** [`../HANDBOOK.md`](../HANDBOOK.md). Lab notes: [`../OPERATOR.md`](../OPERATOR.md).
 See [`spec/composable-deployment.md`](../../spec/composable-deployment.md).
+
+## Personal OVH (do this)
+
+This README is the **air-gap / offline image** path (`pack-release.mjs` / `pnpm pack:control-plane` / `pnpm pack:all`). It is **not** `pnpm pack:luminaryworks` (source kit, host builds). See [`../README.md`](../README.md) "Two pack commands" and [`../HANDBOOK.md`](../HANDBOOK.md) §4.
+
+Pack on the laptop, SSH the tar, never compile on the VPS, never burn GitHub-hosted minutes:
+
+```bash
+node scripts/pack-release.mjs --target control-plane --platform linux/amd64
+node scripts/remote-deploy.mjs \
+  --host 203.0.113.10 \
+  --user debian \
+  --key ~/.ssh/id_ed25519_lw_ovh \
+  --pack dist/packs/luminaryworks-control-plane-linux-amd64-<sha>.tar \
+  --public-host 203.0.113.10
+```
+
+`install.sh` on the host is **bash**. The laptop orchestrator stays **Node** (`remote-deploy.mjs`) because it already shares SSH helpers, env rendering, and probes with the rest of this MetaRepo. Do not rewrite it in Python.
+
+GitHub `ubuntu-latest` + `docker compose up --build` is **refused** unless `ALLOW_REMOTE_COMPOSE_BUILD=1`.
 
 ## What this deploys
 
@@ -26,10 +46,21 @@ scp scripts/remote-host-bootstrap.sh USER@HOST:/tmp/lw-bootstrap.sh
 ssh USER@HOST 'su -c "bash /tmp/lw-bootstrap.sh --user USER"'
 ```
 
-After that, from this MetaRepo:
+After that, from this MetaRepo **prefer an offline pack** (no compile on the host):
 
 ```bash
 # key-only SSH; never commit the private key or host passwords
+node scripts/pack-release.mjs --target control-plane --platform linux/amd64
+node scripts/remote-deploy.mjs \
+  --host 192.168.64.3 \
+  --user andy \
+  --key ~/.ssh/id_ed25519_lw_lab \
+  --pack dist/packs/luminaryworks-control-plane-linux-arm64-<sha>.tar
+```
+
+Lab-only fallback (rsync + `compose --build` on the host — not for OVH SaaS):
+
+```bash
 node scripts/remote-deploy.mjs \
   --host 192.168.64.3 \
   --user andy \
@@ -49,24 +80,11 @@ Logto admin: `ssh -L 3002:127.0.0.1:3002 USER@HOST` then open `http://127.0.0.1:
 
 ## GitHub Actions
 
-Workflow: [`.github/workflows/deploy-remote.yml`](../../.github/workflows/deploy-remote.yml) (`workflow_dispatch` only).
+Workflow: [`.github/workflows/deploy-remote.yml`](../../.github/workflows/deploy-remote.yml).
 
-Repository secrets:
+Personal OVH **must not** use `ubuntu-latest` to rsync + `compose --build`. The script refuses that unless `ALLOW_REMOTE_COMPOSE_BUILD=1`. Pack on the laptop and `--pack`.
 
-| Secret | Purpose |
-|---|---|
-| `DEPLOY_HOST` | SSH hostname / public IP |
-| `DEPLOY_USER` | SSH user in the `docker` group |
-| `DEPLOY_SSH_KEY` | Private key whose public half is in `~/.ssh/authorized_keys` |
-
-A **LAN UTM VM is not reachable from `ubuntu-latest`**. For private networks either:
-
-- run `remote-deploy.mjs` from a laptop on that LAN, or
-- install a GitHub **self-hosted runner** on the VM and point the workflow `runs-on` at that runner.
-
-Bootstrap probes official Docker Hub first (`--registry-mirror auto`, the default). If `registry-1.docker.io` is blocked, it writes `https://docker.m.daocloud.io`. Offline packs do not need Hub. Skip with `--registry-mirror none`.
-
-Hetzner (tomorrow): create an A record or use the public IPv4, put the same three secrets in the repo, then Run workflow → `control-plane`.
+A **LAN UTM VM is not reachable from `ubuntu-latest`**. For private networks run `remote-deploy.mjs` from a laptop on that LAN.
 
 ## Honesty
 

@@ -125,7 +125,13 @@ SyncroBrain（物理世界数据大脑）  ↔  DoerFlow（数字世界价值流
 
 > MetaRepo **目录名**（如 `VibeEdu`、`VibeAgent`）可在后续迭代中逐步改为 `platform` 或与品牌一致；**组织 rename 优先**，仓库 rename 次之。操作手册见 [github-org-migration.md](./github-org-migration.md)。
 
-## 6. 文档归属
+## 6. 品牌色
+
+全生态 **UI 主色统一为品牌蓝 `#1677ff`**。令牌与 Ant Design 主题见 [`shared/brand`](https://github.com/LuminaryWorks/shared/tree/main/brand)（`tokens.css`、`ant-theme.ts`）。青 `#18a0fb` → 薄荷 `#21d4a8` 仅作 hero / 高亮点缀。
+
+LuminaryWorks **不为六个产品规定独立 accent**，也不在本仓维护六套色板。产品页与登录页用各自 Logo 与文案区分品牌。母品牌 Logo 的光束渐变是工坊标识本身，不是产品配色表。
+
+## 7. 文档归属
 
 | 内容 | 主仓 |
 |------|------|

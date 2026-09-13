@@ -101,6 +101,7 @@ if host.startswith("http://") or host.startswith("https://"):
 else:
     base = f"{protocol}://{host}"
 identity = f"{base}:3001"
+console = f"{base}:3050"
 forced = {
     "CONTROL_PLANE_BIND_ADDR": bind_addr,
     "CONTROL_PLANE_ADMIN_BIND_ADDR": "127.0.0.1",
@@ -108,6 +109,11 @@ forced = {
     "IDENTITY_ADMIN_ENDPOINT": "http://127.0.0.1:3002",
     "AUTH_GATEWAY_PUBLIC_URL": f"{base}:3010",
     "ENTITLEMENT_OIDC_ISSUER": f"{identity}/oidc",
+    "CONTROL_CONSOLE_PUBLIC_URL": console,
+    "CONTROL_CONSOLE_IDP_ISSUER": f"{identity}/oidc",
+    "CONTROL_CONSOLE_ENTITLEMENT_BASE_URL": f"{base}:3040",
+    "CONTROL_CONSOLE_AUTH_EXPERIENCE_URL": console,
+    "ENTITLEMENT_CORS_ORIGINS": f"{console},http://127.0.0.1:3050",
 }
 secret_keys = [
     "IDENTITY_DB_PASSWORD",
@@ -116,6 +122,7 @@ secret_keys = [
     "ENTITLEMENT_PARTNER_SECRET_PEPPER",
     "ENTITLEMENT_PARTNER_TOKEN_SECRET",
     "AI_VAULT_MASTER_KEY",
+    "PAYMENT_CONFIG_MASTER_KEY",
 ]
 secrets_out = {}
 for key in secret_keys:

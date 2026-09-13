@@ -1,6 +1,7 @@
 /**
- * Offline Compose pack: images + compose + install script.
+ * Offline Compose pack (基座 / air-gap): images + compose + install script.
  * Built on a workstation / CI; the target host only docker load + compose up.
+ * LuminaryWorks first-install kits do not use this path (no Engine, no images).
  */
 export const CONTROL_PLANE_PACK_IMAGES = [
   "postgres:16-alpine",
@@ -23,6 +24,17 @@ export function dockerPlatformToPackArch(platform) {
   if (p.includes("arm64") || p.includes("aarch64")) return "linux-arm64";
   if (p.includes("amd64") || p.includes("x86_64")) return "linux-amd64";
   return p.replace("/", "-") || "linux-arm64";
+}
+
+/**
+ * Force compose/buildx to the pack CPU, so an Apple Silicon laptop can emit
+ * linux/amd64 tarballs for OVH / Hetzner without compiling on the VPS.
+ */
+export function dockerComposeBuildEnv(platform, extra = {}) {
+  const env = { ...extra };
+  const trimmed = String(platform || "").trim();
+  if (trimmed) env.DOCKER_DEFAULT_PLATFORM = trimmed;
+  return env;
 }
 
 export const PACK_PRODUCT_PROJECT = {

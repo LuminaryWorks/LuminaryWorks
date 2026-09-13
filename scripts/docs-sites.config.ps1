@@ -2,14 +2,14 @@
 # Dot-source from setup-github-docs.ps1 / setup-cloudflare-docs-dns.ps1
 
 $script:DocsSites = @(
+  # apex + www are served by Cloudflare Pages project luminaryworks-website (LuminaryWorks/website).
   @{
     Brand              = "LuminaryWorks"
     Chinese            = "启明工坊"
     Domain             = "luminaryworks.dev"
     Org                = "LuminaryWorks"
     Tagline            = "AI ecosystem orchestration, shared identity and standards"
-    HostMode           = "apex"
-    RedirectLegacyDocs = $true
+    RedirectLegacyDocs = $false
   },
   @{
     Brand   = "DataLuminary"

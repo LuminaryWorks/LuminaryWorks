@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LuminaryWorks 安装配置</title>
+  <style>
+    :root { --blue:#1677ff; --bg:#f5f7fb; --card:#fff; --line:#e5e8ef; --text:#1f2937; --muted:#6b7280; --bad:#d4380d; --ok:#389e0d; }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); }
+    header { background:#001529; color:#fff; padding: 18px 24px; display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+    header strong { font-size: 18px; }
+    header p { margin: 4px 0 0; color:#9ca3af; font-size: 13px; }
+    .ttl { color:#ffd666; font-size: 13px; white-space: nowrap; }
+    .wrap { max-width: 960px; margin: 24px auto; padding: 0 16px 48px; }
+    .steps { display:flex; gap:8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .steps span { flex:1; min-width: 140px; text-align:center; padding:8px; border-radius: 999px; background:#fff; border:1px solid var(--line); color: var(--muted); font-size: 13px; }
+    .steps span.on { background: var(--blue); color:#fff; border-color: var(--blue); }
+    .card { background: var(--card); border:1px solid var(--line); border-radius: 12px; padding: 22px 24px; }
+    h2 { margin: 0 0 8px; font-size: 18px; }
+    .hint { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+    label { display:block; font-weight: 600; margin: 12px 0 4px; }
+    input[type=text], input[type=password], input[type=number], select { width:100%; padding: 8px 10px; border:1px solid var(--line); border-radius: 8px; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .row3 { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    .prod { display:flex; gap:10px; align-items:flex-start; padding: 10px 0; border-bottom:1px solid var(--line); }
+    .note { font-size: 12px; color: var(--muted); margin: 4px 0 0; }
+    .warn { color: #ad6800; }
+    .bad { color: var(--bad); }
+    .ok { color: var(--ok); }
+    .errors { background:#fff2f0; border:1px solid #ffccc7; padding: 10px 12px; border-radius: 8px; margin: 12px 0; }
+    .alert-ip { background:#fff1f0; border:1px solid #ff4d4f; color:#cf1322; padding: 12px 14px; border-radius: 8px; margin: 12px 0; font-size: 14px; font-weight: 600; }
+    .actions { display:flex; gap:8px; margin-top: 20px; flex-wrap: wrap; }
+    button { padding: 8px 16px; border-radius: 8px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+    button.primary { background: var(--blue); color:#fff; border-color: var(--blue); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    table { width:100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align:left; padding: 6px 4px; border-bottom:1px solid var(--line); }
+    code { font-size: 12px; background: #f3f4f6; padding: 1px 4px; border-radius: 4px; }
+    ul.advice { margin: 0 0 16px; padding-left: 18px; color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <strong>LuminaryWorks 安装配置</strong>
+      <p>1 勾选产品 · 2 超管与产品登录 · 3 运维库口令 · 4 内存上限。表单从 env 读。本页一小时后自动关闭，关掉后不能再打开。</p>
+    </div>
+    <div class="ttl" id="ttl"></div>
+  </header>
+  <div class="wrap">
+    <div class="steps" id="steps"></div>
+    <div class="card" id="panel">加载中…</div>
+  </div>
+  <script>
+    const TOKEN = "{{TOKEN}}";
+    const STEPS = ["勾选产品", "超管与产品登录", "运维库口令", "内存上限"];
+    let step = 0;
+    let state = null;
+    let installed = false;
+    let draft = { products: {}, hosts: {}, accounts: {}, internalSecrets: {}, resources: {} };
+
+    async function api(path, opts) {
+      const res = await fetch(path, {
+        ...opts,
+        headers: { "Content-Type": "application/json", "X-Wizard-Token": TOKEN, ...(opts && opts.headers || {}) },
+      });
+      if (res.status === 410) throw new Error("配置页已关闭");
+      const data = await res.json();
+      if (!res.ok && path !== "/api/install") throw new Error((data && data.error) || "request failed");
+      return data;
+    }
+
+    function capture() {
+      if (document.getElementById("publicHost")) draft.publicHost = document.getElementById("publicHost").value.trim();
+      if (document.getElementById("protocol")) draft.protocol = document.getElementById("protocol").value;
+      if (document.getElementById("ramGiB")) draft.ramGiB = Number(document.getElementById("ramGiB").value);
+      if (document.getElementById("swapGiB")) draft.swapGiB = Number(document.getElementById("swapGiB").value);
+      for (const item of state.hostCatalog || []) {
+        const box = document.querySelector(`[data-enabled="${item.id}"]`);
+        const host = document.querySelector(`[data-host="${item.id}"]`);
+        if (box) draft.products[item.id] = { enabled: box.checked };
+        if (host) draft.hosts[item.id] = host.value.trim();
+      }
+      if (draft.products.blockyedu) {
+        draft.products.blockyedu.seed = (state.products.blockyedu && state.products.blockyedu.seed) || { profile: "full-demo", packs: ["syncrobrain", "dataluminary", "vistacast", "doerflow", "vistaremote"] };
+      }
+      for (const item of state.accounts || []) {
+        const email = document.querySelector(`[data-email="${item.product}"]`);
+        if (!email) continue;
+        draft.accounts[item.product] = {
+          email: email.value,
+          username: document.querySelector(`[data-username="${item.product}"]`)?.value || "",
+          password: document.querySelector(`[data-password="${item.product}"]`)?.value || "",
+        };
+      }
+      for (const item of state.internal || []) {
+        const el = document.querySelector(`[data-internal="${item.key}"]`);
+        if (el) draft.internalSecrets[item.key] = el.value;
+      }
+      for (const id of Object.keys(draft.products)) {
+        const working = document.querySelector(`[data-working="${id}"]`);
+        if (!working) continue;
+        draft.resources[id] = {
+          workingMiB: Number(document.querySelector(`[data-working="${id}"]`).value || 0),
+          limitMiB: Number(document.querySelector(`[data-limit="${id}"]`).value || 0),
+          dbLimitMiB: Number(document.querySelector(`[data-db="${id}"]`).value || 0),
+        };
+      }
+    }
+
+    function enabledIds() {
+      return Object.entries(draft.products).filter(([, meta]) => meta && meta.enabled).map(([id]) => id);
+    }
+
+    function payload() {
+      capture();
+      return {
+        publicHost: draft.publicHost || state.publicHost,
+        protocol: draft.protocol || state.protocol,
+        ramGiB: draft.ramGiB || state.memory.ramGiB,
+        swapGiB: draft.swapGiB ?? state.memory.swapGiB,
+        hosts: draft.hosts,
+        products: draft.products,
+        accounts: draft.accounts,
+        internalSecrets: draft.internalSecrets,
+        resources: draft.resources,
+      };
+    }
+
+    function tick() {
+      const el = document.getElementById("ttl");
+      if (!state?.expiresAt) return;
+      const left = Math.max(0, Math.floor(state.expiresAt * 1000 - Date.now()) / 1000);
+      const m = Math.floor(left / 60);
+      const s = Math.floor(left % 60);
+      el.textContent = left <= 0 ? "已到期，即将关闭" : `剩余 ${m} 分 ${s} 秒后自动关闭`;
+    }
+
+    function looksLikeIp(value) {
+      return /^\d{1,3}(?:\.\d{1,3}){3}$/.test((value || "").trim());
+    }
+
+    function accessAlertHtml() {
+      const ids = enabledIds();
+      const ipHosts = [];
+      for (const id of ids) {
+        const host = ((draft.hosts && draft.hosts[id]) || "").trim();
+        if (!host || looksLikeIp(host)) ipHosts.push(id);
+      }
+      if (ipHosts.length) {
+        return `<div class="alert-ip" id="ip-access-alert">应急 IP 访问：已清空或改成 IP 的域名将走源站 IP:端口。浏览器没有 HTTPS，WebCrypto 登录可能失败，.dev 域名也不能这样用。客户交付请填回品牌域名。</div>`;
+      }
+      if ((draft.protocol || state.protocol) === "http") {
+        return `<div class="alert-ip" id="ip-access-alert">.dev 域名浏览器强制 HTTPS。请选 https，或清空域名改走应急 IP:端口。</div>`;
+      }
+      return `<div id="ip-access-alert"></div>`;
+    }
+
+    function bindAccessAlert() {
+      const update = () => {
+        capture();
+        const el = document.getElementById("ip-access-alert");
+        if (!el) return;
+        el.outerHTML = accessAlertHtml();
+      };
+      document.querySelectorAll("[data-host], [data-enabled], #protocol, #publicHost").forEach((el) => {
+        el.addEventListener("input", update);
+        el.addEventListener("change", update);
+      });
+    }
+
+    function viewProducts() {
+      const rows = (state.hostCatalog || []).map((item) => {
+        const prod = state.products[item.id] || {};
+        const hostValue = draft.hosts[item.id] != null ? draft.hosts[item.id] : (state.hosts[item.id] || item.host || "");
+        return `<div class="prod">
+          <input type="checkbox" data-enabled="${item.id}" ${prod.enabled ? "checked" : ""} />
+          <div style="flex:1">
+            <label style="margin:0">${item.label}</label>
+            <input type="text" data-host="${item.id}" value="${hostValue}" placeholder="${item.host || ""}" />
+            <p class="note">默认填域名。清空此栏才走源站 IP:端口。</p>
+            ${item.note ? `<p class="note ${item.id === "vistaremote" ? "warn" : ""}">${item.note}</p>` : ""}
+          </div>
+        </div>`;
+      }).join("");
+      const dockerHint = state.checks.docker
+        ? "Docker 已就绪（不会卸载已有 Docker）。"
+        : "本机没有 Docker 时，开始安装会安装 Engine，不会删除已有软件。";
+      return `<h2>第一步：勾选要装的产品</h2>
+        <p class="hint">客户交付填域名。六个产品各自独立 Compose。VistaRemote 没有独立主域名，用 vistacast.dev 子域。${dockerHint}</p>
+        <div class="row">
+          <div><label>源站公网 IP</label><input id="publicHost" type="text" value="${draft.publicHost || state.publicHost || ""}" placeholder="本机公网 IP（换机器自动检测）" /></div>
+          <div><label>协议</label><select id="protocol"><option value="https" ${(draft.protocol || state.protocol) !== "http" ? "selected" : ""}>https</option><option value="http" ${(draft.protocol || state.protocol) === "http" ? "selected" : ""}>http（仅应急 IP）</option></select></div>
+        </div>
+        ${accessAlertHtml()}
+        ${rows}`;
+    }
+
+    function viewLogins() {
+      const on = new Set(enabledIds());
+      const fields = (state.accounts || []).filter((item) => on.has(item.product)).map((item) => `
+        <h3>${item.label} <span class="${item.passwordSet ? "ok" : "warn"}">${item.passwordSet ? "密码已在 env" : "未填则随机生成"}</span></h3>
+        <div class="row3">
+          <div><label>邮箱</label><input type="text" data-email="${item.product}" value="${item.email || ""}" /></div>
+          <div><label>用户名</label><input type="text" data-username="${item.product}" value="${item.username || ""}" /></div>
+          <div><label>登录密码</label><input type="password" data-password="${item.product}" autocomplete="new-password" placeholder="${item.passwordSet ? "留空则保留 env" : "留空则随机生成"}" /></div>
+        </div>
+        <p class="note">写入 <code>${item.file}</code>。表单和 env 都空时会随机生成，装完在本文件或 CSV 里查找。</p>
+      `).join("");
+      return `<h2>第二步：超管与各产品登录</h2>
+        <p class="hint">只填公网能登录的账号。勾选了哪个产品，才出现对应 admin。不填密码则随机生成。</p>
+        ${fields || "<p class='bad'>请先在上一步勾选产品。</p>"}`;
+    }
+
+    function viewOps() {
+      const on = new Set(enabledIds());
+      const fields = (state.internal || []).filter((item) => on.has(item.product)).map((item) => `
+        <label>${item.label} <span class="${item.set ? "ok" : "bad"}">${item.set ? "已随机生成" : "缺失"}</span></label>
+        <input type="password" data-internal="${item.key}" autocomplete="new-password" placeholder="${item.set ? "留空则保留已生成的值" : "必须填写"}" />
+        <p class="note">运维层 · <code>${item.file}</code> · ${item.key}</p>
+      `).join("");
+      return `<h2>第三步：运维层库口令</h2>
+        <p class="hint">外网连不上这些库。打包已随机生成；需要改再填。排障时打开文件查找。</p>
+        ${fields}`;
+    }
+
+    function viewMemory() {
+      const mem = state.memory || {};
+      const on = enabledIds();
+      const rows = on.map((id) => {
+        const spec = (mem.products && mem.products[id]) || {};
+        const label = (state.hostCatalog.find((item) => item.id === id) || {}).label || id;
+        return `<tr>
+          <th>${label}</th>
+          <td><input type="number" data-working="${id}" value="${spec.workingMiB || ""}" /></td>
+          <td><input type="number" data-limit="${id}" value="${spec.limitMiB || ""}" /></td>
+          <td><input type="number" data-db="${id}" value="${spec.dbLimitMiB || ""}" /></td>
+          <td class="note">${spec.note || ""}</td>
+        </tr>`;
+      }).join("");
+      const advice = (mem.advice || []).map((item) => `<li>${item}</li>`).join("");
+      return `<h2>第四步：内存上限</h2>
+        <p class="hint">工作集之和应放进物理内存；各产品 mem_limit 合计可以大于 24 GiB，因为不会同时顶满。swap 不当作容量。</p>
+        <div class="row">
+          <div><label>主机内存 GiB</label><input id="ramGiB" type="number" value="${mem.ramGiB || 24}" /></div>
+          <div><label>Swap GiB（不计入规划）</label><input id="swapGiB" type="number" value="${mem.swapGiB || 0}" /></div>
+        </div>
+        <p class="note">建议：工作集约 ${Math.round((mem.workingMiB || 0) / 1024)} GiB，上限合计约 ${Math.round((mem.limitMiB || 0) / 1024)} GiB${mem.overcommitLimits ? "（上限合计已超过物理内存，这是预期）" : ""}。</p>
+        <ul class="advice">${advice}</ul>
+        <table>
+          <tr><th>产品</th><th>工作集 MiB</th><th>上限 mem_limit MiB</th><th>库上限 MiB</th><th></th></tr>
+          ${rows}
+        </table>
+        <div id="review"></div>`;
+    }
+
+    function nav(extra = "") {
+      return `<div class="actions">
+        ${step > 0 && !installed ? `<button type="button" id="prev">上一步</button>` : ""}
+        ${step < 3 && !installed ? `<button type="button" class="primary" id="next">下一步</button>` : ""}
+        ${extra}
+      </div>`;
+    }
+
+    function renderReview(pf) {
+      const box = document.getElementById("review");
+      if (!box) return;
+      const err = (pf.errors || []).map((e) => `<div>${e.message}</div>`).join("");
+      const warn = (pf.warnings || []).map((e) => `<div>${e.message}</div>`).join("");
+      box.innerHTML = `
+        ${err ? `<div class="errors"><strong>不能安装</strong>${err}</div>` : `<p class="ok">必填项已齐。</p>`}
+        ${warn ? `<p class="warn">${warn}</p>` : ""}
+      `;
+      const btn = document.getElementById("install");
+      if (btn) btn.disabled = !pf.ok;
+    }
+
+    async function paint() {
+      document.getElementById("steps").innerHTML = STEPS.map((name, i) => `<span class="${i === step ? "on" : ""}">${i + 1}. ${name}</span>`).join("");
+      const panel = document.getElementById("panel");
+      if (installed) {
+        panel.innerHTML = `<h2>已提交安装</h2>
+          <p>Compose 在终端继续。请先下载配置 CSV（含登录与库口令），然后关闭本页。关闭后不能再打开。</p>
+          <div class="actions">
+            <button type="button" class="primary" id="csv">下载配置 CSV</button>
+            <button type="button" id="close">关闭配置页</button>
+          </div>`;
+        document.getElementById("csv").onclick = async () => {
+          const res = await fetch("/api/export.csv?t=" + encodeURIComponent(TOKEN), { headers: { "X-Wizard-Token": TOKEN } });
+          const blob = await res.blob();
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "luminaryworks-install.csv";
+          a.click();
+        };
+        document.getElementById("close").onclick = async () => {
+          await api("/api/close", { method: "POST", body: "{}" });
+          panel.innerHTML = "<p>配置页已关闭，不能再访问。</p>";
+        };
+        return;
+      }
+      if (step === 0) {
+        panel.innerHTML = viewProducts() + nav();
+        bindAccessAlert();
+      }
+      if (step === 1) panel.innerHTML = viewLogins() + nav();
+      if (step === 2) panel.innerHTML = viewOps() + nav();
+      if (step === 3) {
+        panel.innerHTML = viewMemory() + nav(`<button type="button" id="save">保存到 env</button><button type="button" class="primary" id="install">开始安装</button>`);
+        try { renderReview(await api("/api/save", { method: "POST", body: JSON.stringify(payload()) })); }
+        catch (err) { renderReview({ ok: false, errors: [{ message: err.message }] }); }
+      }
+      document.getElementById("prev")?.addEventListener("click", () => { capture(); step -= 1; paint(); });
+      document.getElementById("next")?.addEventListener("click", () => { capture(); step += 1; paint(); });
+      document.getElementById("save")?.addEventListener("click", async () => {
+        renderReview(await api("/api/save", { method: "POST", body: JSON.stringify(payload()) }));
+      });
+      document.getElementById("install")?.addEventListener("click", async () => {
+        const pf = await api("/api/install", { method: "POST", body: JSON.stringify(payload()) });
+        if (!pf.ok) { renderReview(pf); return; }
+        installed = true;
+        paint();
+      });
+    }
+
+    api("/api/state").then((data) => {
+      state = data;
+      if (data.closed) throw new Error("配置页已关闭");
+      for (const item of data.hostCatalog || []) {
+        const prod = data.products[item.id] || {};
+        draft.products[item.id] = { enabled: !!prod.enabled };
+        draft.hosts[item.id] = data.hosts[item.id] || item.host || "";
+      }
+      draft.publicHost = data.publicHost;
+      draft.protocol = data.protocol;
+      draft.ramGiB = data.memory.ramGiB;
+      draft.swapGiB = data.memory.swapGiB;
+      tick();
+      setInterval(tick, 1000);
+      paint();
+    }).catch((err) => { document.getElementById("panel").innerHTML = `<p class="bad">${err.message}</p>`; });
+  </script>
+</body>
+</html>

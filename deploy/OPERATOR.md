@@ -1,38 +1,80 @@
 # LuminaryWorks 实验室操作笔记
 
-**客户实施请先读 [`HANDBOOK.md`](HANDBOOK.md)。** 六个产品均可独立部署，也可按场景组合；套件介质一次可提供六份产品包 + 可选控制面包，由客户勾选。不要把六个 Compose 合成一个 project。
+**客户实施请先读 [`HANDBOOK.md`](HANDBOOK.md) §4。** 六个产品均可独立部署，也可按场景组合。不要把六个 Compose 合成一个 project。
+
+两条打包命令 **不要混用**：
+
+| 命令 | 产物 | 目标机 |
+|---|---|---|
+| `pnpm pack:luminaryworks` | **一份**源码 kit → `dist/kits/` | 已有 Docker、能出网；现场 **build** |
+| `pnpm pack:all` | 控制面 + 六个产品 **各一份**离线 tar → `dist/packs/` | `docker load`，**禁止**现场 build |
+
+`pack:hk-test` = `pack:luminaryworks`。`pack:control-plane` / `pack:products` 是 `pack:all` 的子集。对照表：[`README.md`](README.md)「Two pack commands」。首次安装：[`luminaryworks-install/README.md`](luminaryworks-install/README.md)。
 
 本文只记实验室打包命令、UTM 验证和 **示例口令**（生产禁用）。
 
-规范：[`spec/composable-deployment.md`](../spec/composable-deployment.md)。Compose 契约：[`README.md`](README.md)。SSH / CI：[`remote/README.md`](remote/README.md)。公网单 VPS 验收：[`HOSTED-SAAS.md`](HOSTED-SAAS.md)。
+规范：[`spec/composable-deployment.md`](../spec/composable-deployment.md)。Compose 契约：[`README.md`](README.md)。SSH / CI：[`remote/README.md`](remote/README.md)。公网单 VPS 验收：[`HOSTED-SAAS.md`](HOSTED-SAAS.md)。站点勾选（无密钥）：[`site.example.json`](site.example.json)。
+
+**香港 / 有网测试机（源码 kit，主机已有 Docker）：**
+
+```bash
+pnpm pack:luminaryworks
+# 拷 dist/kits/luminaryworks-install-linux-amd64-<sha>.tar 到主机后：
+sudo bash install.sh
+```
+
+**个人 OVH（离线控制面包，0 GitHub 分钟，VPS 不编译）：**
+
+```bash
+node scripts/pack-release.mjs --target control-plane --platform linux/amd64
+node scripts/remote-deploy.mjs \
+  --host <OVH_IPv4> --user debian --key ~/.ssh/id_ed25519_lw_ovh \
+  --pack dist/packs/luminaryworks-control-plane-linux-amd64-<sha>.tar
+```
+
+笔记本编排用 **Node**（`pack-release.mjs` / `remote-deploy.mjs`），目标机安装用包内 **bash** `install.sh`。不要用 GitHub `ubuntu-latest` 去远端 `compose build`。
 
 ## 1. 实验室交付物
 
-| 包 | 含义 |
-|---|---|
-| 每个产品一份离线包 | 可只装这一个产品 |
-| `control-plane` 离线包 | 可选 Identity + Gateway + Entitlement |
-| 场景 | `agent-commerce` / `smart-site` = 多个独立 Compose 按顺序 `up` |
+| 包 | 命令 | 含义 |
+|---|---|---|
+| 首次安装源码 kit | `pnpm pack:luminaryworks` | 控制面 + 六个产品树，**无镜像 tar**；`site.json` 勾选 |
+| 每个产品一份离线包 | `pnpm pack:products` 或 `--target doerflow` | 可只装这一个产品；内含 `docker save` |
+| `control-plane` 离线包 | `pnpm pack:control-plane` | 可选 Identity + Gateway + Entitlement |
+| 控制面 + 六产品离线套件 | `pnpm pack:all` | 上面离线包打齐，**仍是多份 tar**，不是一份巨型 compose |
+| 场景 | `agent-commerce` / `smart-site` | 多个独立 Compose 按顺序 `up` |
 
-架构：UTM / Apple Silicon 用 **linux/arm64**；Hetzner / 多数机房用 **linux/amd64**。两套包不要混用。
+架构：UTM / Apple Silicon 用 **linux/arm64**；Hetzner / 多数机房用 **linux/amd64**。两套包不要混用。源码 kit 当前按 **linux/amd64** 打（与香港 / OVH 测试机一致）。
 
-## 2. 本机 / CI 打包（拉最新仓，不要在客户机上 build）
+## 2. 本机 / CI 打包
+
+### 2.1 首次安装源码 kit（`pack:luminaryworks`）
+
+不 `docker save`。打包机拷源码；目标机必须已有 Docker，会 pull + `compose build`。
+
+```bash
+pnpm pack:luminaryworks
+# 产物：dist/kits/luminaryworks-install-linux-amd64-<sha>.tar
+```
+
+### 2.2 断网离线镜像包（`pack:all`）
 
 **每次发版**在能出网的打包机或 GitHub Actions 上：`git pull` 六个产品仓 + 本仓 → `docker compose build` → `docker save`。  
 客户内网机只 `docker load`，**不要**在目标机 `git pull` / `pnpm install` / `docker compose build`。
 
 ```bash
 # 控制面
-node scripts/pack-release.mjs --target control-plane --git-pull
+pnpm pack:control-plane -- --git-pull
+# 等价：node scripts/pack-release.mjs --target control-plane --git-pull
 
 # 某一个产品（独立包）
 node scripts/pack-release.mjs --target doerflow --git-pull
 
 # 六个产品各打一份（不合成一个 compose）
-node scripts/pack-release.mjs --target products --git-pull
+pnpm pack:products -- --git-pull
 
-# 控制面 + 六个产品
-node scripts/pack-release.mjs --target all --git-pull --platform linux/amd64
+# 控制面 + 六个产品（= pack:all）
+pnpm pack:all -- --git-pull --platform linux/amd64
 
 # 只看会打哪些 compose，不 build
 node scripts/pack-release.mjs --target products --dry-run

@@ -1,0 +1,26 @@
+# First-install overlay: bind console/gateway on all interfaces and bake
+# public IdP redirect URLs (docker-compose.dev.yml hard-codes localhost).
+services:
+  iot-postgres:
+    ports: !override
+      - "127.0.0.1:${DB_HOST_PORT:-5438}:5432"
+  iot-gateway:
+    ports: !override
+      - "0.0.0.0:13200:13200"
+  iot-console:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports: !override
+      - "0.0.0.0:15180:80"
+    build:
+      args:
+        VITE_API_BASE_URL: /api/v1
+        VITE_TB_URL: ${TB_PUBLIC_URL:-http://127.0.0.1:19080}
+        VITE_IDP_ISSUER: ${VITE_IDP_ISSUER:-}
+        VITE_IDP_CLIENT_ID: ${VITE_IDP_CLIENT_ID:-}
+        VITE_IDP_AUDIENCE: ${VITE_IDP_AUDIENCE:-https://api.iotchain.local}
+        VITE_IDP_REDIRECT_URI: ${VITE_IDP_REDIRECT_URI:-}
+        VITE_IDP_POST_LOGOUT_URI: ${VITE_IDP_POST_LOGOUT_URI:-}
+        VITE_AUTH_EXPERIENCE_URL: ${VITE_AUTH_EXPERIENCE_URL:-}
+        VITE_ALLOW_LOCAL_LOGIN: "false"
+        VITE_LINK_VISTACAST: ${VITE_LINK_VISTACAST:-}

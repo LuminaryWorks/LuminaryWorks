@@ -12,10 +12,12 @@ apps/**/dist/
 /identity/
 /shared/
 /docs/
+/website/
 
 # 部署密钥：真实 env 不入库，示例文件保留
 /deploy/env/*.env
 !/deploy/env/*.env.example
+/deploy/site.json
 /deploy/scenarios/**/env
 /deploy/scenarios/**/*.env
 !/deploy/scenarios/**/*.env.example

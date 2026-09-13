@@ -7,10 +7,11 @@
  * 1) Identity (Logto + PG + Redis)
  * 2) shared: pnpm install + build (@luminaryworks/*)
  * 3) docs: pnpm install
- * 4) entitlement: .env → install → DB → migrate → seed
- * 5) auth-gateway: .env from example (no npm deps)
+ * 4) website: pnpm install
+ * 5) entitlement: .env → install → DB → migrate → seed
+ * 6) auth-gateway: .env from example (no npm deps)
  *
- * Sibling clones (identity / shared / docs) missing → warn & skip, not fatal.
+ * Sibling clones (identity / shared / docs / website) missing → warn & skip, not fatal.
  * Product repos (DataLuminary 等) 不在 MetaRepo 内，需各自目录安装。
  */
 import { execSync } from "node:child_process";
@@ -118,6 +119,10 @@ step("Docs portal", "docs", (dir) => {
   run("pnpm install", dir);
 });
 
+step("Website", "website", (dir) => {
+  run("pnpm install", dir);
+});
+
 step("Auth gateway", "services/auth-gateway", (dir) => {
   ensureEnv(dir);
 });
@@ -146,11 +151,13 @@ Ready:
   · identity          → Logto (see identity/LOCAL_DEV_DOCKER.md)
   · shared            → @luminaryworks/* built
   · docs              → pnpm docs:dev
+  · website           → pnpm web:dev
   · entitlement DB    → localhost:5434
   · auth-gateway env  → pnpm auth:gateway  (needs identity up)
 
 Next (optional, long-running):
   pnpm docs:dev
+  pnpm web:dev
   pnpm ent:dev
   pnpm auth:gateway
 

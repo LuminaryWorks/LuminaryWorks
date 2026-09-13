@@ -5,6 +5,7 @@ import {
 } from "../init-scenario-env.mjs";
 import {
   assertObjectStorageRemotePreflight,
+  hostedComposeBuildRefusal,
   objectStorageProfileRequested,
   probeUrls,
   publicBaseUrl,
@@ -18,6 +19,11 @@ IDENTITY_ENDPOINT=http://localhost:3001
 IDENTITY_ADMIN_ENDPOINT=http://localhost:3002
 AUTH_GATEWAY_PUBLIC_URL=http://localhost:3010
 ENTITLEMENT_OIDC_ISSUER=http://identity:3001/oidc
+CONTROL_CONSOLE_PUBLIC_URL=
+CONTROL_CONSOLE_IDP_ISSUER=
+CONTROL_CONSOLE_ENTITLEMENT_BASE_URL=
+CONTROL_CONSOLE_AUTH_EXPERIENCE_URL=
+ENTITLEMENT_CORS_ORIGINS=
 IDENTITY_DB_PASSWORD=
 ENTITLEMENT_DB_PASSWORD=
 ENTITLEMENT_SERVICE_API_KEY=
@@ -49,6 +55,7 @@ test("renderControlPlaneEnv fills LAN URLs and secrets once", () => {
   assert.equal(env.ENTITLEMENT_OIDC_ISSUER, "http://192.168.64.3:3001/oidc");
   assert.equal(env.IDENTITY_DB_PASSWORD, "sec0");
   assert.equal(env.AI_VAULT_MASTER_KEY, "sec5");
+  assert.equal(env.CONTROL_CONSOLE_PUBLIC_URL, "http://192.168.64.3:3050");
   assert.equal(env.ENTITLEMENT_GIT_SHA, "abc123");
   assert.equal(env.POSTGRES_IMAGE, "postgres:16-alpine");
   assert.match(text, /^# comment$/m);
@@ -106,4 +113,21 @@ AISTOR_DATALUMINARY_ACCESS_KEY=
   assert.equal(env.OBJECT_STORAGE_ENABLED, "0");
   assert.equal(env.AISTOR_ROOT_PASSWORD, "");
   assert.equal(env.AISTOR_DATALUMINARY_ACCESS_KEY, "");
+});
+
+test("hosted compose build is refused on GitHub Actions unless packing", () => {
+  assert.equal(
+    Boolean(
+      hostedComposeBuildRefusal({ githubActions: true, pack: false, allowRemoteBuild: false }),
+    ),
+    true,
+  );
+  assert.equal(
+    hostedComposeBuildRefusal({ githubActions: true, pack: true, allowRemoteBuild: false }),
+    null,
+  );
+  assert.equal(
+    hostedComposeBuildRefusal({ githubActions: false, pack: false, allowRemoteBuild: false }),
+    null,
+  );
 });

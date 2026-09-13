@@ -23,4 +23,26 @@ pnpm verify:migration
 # 或：node scripts/verify-migration.mjs
 ```
 
+## Git 分支（生态统一）
+
+| 分支 | 用途 |
+|------|------|
+| **`dev`** | 日常开发；GitHub **默认分支**；本地 `git checkout dev` 后改代码、跑验证 |
+| **`main`** | 发布线；仅当 `dev` 验收通过后合并，再打 tag / 部署 |
+
+工作流：
+
+1. 在 `dev` 上开发并 push
+2. 本地或 CI 验证通过后，将 `dev` 合并进 `main`（PR 或直接 merge）
+3. 从 `main` 打 release tag 并发布
+
+曾用 `master` 的仓（LuminaryWorks、identity、shared、docs、SyncroBrain 等）已统一为 `main` + `dev`。
+
+批量对齐各组织仓库默认分支与 `dev`/`main` 同步：
+
+```bash
+node scripts/sync-ecosystem-dev-branch.mjs
+node scripts/sync-ecosystem-dev-branch.mjs --dry-run   # 仅预览
+```
+
 > **历史**：GitHub 组织曾由 `AgentSkillMesh` 等更名；主仓也曾用 `DataLuminary-Platform` / `VibeEdu` / `VibeAgent` 等名。现本地与 remote 均以本表为准。VistaRemote 远程桌面与 VistaCast 摄像头产品线并存。

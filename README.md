@@ -67,14 +67,16 @@
 
 ```text
 LuminaryWorks/                  # 本仓：叙事 + 标准 + 编排脚本
-├── docs/        → LuminaryWorks/docs        RsPress 对外宣传 + 开发者门户
+├── docs/        → LuminaryWorks/docs        RsPress 开发者门户（docs 子域）
+├── website/     → LuminaryWorks/website    官网（Next 静态导出 + Cloudflare Pages）
 ├── identity/    → LuminaryWorks/identity    统一登录授权 Docker 服务
 └── shared/      → LuminaryWorks/shared      @luminary/* 共享库（pnpm 工作区）
 ```
 
 | 子仓 | 作用 |
 |------|------|
-| [docs](https://github.com/LuminaryWorks/docs) | 营销站 + 开发者文档（RsPress） |
+| [docs](https://github.com/LuminaryWorks/docs) | 开发者文档（RsPress，`docs.luminaryworks.dev`） |
+| [website](https://github.com/LuminaryWorks/website) | 官网（Next 静态导出 + Cloudflare Pages，`luminaryworks.dev`） |
 | [identity](https://github.com/LuminaryWorks/identity) | Logto + PG + Redis + 应用注册脚本 |
 | [shared](https://github.com/LuminaryWorks/shared) | `@luminaryworks/auth-core`、`auth-react`、`pal`、`notification`、`entitlement-client`、`tooling` |
 | `services/entitlement` | 中央订阅/权益服务（NestJS + PostgreSQL；见 `pnpm ent:*`） |
@@ -112,6 +114,7 @@ pnpm id:up         # 仅拉起统一登录（unless-stopped；Desktop 重启后�
 pnpm id:down       # 临时 stop（保留容器，下次 Desktop 仍自启）
 pnpm id:destroy    # compose down（拆掉栈，需再 id:up）
 pnpm docs:dev      # 本地预览文档站
+pnpm web:dev       # 本地预览官网（site:* 是部署站点意图，勿混用）
 pnpm ent:dev       # 权益服务开发态
 pnpm auth:gateway  # Auth Gateway :3010（需 identity 已起）
 ```

@@ -9,6 +9,9 @@
  *
  * Pack *time* (laptop / CI): git pull latest (optional) + docker compose build + docker save.
  * Target Linux host: docker load + compose up --no-build --pull never. No pnpm, no compilers.
+ *
+ * This is the 基座 air-gap path. LuminaryWorks first-install kits are
+ * `scripts/pack-luminaryworks.mjs` and must not docker save.
  */
 import { spawnSync } from "node:child_process";
 import {
@@ -33,6 +36,7 @@ import {
 } from "./lib/docker-registry.mjs";
 import {
   CONTROL_PLANE_PACK_IMAGES,
+  dockerComposeBuildEnv,
   dockerPlatformToPackArch,
   expandPackTargets,
   PACK_PRODUCT_PROJECT,
@@ -95,11 +99,13 @@ function printHelp() {
 
   --target control-plane|vistacast|syncrobrain|doerflow|vistaremote|dataluminary|blockyedu|products|all
   --platform linux/arm64|linux/amd64
+                          OVH / most datacenters: linux/amd64 (Apple Silicon still packs amd64 via buildx)
   --git-pull     git pull --ff-only each product (and this repo for control-plane) before build
   --skip-build   Pack whatever images already exist locally
   --dry-run      Print the pack plan and exit
 
 Build happens on this machine / CI. The customer host never git-pulls or compiles.
+Personal OVH: pack here, then node scripts/remote-deploy.mjs --pack <tar> --host <ip>
 `);
 }
 
@@ -288,7 +294,7 @@ function packControlPlane(options, platform, packArch) {
         "auth-gateway",
         "entitlement",
         "control-console",
-      ]);
+      ], { env: dockerComposeBuildEnv(platform) });
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }
@@ -333,6 +339,14 @@ function packControlPlane(options, platform, packArch) {
   );
   cpSync(join(metaRoot, "scripts", "install-from-pack.sh"), join(packDir, "install.sh"));
   chmodSync(join(packDir, "install.sh"), 0o755);
+  for (const doc of ["deploy/HANDBOOK.md", "deploy/site.example.json", "deploy/site.hk-test.example.json"]) {
+    const from = join(metaRoot, doc);
+    if (existsSync(from)) {
+      const dest = join(packDir, doc);
+      mkdirSync(dirname(dest), { recursive: true });
+      cpSync(from, dest);
+    }
+  }
   const identityRoot = join(metaRoot, "identity");
   if (existsSync(identityRoot)) {
     for (const file of [
@@ -405,7 +419,10 @@ function packProduct(product, options, platform, packArch) {
       const buildArgs = ["compose", "--env-file", packEnv];
       for (const file of resolved.files) buildArgs.push("-f", file);
       buildArgs.push("build", "--build-arg", `NPM_REGISTRY=${npmRegistry}`);
-      run("docker", buildArgs, { cwd: productRoot, env: { NPM_REGISTRY: npmRegistry } });
+      run("docker", buildArgs, {
+        cwd: productRoot,
+        env: dockerComposeBuildEnv(platform, { NPM_REGISTRY: npmRegistry }),
+      });
     }
     const images = composeImages(productRoot, resolved.files, packEnv);
     plan.images = images;
@@ -464,7 +481,13 @@ function main() {
     printHelp();
     return 64;
   }
+  const detected = detectPlatform("");
   const platform = detectPlatform(options.platform);
+  if (options.platform && dockerPlatformToPackArch(platform) !== dockerPlatformToPackArch(detected)) {
+    console.warn(
+      `[pack] packing ${platform} on a ${detected || "unknown"} docker engine; enable Docker Desktop / buildx qemu`,
+    );
+  }
   const packArch = dockerPlatformToPackArch(platform);
   mkdirSync(options.outDir, { recursive: true });
   const results = [];

@@ -1,0 +1,34 @@
+{
+  "$comment": "勾选 products.*.enabled。不要写密码。hosts 默认品牌域名；清空某栏才走源站 IP:端口。默认 sudo bash install.sh 打开向导。也可 --no-wizard。VistaRemote 没有独立主域名，hosts.vistaremote 用 vistacast.dev 子域。publicHost 是本机公网 IP / Cloudflare 源站，换机器改这一项即可。",
+  "publicHost": "REPLACE_WITH_SERVER_PUBLIC_IP",
+  "protocol": "https",
+  "platform": "linux/amd64",
+  "profile": "control-plane",
+  "identity": {
+    "accountsProfile": "product"
+  },
+  "hosts": {
+    "control-plane": "luminaryworks.dev",
+    "dataluminary": "dataluminary.dev",
+    "blockyedu": "blockyedu.com",
+    "doerflow": "doerflow.dev",
+    "vistacast": "vistacast.dev",
+    "vistaremote": "vistaremote.vistacast.dev",
+    "syncrobrain": "syncrobrain.com"
+  },
+  "products": {
+    "control-plane": { "enabled": true },
+    "dataluminary": { "enabled": false },
+    "blockyedu": {
+      "enabled": false,
+      "seed": {
+        "profile": "full-demo",
+        "packs": ["syncrobrain", "dataluminary", "vistacast", "doerflow", "vistaremote"]
+      }
+    },
+    "doerflow": { "enabled": false },
+    "vistaremote": { "enabled": false },
+    "vistacast": { "enabled": false },
+    "syncrobrain": { "enabled": false }
+  }
+}

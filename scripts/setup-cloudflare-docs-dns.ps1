@@ -6,6 +6,7 @@
 # Host modes (docs-sites.config.ps1):
 #   default  -> docs.{domain} CNAME -> {org}.github.io
 #   apex     -> @ + www CNAME -> github.io; docs.{domain} 301 -> https://{domain}
+# luminaryworks.dev apex/www are NOT managed here — Cloudflare Pages (luminaryworks-website).
 
 param(
   [switch]$WhatIf,

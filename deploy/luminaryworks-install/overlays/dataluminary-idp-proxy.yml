@@ -1,0 +1,8 @@
+# Same-origin IdP proxy for DataView nginx (/oidc + /api/experience).
+services:
+  dataview:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      IDP_UPSTREAM: ${IDP_UPSTREAM:-host.docker.internal:3001}
+      IDP_HOST: ${IDP_HOST:-127.0.0.1:3001}

@@ -25,6 +25,7 @@ import { fileURLToPath } from "node:url";
 import { parseDotEnv } from "./init-scenario-env.mjs";
 import {
   assertObjectStorageRemotePreflight,
+  hostedComposeBuildRefusal,
   objectStorageProfileRequested,
   probeUrls,
   renderControlPlaneEnv,
@@ -147,16 +148,16 @@ function printHelp() {
   --registry-mirror auto|none|<url>
                           auto (default): probe Docker Hub, else docker.m.daocloud.io
   --npm-registry <url>    npm registry for Entitlement image build
-  --pack <file.tar>       Offline pack from scripts/pack-release.mjs (load + up, no build)
+  --pack <file.tar>       Recommended for OVH: load + up, no build on the VPS
   --init-identity         After up, create Logto Console operator + seed (inside identity container)
+
+Personal OVH: pack on the laptop (linux/amd64), then --pack over SSH. Do not rsync source
+and compose --build on the server. Site intent (no secrets): deploy/site.example.json
 
 Environment: DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_REMOTE_DIR
              DEPLOY_PUBLIC_HOST DEPLOY_BIND_ADDR DEPLOY_PROTOCOL
              DEPLOY_REGISTRY_MIRROR DEPLOY_PACK
-
-Environment: DEPLOY_HOST DEPLOY_USER DEPLOY_SSH_KEY DEPLOY_REMOTE_DIR
-             DEPLOY_PUBLIC_HOST DEPLOY_BIND_ADDR DEPLOY_PROTOCOL
-             DEPLOY_REGISTRY_MIRROR
+             ALLOW_REMOTE_COMPOSE_BUILD=1  (escape hatch; burns VPS CPU)
 `);
 }
 
@@ -462,6 +463,15 @@ async function main() {
     console.error("missing --host (or DEPLOY_HOST)");
     printHelp();
     return 64;
+  }
+  const hostedRefusal = hostedComposeBuildRefusal({
+    githubActions: process.env.GITHUB_ACTIONS === "true",
+    pack: Boolean(options.pack),
+    allowRemoteBuild: process.env.ALLOW_REMOTE_COMPOSE_BUILD === "1",
+  });
+  if (hostedRefusal) {
+    console.error(hostedRefusal);
+    return 78;
   }
   if (!TARGETS.includes(options.target)) {
     console.error(`unknown --target ${options.target}`);

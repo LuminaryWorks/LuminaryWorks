@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import {
   CONTROL_PLANE_PACK_IMAGES,
+  dockerComposeBuildEnv,
   dockerPlatformToPackArch,
   expandPackTargets,
   packName,
@@ -37,4 +41,15 @@ test("control-plane pack lists the images compose will start", () => {
     CONTROL_PLANE_PACK_IMAGES.some((image) => /aistor|minio\/minio/.test(image)),
     false,
   );
+});
+
+test("dockerComposeBuildEnv pins linux/amd64 for OVH packs from Apple Silicon", () => {
+  assert.equal(dockerComposeBuildEnv("linux/amd64").DOCKER_DEFAULT_PLATFORM, "linux/amd64");
+  assert.equal(dockerComposeBuildEnv("linux/amd64", { NPM_REGISTRY: "https://example" }).NPM_REGISTRY, "https://example");
+});
+
+test("pack install.sh fills console URLs from public-host", () => {
+  const text = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../install-from-pack.sh"), "utf8");
+  assert.match(text, /CONTROL_CONSOLE_PUBLIC_URL/);
+  assert.match(text, /PAYMENT_CONFIG_MASTER_KEY/);
 });

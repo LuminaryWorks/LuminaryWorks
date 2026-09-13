@@ -1,14 +1,8 @@
 /**
- * Thin dispatcher for sub-repo commands.
- *   node scripts/run.mjs <repo> <action>
+ * Dispatcher for identity sub-repo commands (shell/docker, not plain pnpm).
+ * Plain package scripts use `pnpm --dir <path>` in package.json instead.
  *
- * Examples:
- *   node scripts/run.mjs identity bootstrap
- *   node scripts/run.mjs identity down
- *   node scripts/run.mjs shared build
- *   node scripts/run.mjs docs dev
- *   node scripts/run.mjs entitlement up
- *   node scripts/run.mjs entitlement dev
+ *   node scripts/run.mjs identity <action>
  */
 import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -32,25 +26,6 @@ const map = {
     "seed-user": "node scripts/seed-dev-user.mjs",
     ps: "docker compose ps",
   },
-  shared: { build: "pnpm build", check: "pnpm check" },
-  docs: { dev: "pnpm dev", build: "pnpm build" },
-  entitlement: {
-    up: "docker compose up -d",
-    down: "docker compose down",
-    install: "pnpm install",
-    build: "pnpm build",
-    check: "pnpm check",
-    test: "pnpm test",
-    migrate: "pnpm migration:run",
-    seed: "pnpm seed",
-    dev: "pnpm start:dev",
-    start: "pnpm start",
-  },
-};
-
-/** Nested dirs for MetaRepo-owned services (not sibling clones). */
-const repoDirs = {
-  entitlement: "services/entitlement",
 };
 
 const cmd = map[repo]?.[action];
@@ -59,9 +34,9 @@ if (!cmd) {
   process.exit(1);
 }
 
-const dir = join(root, repoDirs[repo] ?? repo);
+const dir = join(root, repo);
 if (!existsSync(dir)) {
-  console.error(`✗ ${repoDirs[repo] ?? repo}/ not found. Clone LuminaryWorks/${repo} here.`);
+  console.error(`✗ ${repo}/ not found. Clone LuminaryWorks/${repo} here.`);
   process.exit(1);
 }
 

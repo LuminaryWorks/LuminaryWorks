@@ -1,0 +1,25 @@
+{
+  "$comment": "Copy to deploy/site.json (gitignored). No passwords. Identity users: identity/ACCOUNTS.product.env. BlockyEdu courses: products.blockyedu.seed — not ACCOUNTS.dev.env.",
+  "publicHost": "app.example.com",
+  "protocol": "https",
+  "platform": "linux/amd64",
+  "profile": "control-plane",
+  "identity": {
+    "accountsProfile": "product"
+  },
+  "products": {
+    "control-plane": { "enabled": true },
+    "vistacast": { "enabled": false },
+    "syncrobrain": { "enabled": false },
+    "doerflow": { "enabled": false },
+    "vistaremote": { "enabled": false },
+    "dataluminary": { "enabled": false },
+    "blockyedu": {
+      "enabled": false,
+      "seed": {
+        "profile": "full-demo",
+        "packs": ["syncrobrain", "dataluminary", "vistacast", "doerflow", "vistaremote"]
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+# Publish VistaRemote API for a single-IP install. Web SPAs are optional.
+# Port 15200 avoids colliding with Control Console / Identity.
+services:
+  server:
+    ports:
+      - "0.0.0.0:${VR_SERVER_HOST_PORT:-15200}:3000"
+    environment:
+      PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://127.0.0.1:5173}
+      PUBLIC_API_HOST: ${PUBLIC_API_HOST:-127.0.0.1:15200}
+      PUBLIC_SIGNALING_HOST: ${PUBLIC_SIGNALING_HOST:-127.0.0.1:15200}
+      PUBLIC_SIGNALING_PROTO: ${PUBLIC_SIGNALING_PROTO:-ws}
+      IDP_MODE: ${IDP_MODE:-logto}
+      IDP_ISSUER: ${IDP_ISSUER:-}
+      IDP_AUDIENCE: ${IDP_AUDIENCE:-https://api.vistaremote.local}
+      IDP_JWKS_URI: ${IDP_JWKS_URI:-}
+      ENTITLEMENT_MODE: ${ENTITLEMENT_MODE:-off}

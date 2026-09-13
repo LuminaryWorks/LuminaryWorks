@@ -1,0 +1,42 @@
+{
+  "$comment": "Browser hostnames. Not passwords. VistaRemote has no apex domain — it is a vistacast.dev subdomain. Brand docs also mention remote.vistacast.dev; put the DNS you actually created here.",
+  "products": [
+    {
+      "id": "control-plane",
+      "label": "控制面 / Identity",
+      "host": "luminaryworks.dev",
+      "note": "对外 Identity 是 login.luminaryworks.dev；控制台是 console.luminaryworks.dev。清空此栏才走源站 IP:端口。"
+    },
+    {
+      "id": "dataluminary",
+      "label": "DataLuminary",
+      "host": "dataluminary.dev"
+    },
+    {
+      "id": "blockyedu",
+      "label": "BlockyEdu",
+      "host": "blockyedu.com"
+    },
+    {
+      "id": "doerflow",
+      "label": "DoerFlow",
+      "host": "doerflow.dev"
+    },
+    {
+      "id": "vistacast",
+      "label": "VistaCast",
+      "host": "vistacast.dev"
+    },
+    {
+      "id": "vistaremote",
+      "label": "VistaRemote",
+      "host": "vistaremote.vistacast.dev",
+      "note": "没有独立主域名。必须挂在 vistacast.dev 下（本次 DNS：vistaremote.vistacast.dev）。不要写成 vistaremote.dev。品牌文档里的官网是 remote.vistacast.dev，以你实际解析为准。"
+    },
+    {
+      "id": "syncrobrain",
+      "label": "SyncroBrain",
+      "host": "syncrobrain.com"
+    }
+  ]
+}

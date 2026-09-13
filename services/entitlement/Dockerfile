@@ -5,10 +5,11 @@ WORKDIR /app
 ARG NPM_REGISTRY=https://registry.npmjs.org
 ENV NPM_CONFIG_REGISTRY=${NPM_REGISTRY}
 ENV COREPACK_NPM_REGISTRY=${NPM_REGISTRY}
-COPY package.json pnpm-lock.yaml* .npmrc ./
+COPY package.json pnpm-lock.yaml* .npmrc pnpm-workspace.yaml* ./
 RUN corepack enable \
-  && pnpm config set registry "$NPM_REGISTRY" \
-  && (pnpm install --frozen-lockfile || pnpm install)
+    && pnpm config set registry "$NPM_REGISTRY" \
+    && pnpm config set dangerouslyAllowAllBuilds true \
+    && (pnpm install --frozen-lockfile || pnpm install)
 
 FROM node:24-alpine AS build
 WORKDIR /app

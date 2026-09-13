@@ -67,7 +67,7 @@ IAM_PROVIDER=logto
    - Auth Gateway (`:3010`) is optional locally; preferred in multi-product / production.
 6. Attach `Authorization: Bearer <access_token>` to API client; exchange via product `POST …/auth/sso/login` when the API still issues a local session JWT.
 7. Drive UI from resource `permissions` fields — do not hardcode role names for buttons.
-8. Brand the login page per product (logo, colors, copy). Auth logic stays SDK/API.
+8. Brand the login page per product (logo, copy). Use ecosystem primary `#1677ff`. Auth logic stays SDK/API.
 9. Optional return-path helpers: `createPostLoginPathHelpers({ storageKey, defaultPath })` from `@luminaryworks/auth-react`.
 
 Env:

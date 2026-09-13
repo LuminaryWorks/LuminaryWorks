@@ -1,0 +1,25 @@
+{
+  "$comment": "Hong Kong early-test site intent. No passwords. Copy to deploy/site.json if you want site:check locally. install.sh uses --public-host on the server instead of this hostname.",
+  "publicHost": "REPLACE_WITH_HK_SERVER_IP",
+  "protocol": "http",
+  "platform": "linux/amd64",
+  "profile": "control-plane",
+  "identity": {
+    "accountsProfile": "product"
+  },
+  "products": {
+    "control-plane": { "enabled": true },
+    "vistacast": { "enabled": false },
+    "syncrobrain": { "enabled": false },
+    "doerflow": { "enabled": false },
+    "vistaremote": { "enabled": false },
+    "dataluminary": { "enabled": false },
+    "blockyedu": {
+      "enabled": false,
+      "seed": {
+        "profile": "full-demo",
+        "packs": ["syncrobrain", "dataluminary", "vistacast", "doerflow", "vistaremote"]
+      }
+    }
+  }
+}

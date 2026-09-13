@@ -1,0 +1,11 @@
+# Cloudflare origin: HTTP :80, Host-based routing. Caddyfile is generated
+# by `python3 install-runtime.py --apply-ingress`.
+name: lw-ingress
+
+services:
+  ingress:
+    image: caddy:2.8-alpine
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ./ingress/Caddyfile:/etc/caddy/Caddyfile:ro

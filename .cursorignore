@@ -1,0 +1,39 @@
+# Dependencies
+**/node_modules/
+
+# IDE / VCS / tooling
+.idea/
+.vscode/
+.git/
+.husky/
+.github/
+.github-org-profile/
+
+# Build outputs — Rsbuild / NestJS / RsPress / Next 等
+**/dist/
+**/build/
+**/doc_build/
+**/out/
+**/.next/
+**/coverage/
+**/.nyc_output/
+**/*.tsbuildinfo
+
+# 官网与演示站（非核心产品仓）
+website/
+share-demo/
+
+# 根目录临时试验文件
+/test.md
+/test.js
+/test.ts
+/test.tsx
+/test.html
+/test.json
+/test.yaml
+/test.yml
+/test.xml
+/test.csv
+/test.txt
+/test.log
+/test.ini

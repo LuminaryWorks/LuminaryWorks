@@ -3,66 +3,30 @@ name: Deploy remote
 on:
   workflow_dispatch:
     inputs:
-      target:
-        description: Compose target to start
-        type: choice
-        options:
-          - control-plane
-          - agent-commerce
-          - smart-site
-        default: control-plane
-      public_host:
-        description: Browser-reachable host (leave empty to use DEPLOY_HOST)
-        required: false
+      confirm:
+        description: "Type laptop-pack — this workflow must not compose-build on ubuntu-latest"
+        required: true
         type: string
 
-# github.com cannot reach a LAN UTM VM. Use this workflow against a public
-# host (Hetzner) or move the job to a self-hosted runner on the private machine.
+# Personal OVH: pack on the laptop, then remote-deploy.mjs --pack.
+# GitHub-hosted minutes are 2000/month on private repos; do not docker compose build here.
 permissions:
   contents: read
 
-concurrency:
-  group: deploy-remote-${{ github.event.inputs.target }}
-  cancel-in-progress: false
-
 jobs:
-  deploy:
+  refuse-hosted-build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-
-      - name: Install rsync
-        run: sudo apt-get update -y && sudo apt-get install -y rsync
-
-      - name: Write deploy SSH key
-        env:
-          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      - name: Point operators at laptop pack
         run: |
-          test -n "$DEPLOY_SSH_KEY"
-          mkdir -p "$HOME/.ssh"
-          umask 077
-          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/deploy_key"
-
-      - name: Deploy
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_PUBLIC_HOST: ${{ github.event.inputs.public_host }}
-        run: |
-          test -n "$DEPLOY_HOST"
-          test -n "$DEPLOY_USER"
-          extra=()
-          if [[ -n "$DEPLOY_PUBLIC_HOST" ]]; then
-            extra+=(--public-host "$DEPLOY_PUBLIC_HOST")
+          echo "Do not deploy OVH from GitHub-hosted runners."
+          echo "On the laptop (linux/amd64 even on Apple Silicon):"
+          echo "  node scripts/pack-release.mjs --target control-plane --platform linux/amd64"
+          echo "  node scripts/remote-deploy.mjs --pack dist/packs/<tar> --host \"\$DEPLOY_HOST\" --user debian --key ~/.ssh/id_ed25519_lw_ovh"
+          echo "Site intent (no secrets): deploy/site.example.json / pnpm site:check"
+          if [[ "${{ github.event.inputs.confirm }}" != "laptop-pack" ]]; then
+            echo "Type laptop-pack in the confirm input if you only wanted to see this message."
+            exit 1
           fi
-          node scripts/remote-deploy.mjs \
-            --host "$DEPLOY_HOST" \
-            --user "$DEPLOY_USER" \
-            --key "$HOME/.ssh/deploy_key" \
-            --target "${{ github.event.inputs.target }}" \
-            "${extra[@]}"
+          exit 1

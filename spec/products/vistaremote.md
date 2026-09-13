@@ -13,7 +13,6 @@
 | 独立价值 | 私有化远程运维、会话录制、AI 摘要，可脱离 IoT 部署 |
 | 生态角色 | **控** — 人工触达现场、远程调试与审计 |
 | 受众 | 工控运维、IT 服务商、远程客服、私有化部署客户 |
-| 品牌主色 | `#1677ff`（对齐 [shared/brand](../../shared/brand/)；Logo SVG `#0078FF` 同源） |
 
 与 **[VistaCast](./vistacast.md)**（AI 摄像头云监控）**并存**：VistaRemote 不做固定摄像头 AI 分析；VistaCast 不做远程桌面会话。
 
