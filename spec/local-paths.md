@@ -38,11 +38,44 @@ pnpm verify:migration
 
 曾用 `master` 的仓（LuminaryWorks、identity、shared、docs、SyncroBrain 等）已统一为 `main` + `dev`。
 
-批量对齐各组织仓库默认分支与 `dev`/`main` 同步：
+### 批量命令（MetaRepo 根目录）
+
+| 命令 | 作用 |
+|------|------|
+| `pnpm sync:dev-branch` | 各组织仓：确保有 `dev`/`main`、GitHub 默认分支为 `dev` |
+| `pnpm checkout:dev` | **扫描本地全部生态仓**（LuminaryWorks + DataLuminary / BlockyEdu / DoerFlow / VistaCast / VistaRemote / SyncroBrain 及其**嵌套子仓**），全部切到 `dev` |
+| `pnpm sync:commit-branches` | 在 **`dev` 上**提交本地改动 → 能自动合并的把远程 `main` 对齐到 `dev` 并 push；**本地始终停在 `dev`**（不长期 checkout `main`）；冲突则汇总清单 |
 
 ```bash
-node scripts/sync-ecosystem-dev-branch.mjs
-node scripts/sync-ecosystem-dev-branch.mjs --dry-run   # 仅预览
+# 1）远程默认分支 + 创建缺失的 dev（可先 --dry-run）
+pnpm sync:dev-branch
+# 或：node scripts/sync-ecosystem-dev-branch.mjs --dry-run
+
+# 2）本地所有生态仓（含嵌套）checkout 到 dev
+pnpm checkout:dev
+
+# 3）提交本地改动，并把远程 main 对齐到 dev（本地仍停在 dev）
+pnpm sync:commit-branches
+# 或：node scripts/sync-commit-branches.mjs --dry-run
 ```
+
+### `sync:commit-branches` 行为（dev 开发 / 合并到 main）
+
+日常：**只在 `dev` 上改代码**。发布时把 `dev` 合进远程 `main`，本地 checkout **不切到 `main`**。
+
+1. 确保当前在 `dev`，提交未提交改动
+2. 若远程 `main` 领先 → 合并进本地 `dev`（可自动则自动，冲突则留在 `dev` 上待手修）
+3. `git push origin HEAD:dev`
+4. 优先 `git push origin HEAD:main`（快进更新远程 `main`，**不 checkout main**）
+5. 仅当快进失败时，短暂切到 `main` merge 后立刻回到 `dev`
+6. `finally`：保证工作树回到 `dev`
+
+冲突：该仓不中断全量扫描；结束后打印 **MANUAL ACTION REQUIRED**。修完后重跑 `pnpm sync:commit-branches`。
+
+### 冲突时怎么办
+
+- Git **能自动合并**的：脚本合并并 push，本地仍在 `dev`。
+- **不能自动合并**的：冲突留在 `dev`（或已 abort 临时 `main` 合并）；清单里给路径与建议命令。
+- 放弃某次合并：`cd <仓>` → `git merge --abort` → `git checkout dev` → `git reset --hard origin/dev`。
 
 > **历史**：GitHub 组织曾由 `AgentSkillMesh` 等更名；主仓也曾用 `DataLuminary-Platform` / `VibeEdu` / `VibeAgent` 等名。现本地与 remote 均以本表为准。VistaRemote 远程桌面与 VistaCast 摄像头产品线并存。
