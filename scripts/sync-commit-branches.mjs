@@ -122,7 +122,8 @@ function syncBranches(repoPath) {
   }
 
   run("git checkout dev", repoPath);
-  run("git pull --ff-only origin dev", repoPath, { allowFail: true });
+  run("git merge origin/main --ff-only", repoPath, { allowFail: true });
+  run("git push origin dev", repoPath, { allowFail: true });
 }
 
 function processRepo(repoPath) {
