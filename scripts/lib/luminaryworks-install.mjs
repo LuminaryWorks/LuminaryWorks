@@ -48,16 +48,21 @@ export const INSTALL_PACK_FEDERAL_PRODUCTS = [
 ];
 
 /**
- * Compose files the first-install kit actually `up`s on a public IP (HTTP).
- * Offline `pack:all` still uses PRODUCT_PACK_COMPOSE_SETS (prod / loopback).
- * Prod overlays that require DOMAIN, Caddy :80/:443, or a license file are
- * skipped here so `sudo bash install.sh` can bind 0.0.0.0:port.
+ * Compose files the first-install kit actually `up`s on a public IP.
+ * Prefer each product's **prod** overlay (loopback DB, strong secrets).
+ * Public port overlays in INSTALL_KIT_PUBLIC_OVERLAYS reopen browser ports.
+ * Offline `pack:all` still uses PRODUCT_PACK_COMPOSE_SETS.
+ *
+ * Production delivery should prefer the sibling LuminaryWorksDeployment
+ * repo (digest-locked images). This kit remains for lab / source installs.
  */
 export const INSTALL_KIT_COMPOSE_SETS = {
-  vistacast: [["deploy/docker-compose.yml"]],
-  syncrobrain: [["deploy/docker-compose.core.yml", "deploy/docker-compose.dev.yml"]],
+  vistacast: [["deploy/docker-compose.yml", "deploy/docker-compose.prod.yml"]],
+  syncrobrain: [["deploy/docker-compose.core.yml", "deploy/docker-compose.prod.yml"]],
   doerflow: [["deploy/docker-compose.core.yml", "deploy/docker-compose.prod.yml"]],
-  vistaremote: [["deploy/compose/docker-compose.core.yml"]],
+  vistaremote: [
+    ["deploy/compose/docker-compose.core.yml", "deploy/compose/docker-compose.prod.yml"],
+  ],
   dataluminary: [
     [
       "deploy/standalone/compose.core.yml",
@@ -65,7 +70,7 @@ export const INSTALL_KIT_COMPOSE_SETS = {
       "deploy/standalone/compose.prod.yml",
     ],
   ],
-  blockyedu: [["deploy/edu/docker-compose.yml"]],
+  blockyedu: [["deploy/edu/docker-compose.yml", "deploy/edu/docker-compose.prod.yml"]],
 };
 
 export const INSTALL_KIT_PUBLIC_OVERLAYS = {

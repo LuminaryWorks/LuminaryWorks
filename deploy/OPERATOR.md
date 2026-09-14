@@ -166,7 +166,7 @@ node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 
 ### 5.3 镜像名（包内已 save 的 tag）
 
-`POSTGRES_IMAGE=postgres:16-alpine` · `REDIS_IMAGE=redis:7-alpine` · `IDENTITY_IMAGE=svhd/logto:latest` · `AUTH_GATEWAY_IMAGE=luminaryworks/auth-gateway:local` · `ENTITLEMENT_IMAGE=luminaryworks/entitlement:local`
+`POSTGRES_IMAGE=postgres:16-alpine` · `REDIS_IMAGE=redis:7-alpine` · `IDENTITY_IMAGE=svhd/logto:1.22.0` · `AUTH_GATEWAY_IMAGE=luminaryworks/auth-gateway:local` · `ENTITLEMENT_IMAGE=luminaryworks/entitlement:local`
 
 生产不要长期用 `latest`；preflight 在 `pilot`/`production` 会拒绝浮动 tag。
 

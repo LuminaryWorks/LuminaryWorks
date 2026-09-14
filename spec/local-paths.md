@@ -36,7 +36,7 @@ pnpm verify:migration
 2. 本地或 CI 验证通过后，将 `dev` 合并进 `main`（PR 或直接 merge）
 3. 从 `main` 打 release tag 并发布
 
-曾用 `master` 的仓（LuminaryWorks、identity、shared、docs、SyncroBrain 等）已统一为 `main` + `dev`。
+曾用 `master` 的仓已统一为 **`main`（发布线）+ `dev`（默认开发）**。`pnpm sync:dev-branch` 会：仅有 `master` 时改名为 `main`；同时存在 `main`+`master` 且 tip 已包含在 `main` 时删除残留 `master`。
 
 ### 批量命令（MetaRepo 根目录）
 

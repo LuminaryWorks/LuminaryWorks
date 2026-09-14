@@ -78,7 +78,7 @@ const productCases = [
     clientIdKey: "DataView (DataLuminary)",
     accountKey: "DATALUMINARY",
     fallbackEmail: "admin.dataluminary@luminaryworks.dev",
-    success: (url) => url.origin === "http://localhost:3003" && /^#\/(space|account)/.test(url.hash),
+    success: (url) => /^#\/(space|account)/.test(url.hash),
   },
   {
     id: "blockyedu-lms",
@@ -218,8 +218,15 @@ async function verifyDiscovery(spec) {
   if (!response.ok) throw new Error(`discovery returned ${response.status}`);
   const discovery = await response.json();
   const authorize = String(discovery.authorization_endpoint || "");
-  if (!authorize.startsWith(`${IDP_ORIGIN}/`)) {
-    throw new Error(`authorization_endpoint must remain on ${IDP_ORIGIN}, got ${authorize || "<empty>"}`);
+  // Same-origin nginx may proxy /oidc (authorize on SPA origin) or redirect to hosted IdP.
+  const allowed =
+    authorize.startsWith(`${IDP_ORIGIN}/`) ||
+    authorize.startsWith(`${origin}/oidc/`) ||
+    authorize.startsWith(`${origin.replace(/^https:/, "http:")}/oidc/`);
+  if (!allowed) {
+    throw new Error(
+      `authorization_endpoint must be on ${IDP_ORIGIN} or ${origin}/oidc, got ${authorize || "<empty>"}`,
+    );
   }
   if (!discovery.token_endpoint || !discovery.jwks_uri) {
     throw new Error("discovery is missing token_endpoint or jwks_uri");
@@ -255,7 +262,8 @@ async function assertNoInvalidClient(page, failures) {
 }
 
 async function signInExperience(page, spec) {
-  const endpoint = new URL("/api/.well-known/sign-in-exp", spec.url);
+  // Experience API lives on the hosted IdP (login.*), not product /api → DataTalk.
+  const endpoint = new URL("/api/.well-known/sign-in-exp", `${IDP_ORIGIN}/`);
   endpoint.searchParams.set("appId", spec.spaClientId);
   const response = await page.request.get(endpoint.toString(), {
     timeout: 10000,

@@ -34,7 +34,11 @@ test("expandPackTargets keeps products independent", () => {
 });
 
 test("control-plane pack lists the images compose will start", () => {
-  assert.ok(CONTROL_PLANE_PACK_IMAGES.includes("svhd/logto:latest"));
+  assert.ok(CONTROL_PLANE_PACK_IMAGES.includes("svhd/logto:1.22.0"));
+  assert.equal(
+    CONTROL_PLANE_PACK_IMAGES.some((image) => image.endsWith(":latest")),
+    false,
+  );
   assert.ok(CONTROL_PLANE_PACK_IMAGES.includes("luminaryworks/control-console:local"));
   assert.equal(assertPackExcludesObjectStorage(CONTROL_PLANE_PACK_IMAGES).ok, true);
   assert.equal(

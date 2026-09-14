@@ -110,7 +110,27 @@ function mergeBaseExists(cwd, a, b) {
 
 function renameMasterToMain(owner, repo, cwd) {
   if (!remoteHasBranch(cwd, "master")) return "main";
-  if (remoteHasBranch(cwd, "main")) return "main";
+  if (remoteHasBranch(cwd, "main")) {
+    // Leftover master after rename — delete when tip is already in main history.
+    const ancestor = run(
+      "git merge-base --is-ancestor origin/master origin/main",
+      cwd,
+      { allowFail: true },
+    ).ok;
+    const unique = Number(
+      run("git rev-list --count origin/main..origin/master", cwd, { allowFail: true }).out || "0",
+    );
+    if (ancestor || unique === 0) {
+      console.log(`  delete leftover origin/master on ${owner}/${repo}`);
+      run(`git push origin --delete master`, cwd, { allowFail: true });
+      run("git branch -D master 2>/dev/null || true", cwd, { allowFail: true });
+    } else {
+      console.log(
+        `  WARN leftover origin/master has ${unique} unique commit(s) — not auto-deleted`,
+      );
+    }
+    return "main";
+  }
   console.log(`  rename master -> main on ${owner}/${repo}`);
   run(
     `gh api -X POST repos/${owner}/${repo}/branches/master/rename -f new_name=main`,
@@ -198,9 +218,10 @@ function processLocalRepo({ path: repoPath, label }) {
     return;
   }
 
-  if (release === "master") {
-    release = renameMasterToMain(remote.owner, remote.repo, repoPath);
-  }
+  // Always normalize: rename master→main, or delete leftover master when main exists.
+  renameMasterToMain(remote.owner, remote.repo, repoPath);
+  release = remoteHasBranch(repoPath, "main") ? "main" : release;
+  run("git fetch origin --prune", repoPath);
 
   ensureDevOnRemote(remote.owner, remote.repo, release, repoPath);
   run("git fetch origin --prune", repoPath);
@@ -218,46 +239,79 @@ function processLocalRepo({ path: repoPath, label }) {
   console.log(`  local checkout: dev @ ${run("git rev-parse --short HEAD", repoPath).out}`);
 }
 
-function processRemoteRepo(owner, name, defaultBranch) {
-  const release =
-    defaultBranch === "master" && !ghJson(`gh api repos/${owner}/${name}/branches/main --jq .name`)
-      ? "master"
-      : defaultBranch === "master"
-        ? "main"
-        : defaultBranch;
+function processRemoteRepo(owner, name, _defaultBranch) {
+  const hasMain = ghJson(`gh api repos/${owner}/${name}/branches/main --jq .name`, {
+    allowFail: true,
+  });
+  const hasMaster = ghJson(`gh api repos/${owner}/${name}/branches/master --jq .name`, {
+    allowFail: true,
+  });
 
-  if (defaultBranch === "master") {
-    const hasMain = ghJson(`gh api repos/${owner}/${name}/branches/main --jq .name`);
-    if (!hasMain) {
-      console.log(`  ${owner}/${name}: rename master -> main`);
+  if (hasMaster === "master" && hasMain !== "main") {
+    console.log(`  ${owner}/${name}: rename master -> main`);
+    if (!DRY) {
+      run(
+        `gh api -X POST repos/${owner}/${name}/branches/master/rename -f new_name=main`,
+        metaRoot,
+        { allowFail: true },
+      );
+    }
+  } else if (hasMaster === "master" && hasMain === "main") {
+    const unique = ghJson(
+      `gh api repos/${owner}/${name}/compare/main...master --jq .ahead_by`,
+      { allowFail: true },
+    );
+    if (unique === 0 || unique === "0") {
+      console.log(`  ${owner}/${name}: delete leftover master`);
       if (!DRY) {
         run(
-          `gh api -X POST repos/${owner}/${name}/branches/master/rename -f new_name=main`,
+          `gh api -X DELETE repos/${owner}/${name}/git/refs/heads/master`,
           metaRoot,
           { allowFail: true },
         );
       }
+    } else {
+      console.log(
+        `  ${owner}/${name}: WARN leftover master has ${unique} unique commit(s)`,
+      );
     }
+  }
+
+  const relSha = ghJson(
+    `gh api repos/${owner}/${name}/git/ref/heads/main --jq .object.sha`,
+    { allowFail: true },
+  );
+  if (!relSha) {
+    console.log(`  ${owner}/${name}: skip (no main branch sha)`);
+    return;
   }
 
   const hasDev = ghJson(`gh api repos/${owner}/${name}/branches/dev --jq .name`, {
     allowFail: true,
   });
-  const relBranch = release === "master" ? "main" : release;
-  const relSha = ghJson(
-    `gh api repos/${owner}/${name}/git/ref/heads/${relBranch} --jq .object.sha`,
-    { allowFail: true },
-  );
-  if (!relSha) {
-    console.log(`  ${owner}/${name}: skip (no release branch sha)`);
-    return;
-  }
-
   if (!hasDev) {
-    console.log(`  ${owner}/${name}: create dev from ${relBranch}`);
+    console.log(`  ${owner}/${name}: create dev from main`);
     if (!DRY) {
       run(
         `gh api -X POST repos/${owner}/${name}/git/refs -f ref=refs/heads/dev -f sha=${relSha}`,
+        metaRoot,
+        { allowFail: true },
+      );
+    }
+  }
+
+  // If remote main is ahead of remote dev, point dev at main tip (API-only clones).
+  const mainAhead = ghJson(
+    `gh api repos/${owner}/${name}/compare/dev...main --jq .ahead_by`,
+    { allowFail: true },
+  );
+  if (mainAhead && Number(mainAhead) > 0) {
+    console.log(
+      `  ${owner}/${name}: main ahead of dev by ${mainAhead} — align dev tip to main`,
+    );
+    if (!DRY) {
+      run(
+        `gh api -X PATCH repos/${owner}/${name}/git/refs/heads/dev -f sha=${relSha} -F force=true`,
         metaRoot,
         { allowFail: true },
       );

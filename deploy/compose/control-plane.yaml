@@ -85,7 +85,7 @@ services:
   # contract is the OIDC discovery document (see scripts/preflight-control-plane.mjs).
   identity:
     <<: *restart
-    image: ${IDENTITY_IMAGE:-svhd/logto:latest}
+    image: ${IDENTITY_IMAGE:-svhd/logto:1.22.0}
     depends_on:
       identity-db:
         condition: service_healthy

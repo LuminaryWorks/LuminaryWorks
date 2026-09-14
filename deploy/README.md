@@ -23,6 +23,7 @@ The control plane is **optional**. Every product ships and runs standalone with 
 | `scenarios/ingress/` | Optional same-host HTTP Caddy by hostname. Not Let's Encrypt. Daily work uses per-product host ports. |
 | `helm/` | Per-product chart **skeletons** + umbrella. Not required. Not production. K8s is future. |
 | `luminaryworks-install/` | First-install **source kit** docs (`pnpm pack:luminaryworks`). Not the air-gap image packs |
+| **Production orchestrator** | Sibling repo `LuminaryWorksDeployment`（**不**嵌套进 MetaRepo）— [`DEPLOYMENT-REPO.md`](DEPLOYMENT-REPO.md) · ADR [`../spec/decisions/2026-09-deployment-sibling-repo.md`](../spec/decisions/2026-09-deployment-sibling-repo.md) |
 | `LOCAL_DOCKER_STACKS.md` | Developer laptop: minimal stacks, stop/destroy, demo-sidecar CPU footguns |
 | `PAYMENTS.md` | Alipay Face-to-Face / PayPal credential, sandbox/live, and callback ops |
 | `HOSTED-SAAS.md` | Single-VPS go-live: TLS, trusted proxy, MinIO watermarks, Doris Pilot, trial purge, N-1 rollback |

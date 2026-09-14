@@ -6,7 +6,8 @@
 export const CONTROL_PLANE_PACK_IMAGES = [
   "postgres:16-alpine",
   "redis:7-alpine",
-  "svhd/logto:latest",
+  // Pin Logto — never ship floating :latest to pilot/production packs.
+  "svhd/logto:1.22.0",
   "luminaryworks/auth-gateway:local",
   "luminaryworks/entitlement:local",
   "luminaryworks/control-console:local",

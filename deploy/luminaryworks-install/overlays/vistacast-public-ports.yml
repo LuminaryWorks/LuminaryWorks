@@ -1,0 +1,12 @@
+# Publish VistaCast API/Admin for single-IP installs without exposing Postgres.
+# Pair with deploy/docker-compose.yml + deploy/docker-compose.prod.yml.
+services:
+  api:
+    ports: !override
+      - "0.0.0.0:${API_PORT:-13100}:13100"
+  web:
+    ports: !override
+      - "0.0.0.0:${WEB_PORT:-13101}:80"
+  postgres:
+    ports: !override
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
