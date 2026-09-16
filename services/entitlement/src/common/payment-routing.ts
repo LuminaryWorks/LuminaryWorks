@@ -110,7 +110,7 @@ export function selectAvailableProviders(input: {
           configId: config.id,
           providerId: config.providerId,
           code: "PAYMENT_PROVIDER_FORBIDDEN_MARKET",
-          reason: "Hosted CN market only allows Alipay (manual optional)",
+          reason: "Hosted CN market only allows Alipay, mock (lab), and manual",
         });
         continue;
       }

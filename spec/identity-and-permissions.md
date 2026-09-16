@@ -181,6 +181,18 @@ Product SPA  →  Luminary Auth SDK (@luminaryworks/auth-react)
 
 实现与文案约定见开发文档 [unified-login §社交登录可关](https://github.com/LuminaryWorks/docs/blob/main/docs/develop/unified-login.md)。
 
+### 3.5 自助注册开关（管理后台）
+
+`HeadlessLoginPanel` 默认展示注册入口（Experience `Register`，username + password）。
+
+| 场景 | 配置 |
+|------|------|
+| 面向终端用户的产品登录（ToC / 开放 SaaS） | 默认 `showRegister`（或不传，等价 `true`） |
+| 管理后台 / 内部控制台 | **`showRegister={false}`** |
+| 同源双域名（如 VistaCast `app.*` / `admin.*`） | 按 hostname 或 `PUBLIC_ALLOW_SELF_REGISTER` |
+
+进入路径：自助注册、邀请、管理员导入（中心 Management）、企业 SSO。详见 [unified-login §自助注册](https://github.com/LuminaryWorks/docs/blob/main/docs/develop/unified-login.md)。
+
 ## 4. Casbin 产品权限
 
 企业级资源 ACL（Dashboard / Dataset / 课程 / 设备…）自研成本接近权限引擎产品。选型：

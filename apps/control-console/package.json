@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@fastify/static": "^10.1.2",
-    "@luminaryworks/auth-react": "^0.4.2",
+    "@luminaryworks/auth-react": "^0.4.3",
     "fastify": "5.11.3",
     "i18next": "^24.2.3",
     "react": "^19.2.0",
@@ -39,6 +39,8 @@
     "vitest": "^3.2.4"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

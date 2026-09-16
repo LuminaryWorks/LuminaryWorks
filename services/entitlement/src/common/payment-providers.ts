@@ -203,7 +203,11 @@ export function isRefundableOrderStatus(status: string): boolean {
   return status === "paid" || status === "fulfilled" || status === "partially_refunded";
 }
 
-export const CN_HOSTED_ALLOWLIST: readonly ProviderId[] = ["alipay_f2f", "manual"];
+export const CN_HOSTED_ALLOWLIST: readonly ProviderId[] = [
+  "alipay_f2f",
+  "manual",
+  "mock",
+];
 
 export type PaymentMarketPolicy = "hosted" | "scopes_only";
 

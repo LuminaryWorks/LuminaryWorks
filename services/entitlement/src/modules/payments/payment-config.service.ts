@@ -68,6 +68,39 @@ export class PaymentConfigService implements OnModuleInit {
       masterKey: conf.paymentConfigMasterKey,
       enabledProviderConfigs,
     });
+    await this.maybeSeedSandboxMock(enabledProviderConfigs);
+  }
+
+  /**
+   * Lab-only: when no payment providers are enabled and master key is present,
+   * seed an enabled `mock` config so Membership checkout can complete locally.
+   * Set `ENTITLEMENT_SEED_MOCK_PAYMENT=false` to skip. Never runs in production.
+   */
+  private async maybeSeedSandboxMock(enabledCount: number): Promise<void> {
+    const conf = this.conf();
+    if (conf.nodeEnv === "production") return;
+    if (process.env.ENTITLEMENT_SEED_MOCK_PAYMENT === "false") return;
+    if (enabledCount > 0) return;
+    if (!conf.paymentConfigMasterKey?.trim()) return;
+    try {
+      const created = await this.create({
+        providerId: "mock",
+        environment: "sandbox",
+        enabled: true,
+        currencies: ["CNY", "USD"],
+        marketScopes: [],
+        priority: 10,
+        merchantId: "mock-lab",
+        credentials: { webhookSecret: "mock_lab_webhook_secret_01" },
+        metadata: { seededBy: "ENTITLEMENT_SEED_MOCK_PAYMENT" },
+        actor: "system:seed-mock",
+      });
+      this.logger.log(`Seeded sandbox mock payment config ${created.id}`);
+    } catch (error) {
+      this.logger.warn(
+        `Sandbox mock payment seed skipped: ${error instanceof Error ? error.message : error}`,
+      );
+    }
   }
 
   private conf(): EntitlementConfig {

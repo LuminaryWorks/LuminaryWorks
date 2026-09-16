@@ -4,6 +4,7 @@ import { EntitlementException } from "../../common/errors";
 import { defaultCapabilities, type ProviderId } from "../../common/payment-providers";
 import type {
   CheckoutSession,
+  CompleteCheckoutInput,
   CreateCheckoutInput,
   CreatePaymentInput,
   CreatePaymentResult,
@@ -110,6 +111,24 @@ export class MockPaymentAdapter implements PaymentAdapter {
       currency: "USD",
       merchantId: config.merchantId,
     };
+  }
+
+  /**
+   * Lab capture: buyer `POST .../complete` fulfills mock attempts.
+   * Live PSP adapters still re-query the provider; mock has no external ledger.
+   */
+  async completeCheckout(input: CompleteCheckoutInput): Promise<PaymentQueryResult> {
+    const result: PaymentQueryResult = {
+      providerRef: input.providerRef,
+      orderId: input.orderId,
+      attemptId: input.attemptId,
+      status: "succeeded",
+      amountCents: input.amountCents,
+      currency: input.currency,
+      merchantId: input.config.merchantId,
+    };
+    this.queries.set(input.providerRef, result);
+    return result;
   }
 
   markQuery(providerRef: string, patch: Partial<PaymentQueryResult>): void {
