@@ -82,6 +82,16 @@ function isGitRepo(dir) {
   return true;
 }
 
+function normalizeOriginKey(url) {
+  if (!url) return "";
+  const s = url.trim().replace(/\.git$/i, "");
+  const m =
+    s.match(/github\.com[^:]*:([^/]+)\/(.+)$/i) ||
+    s.match(/github\.com\/([^/]+)\/(.+)$/i);
+  if (!m) return s.toLowerCase();
+  return `${m[1]}/${m[2]}`.toLowerCase();
+}
+
 function discoverRepos() {
   const found = new Set();
   function walk(dir, depth = 0) {
@@ -105,7 +115,36 @@ function discoverRepos() {
     }
   }
   for (const root of SCAN_ROOTS) walk(root);
-  return [...found].sort();
+
+  // One local clone per GitHub repo (e.g. VistaCast/web and VistaRemote/web may
+  // redirect to the same remote). Prefer the clone with local work / ahead commits.
+  const byRemote = new Map();
+  for (const repoPath of [...found].sort()) {
+    const origin = run("git remote get-url origin", repoPath, { allowFail: true }).out;
+    if (!origin || !ORG_PATTERN.test(origin)) continue;
+    const key = normalizeOriginKey(origin);
+    if (!key) continue;
+    const dirty = run("git status --porcelain", repoPath, { allowFail: true }).out;
+    const meaningful = meaningfulDirtyLines(dirty || "").length;
+    const ahead = Number(
+      run("git rev-list --count origin/dev..HEAD", repoPath, { allowFail: true }).out || "0",
+    );
+    const score = meaningful * 1000 + ahead * 10 - repoPath.length / 1000;
+    const prev = byRemote.get(key);
+    if (!prev || score > prev.score) {
+      if (prev) {
+        console.log(
+          `  note: skip duplicate clone ${rel(prev.path)} (same remote ${key}, prefer ${rel(repoPath)})`,
+        );
+      }
+      byRemote.set(key, { path: repoPath, score });
+    } else {
+      console.log(
+        `  note: skip duplicate clone ${rel(repoPath)} (same remote ${key}, keep ${rel(prev.path)})`,
+      );
+    }
+  }
+  return [...byRemote.values()].map((v) => v.path).sort();
 }
 
 function ensureFetchAll(repoPath) {
@@ -365,6 +404,37 @@ function syncMainFromDev(repoPath) {
   if (unmergedFiles(repoPath).length > 0) return "conflict";
 
   run(`git branch --set-upstream-to=origin/${DEV} ${DEV}`, repoPath, { allowFail: true });
+
+  // If another clone already pushed, fast-forward local DEV before aligning MAIN.
+  if (hasRef(repoPath, "origin/" + DEV)) {
+    const behind = Number(
+      run("git rev-list --count HEAD..origin/" + DEV, repoPath).out || "0",
+    );
+    if (behind > 0) {
+      console.log(`  fast-forward local ${DEV} from origin/${DEV} (${behind} commits)`);
+      const ff = run(`git merge --ff-only origin/${DEV}`, repoPath, { allowFail: true });
+      if (!ff.ok) {
+        const merge = run(
+          `git merge origin/${DEV} -m "sync: merge origin/${DEV} into local ${DEV}"`,
+          repoPath,
+          { allowFail: true },
+        );
+        if (!merge.ok && (unmergedFiles(repoPath).length > 0 || inMerge(repoPath))) {
+          recordConflict(
+            repoPath,
+            `merge origin/${DEV} → local ${DEV}`,
+            [
+              `cd ${repoPath}`,
+              `git checkout ${DEV}`,
+              "git status",
+              "# resolve, then commit and re-run pnpm sync:commit-branches",
+            ].join("\n"),
+          );
+          return "conflict";
+        }
+      }
+    }
+  }
 
   if (hasRef(repoPath, "origin/" + MAIN)) {
     const mainAheadOfDev = Number(
