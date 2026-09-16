@@ -120,6 +120,7 @@ function discoverRepos() {
   // One local clone per GitHub repo (e.g. VistaCast/web and VistaRemote/web may
   // redirect to the same remote). Prefer the clone with local work / ahead commits.
   const byRemote = new Map();
+  const skippedDuplicates = [];
   for (const repoPath of [...found].sort()) {
     const origin = run("git remote get-url origin", repoPath, { allowFail: true }).out;
     if (!origin || !ORG_PATTERN.test(origin)) continue;
@@ -146,14 +147,18 @@ function discoverRepos() {
         console.log(
           `  note: skip duplicate clone ${rel(prev.path)} (same remote ${key}, prefer ${rel(repoPath)})`,
         );
+        skippedDuplicates.push(prev.path);
       }
       byRemote.set(key, { path: repoPath, score });
     } else {
       console.log(
         `  note: skip duplicate clone ${rel(repoPath)} (same remote ${key}, keep ${rel(prev.path)})`,
       );
+      skippedDuplicates.push(repoPath);
     }
   }
+  // Stash skipped list on global for post-pass.
+  globalThis.__syncSkippedDuplicates = [...new Set(skippedDuplicates)];
   return [...byRemote.values()].map((v) => v.path).sort();
 }
 
@@ -734,6 +739,27 @@ for (const repo of discoverRepos()) {
     } catch {
       /* ignore */
     }
+  }
+}
+
+// Fast-forward skipped duplicate clones so their local tips match origin/dev.
+for (const repoPath of globalThis.__syncSkippedDuplicates || []) {
+  try {
+    ensureFetchAll(repoPath);
+    checkoutDevPreserveLocal(repoPath);
+    if (hasRef(repoPath, "origin/" + DEV)) {
+      const behind = Number(
+        run("git rev-list --count HEAD..origin/" + DEV, repoPath, { allowFail: true }).out || "0",
+      );
+      if (behind > 0) {
+        console.log(`\n=== ${rel(repoPath)} (duplicate ff) ===`);
+        console.log(`  fast-forward local ${DEV} from origin/${DEV} (${behind} commits)`);
+        run(`git merge --ff-only origin/${DEV}`, repoPath, { allowFail: true });
+      }
+    }
+    ensureOnDev(repoPath);
+  } catch (e) {
+    console.error(`WARN duplicate ff ${rel(repoPath)}: ${e.message.split("\n")[0]}`);
   }
 }
 
