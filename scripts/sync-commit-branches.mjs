@@ -118,7 +118,14 @@ function ensureFetchAll(repoPath) {
   if (mainOnly) {
     run('git config --add remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"', repoPath);
   }
-  run("git fetch origin --prune", repoPath);
+  // Retry transient network / SSH failures.
+  let last = null;
+  for (let i = 1; i <= 3; i++) {
+    last = run("git fetch origin --prune", repoPath, { allowFail: true });
+    if (last.ok) return;
+    console.log(`  WARN fetch attempt ${i}/3 failed: ${last.out.split("\n")[0]}`);
+  }
+  throw new Error(`git fetch origin --prune\n${last?.out || ""}`);
 }
 
 function unmergedFiles(repoPath) {
@@ -219,15 +226,42 @@ function applyStash(repoPath) {
   return "ok";
 }
 
+function isWorktreePath(filePath) {
+  const parts = filePath.replace(/\\/g, "/").split("/");
+  return parts.includes(".worktrees");
+}
+
+/** Paths that should not be auto-committed (linked worktrees / submodule noise). */
+function meaningfulDirtyLines(porcelain) {
+  return porcelain
+    .split("\n")
+    .filter(Boolean)
+    .filter((line) => {
+      const filePath = line.slice(3).trim(); // XY<space>path
+      return filePath && !isWorktreePath(filePath);
+    });
+}
+
 function commitLocal(repoPath, label) {
   const dirty = run("git status --porcelain", repoPath).out;
   if (!dirty) return "ok";
   if (unmergedFiles(repoPath).length > 0) return "conflict";
 
+  const meaningful = meaningfulDirtyLines(dirty);
+  if (meaningful.length === 0) {
+    console.log("  skip commit: only .worktrees noise");
+    return "ok";
+  }
+
   const branch = run("git branch --show-current", repoPath, { allowFail: true }).out || "detached";
-  const n = dirty.split("\n").filter(Boolean).length;
-  console.log(`  commit ${n} files on ${branch}`);
-  run("git add -A", repoPath);
+  console.log(`  commit ${meaningful.length} files on ${branch}`);
+  // Exclude linked worktrees from the commit (submodule "*-dirty" pointers, etc.).
+  run("git add -A -- . \":(exclude).worktrees\" \":(exclude).worktrees/**\"", repoPath);
+  const staged = run("git diff --cached --name-only", repoPath, { allowFail: true }).out;
+  if (!staged) {
+    console.log("  skip commit: nothing staged after excludes");
+    return "ok";
+  }
   const commit = run(
     `git commit -m "chore: sync local work on ${branch} (${label})"`,
     repoPath,
