@@ -44,31 +44,30 @@ pnpm verify:migration
 |------|------|
 | `pnpm sync:dev-branch` | 各组织仓：确保有 `dev`/`main`、GitHub 默认分支为 `dev` |
 | `pnpm checkout:dev` | **扫描本地全部生态仓**（LuminaryWorks + DataLuminary / BlockyEdu / DoerFlow / VistaCast / VistaRemote / SyncroBrain 及其**嵌套子仓**），全部切到 `dev` |
-| `pnpm sync:commit-branches` | 在 **`dev` 上**提交本地改动 → 能自动合并的把远程 `main` 对齐到 `dev` 并 push；**本地始终停在 `dev`**（不长期 checkout `main`）；冲突则汇总清单 |
+| `pnpm sync:commit-branches` | 先在**当前分支**提交脏工作区 → 若不在 `dev` 则合并进 `dev` → push `dev` 并对齐远程 `main`；**本地始终停在 `dev`**；冲突则汇总清单。跳过 `.worktrees` |
 
 ```bash
-# 1）远程默认分支 + 创建缺失的 dev（可先 --dry-run）
+# 1）远程默认分支 + 创建缺失的 `dev`（可先 --dry-run）
 pnpm sync:dev-branch
 # 或：node scripts/sync-ecosystem-dev-branch.mjs --dry-run
 
-# 2）本地所有生态仓（含嵌套）checkout 到 dev
+# 2）本地所有生态仓（含嵌套）checkout 到 `dev`（可选）
 pnpm checkout:dev
 
-# 3）提交本地改动，并把远程 main 对齐到 dev（本地仍停在 dev）
+# 3）提交 → 折入 `dev` → 同步并 push `main`（本地仍停在 `dev`）
 pnpm sync:commit-branches
 # 或：node scripts/sync-commit-branches.mjs --dry-run
 ```
 
-### `sync:commit-branches` 行为（dev 开发 / 合并到 main）
+### `sync:commit-branches` 行为（commit → `dev` → `main` → push）
 
-日常：**只在 `dev` 上改代码**。发布时把 `dev` 合进远程 `main`，本地 checkout **不切到 `main`**。
-
-1. 确保当前在 `dev`，提交未提交改动
-2. 若远程 `main` 领先 → 合并进本地 `dev`（可自动则自动，冲突则留在 `dev` 上待手修）
-3. `git push origin HEAD:dev`
-4. 优先 `git push origin HEAD:main`（快进更新远程 `main`，**不 checkout main**）
-5. 仅当快进失败时，短暂切到 `main` merge 后立刻回到 `dev`
-6. `finally`：保证工作树回到 `dev`
+1. 若有未提交改动：**先在当前分支** `git add -A` + commit（不强制先切 `dev`）
+2. 若当前分支 **不是** `dev`：checkout 本地 `dev`（**不会** `checkout -B` 丢掉未 push 的本地 tip）→ merge 原分支进 `dev`
+3. 若已在 `dev`：跳过折入，直接进入同步
+4. 若远程 `main` 领先 → merge 进本地 `dev`（冲突则留在 `dev` 待手修）
+5. `git push origin HEAD:dev`（无远程 `dev` 时创建）
+6. 优先 `git push origin HEAD:main`（快进）；失败则短暂 checkout `main` merge 后立刻回 `dev`
+7. `finally`：保证工作树回到 `dev`（冲突留在 `dev` 上除外）
 
 冲突：该仓不中断全量扫描；结束后打印 **MANUAL ACTION REQUIRED**。修完后重跑 `pnpm sync:commit-branches`。
 

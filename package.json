@@ -72,8 +72,8 @@
     "sync:cursor-model-policy": "node scripts/write-model-usage-policy.mjs",
     "sync:cursor-local-docker-rule": "node scripts/write-local-docker-sidecars-rule.mjs",
     "verify:migration": "node scripts/verify-migration.mjs",
-    "sync:dev-branch": "node scripts/sync-ecosystem-dev-branch.mjs",
     "checkout:dev": "node scripts/checkout-local-dev.mjs",
+    "sync:dev-branch": "node scripts/sync-ecosystem-dev-branch.mjs",
     "sync:commit-branches": "node scripts/sync-commit-branches.mjs"
   },
   "engines": {
