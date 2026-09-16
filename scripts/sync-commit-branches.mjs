@@ -61,7 +61,8 @@ function run(cmd, cwd, { allowFail = false, readOnly = false } = {}) {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
-  const out = `${r.stdout || ""}${r.stderr || ""}`.trim();
+  // Do not trim leading spaces — `git status --porcelain` uses a leading space in XY.
+  const out = `${r.stdout || ""}${r.stderr || ""}`.replace(/[\r\n]+$/, "");
   if (r.status !== 0 && !allowFail) throw new Error(`${cmd}\n${out}`);
   return { ok: r.status === 0, out, status: r.status };
 }
@@ -122,8 +123,17 @@ function discoverRepos() {
   for (const repoPath of [...found].sort()) {
     const origin = run("git remote get-url origin", repoPath, { allowFail: true }).out;
     if (!origin || !ORG_PATTERN.test(origin)) continue;
-    const key = normalizeOriginKey(origin);
+    let key = normalizeOriginKey(origin);
     if (!key) continue;
+    // Follow GitHub renames/redirects (VistaCast/web -> VistaRemote/web).
+    const resolved = run(
+      `gh api repos/${key} --jq .full_name`,
+      repoPath,
+      { allowFail: true },
+    ).out;
+    if (resolved && typeof resolved === "string" && resolved.includes("/")) {
+      key = resolved.trim().replace(/^"|"$/g, "").toLowerCase();
+    }
     const dirty = run("git status --porcelain", repoPath, { allowFail: true }).out;
     const meaningful = meaningfulDirtyLines(dirty || "").length;
     const ahead = Number(
@@ -265,22 +275,34 @@ function applyStash(repoPath) {
   return "ok";
 }
 
-function isWorktreePath(filePath) {
-  const parts = filePath.replace(/\\/g, "/").split("/");
-  return parts.includes(".worktrees");
+function shouldSkipAutoCommit(filePath) {
+  const norm = filePath.replace(/\\/g, "/");
+  const parts = norm.split("/");
+  if (parts.includes(".worktrees")) return true;
+  const base = parts[parts.length - 1] || "";
+  // Never auto-commit env / credential material.
+  if (/^\.env(\..+)?$/i.test(base)) return true;
+  if (/\.env$/i.test(base)) return true;
+  if (/^dev\.env$/i.test(base)) return true;
+  if (/^ACCOUNTS\./i.test(base)) return true;
+  if (/credential|secret|passwd|\.pem$|\.key$/i.test(base)) return true;
+  return false;
 }
 
-/** Paths that should not be auto-committed (linked worktrees / submodule noise). */
+/** Paths that should not be auto-committed (worktrees / env / secrets). */
 function meaningfulDirtyLines(porcelain) {
   return porcelain
     .split("\n")
     .filter(Boolean)
     .filter((line) => {
-      const filePath = line.slice(3).trim(); // XY<space>path
-      return filePath && !isWorktreePath(filePath);
+      // porcelain: XY<space>path  (or rename "R  old -> new")
+      let filePath = line.slice(3).trim();
+      const arrow = filePath.indexOf(" -> ");
+      if (arrow >= 0) filePath = filePath.slice(arrow + 4).trim();
+      filePath = filePath.replace(/^"|"$/g, "");
+      return filePath && !shouldSkipAutoCommit(filePath);
     });
 }
-
 function commitLocal(repoPath, label) {
   const dirty = run("git status --porcelain", repoPath).out;
   if (!dirty) return "ok";
@@ -295,7 +317,17 @@ function commitLocal(repoPath, label) {
   const branch = run("git branch --show-current", repoPath, { allowFail: true }).out || "detached";
   console.log(`  commit ${meaningful.length} files on ${branch}`);
   // Exclude linked worktrees from the commit (submodule "*-dirty" pointers, etc.).
-  run("git add -A -- . \":(exclude).worktrees\" \":(exclude).worktrees/**\"", repoPath);
+  const toAdd = meaningful
+    .map((line) => {
+      let filePath = line.slice(3).trim();
+      const arrow = filePath.indexOf(" -> ");
+      if (arrow >= 0) filePath = filePath.slice(arrow + 4).trim();
+      return filePath.replace(/^"|"$/g, "");
+    })
+    .filter(Boolean);
+  for (const f of toAdd) {
+    run(`git add -- "${f.replaceAll('"', '\\"')}"`, repoPath, { allowFail: true });
+  }
   const staged = run("git diff --cached --name-only", repoPath, { allowFail: true }).out;
   if (!staged) {
     console.log("  skip commit: nothing staged after excludes");
