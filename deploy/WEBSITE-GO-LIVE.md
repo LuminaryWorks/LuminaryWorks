@@ -7,7 +7,7 @@
 
 | 入口 | 托管 | 仓库 | 构建产物 |
 |------|------|------|----------|
-| `luminaryworks.dev`、`www.luminaryworks.dev` | Cloudflare Pages 项目 **`luminaryworks-website`** | [LuminaryWorks/website](https://github.com/LuminaryWorks/website) | `out/` |
+| `luminaryworks.dev`（主域）；`www` 301 → apex | Cloudflare Pages 项目 **`luminaryworks-website`** | [LuminaryWorks/website](https://github.com/LuminaryWorks/website) | `out/` |
 | `docs.luminaryworks.dev` | GitHub Pages | [LuminaryWorks/docs](https://github.com/LuminaryWorks/docs) | `doc_build/`（Rspress） |
 
 - 官网：营销首页、产品/生态/部署/关于、法律条款（中英）。
@@ -42,7 +42,8 @@ pnpm legal:check   # CI：校验法律页与 spec 同步
   - Production branch：`main`
   - 构建产物目录：**`out`**
   - 构建由仓库 `.github/workflows/deploy.yml` 触发（`wrangler pages deploy`）
-- [ ] 绑定自定义域：**`luminaryworks.dev`**、**`www.luminaryworks.dev`**
+- [ ] 绑定自定义域：**`luminaryworks.dev`**（SEO 唯一主域，与官网 `SITE_URL` 一致）
+- [ ] **`www.luminaryworks.dev` → apex 301**（Redirect Rule 或 Pages 绑定 www 后再跳转；勿与 apex 双入口并存）
 
 ### 2.3 文档站迁回 `docs` 子域
 
@@ -63,6 +64,7 @@ pnpm legal:check   # CI：校验法律页与 spec 同步
 ### 2.4 验证清单
 
 - [ ] `https://luminaryworks.dev/` → **200**
+- [ ] `https://www.luminaryworks.dev/` → **301** → `https://luminaryworks.dev/`
 - [ ] `https://luminaryworks.dev/en/` → **200**
 - [ ] 法律页（各 200）：
   - `/legal/terms/`、`/legal/privacy/`、`/legal/trial-data-deletion/`
