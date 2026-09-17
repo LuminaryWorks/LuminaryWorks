@@ -9,7 +9,7 @@ import { SubscriptionEntity } from "../../database/entities/subscription.entity"
 import { WebhookEventEntity } from "../../database/entities/webhook-event.entity";
 import { AuditModule } from "../audit/audit.module";
 import { CatalogModule } from "../catalog/catalog.module";
-import { PaymentsModule } from "../payments/payments.module";
+import { paymentsModuleImports } from "../payments/payments.module";
 import { OrdersController } from "./orders.controller";
 import { OrdersService } from "./orders.service";
 
@@ -17,7 +17,11 @@ import { OrdersService } from "./orders.service";
   imports: [
     AuditModule,
     CatalogModule,
-    PaymentsModule,
+    // PAYMENTS_ENABLED=false omits PaymentsModule so webhook/admin payment
+    // routes 404. Orders stay registered for catalog reads and admin grants;
+    // createOrder short-circuits with PAYMENT_PROVIDER_UNAVAILABLE (enterprise
+    // seats continue via admin grant / offline_license, not PSP checkout).
+    ...paymentsModuleImports(),
     TypeOrmModule.forFeature([
       OrderEntity,
       BundleEntity,

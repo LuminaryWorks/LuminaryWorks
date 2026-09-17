@@ -95,6 +95,24 @@ export interface BitpayCredentials {
   redirectUrl?: string;
 }
 
+export interface CreemCredentials {
+  apiKey: string;
+  webhookSecret: string;
+  productId: string;
+  successUrl?: string;
+}
+
+export type DoerflowCreditAsset = "USDC" | "USDT" | "PYUSD";
+
+export interface DoerflowCreditCredentials {
+  baseUrl: string;
+  serviceKey: string;
+  webhookSecret: string;
+  merchantAccount: string;
+  asset: DoerflowCreditAsset;
+  chainId: number;
+}
+
 export function assertProviderCredentials(
   providerId: ProviderId,
   raw: unknown,
@@ -134,6 +152,14 @@ export function assertProviderCredentials(
   }
   if (providerId === "bitpay") {
     assertBitpayCredentials(generic);
+    return generic;
+  }
+  if (providerId === "creem") {
+    assertCreemCredentials(generic);
+    return generic;
+  }
+  if (providerId === "doerflow_credit") {
+    assertDoerflowCreditCredentials(generic);
     return generic;
   }
   return generic;
@@ -539,6 +565,106 @@ export function assertBitpayCredentials(credentials: GenericCredentials): Bitpay
     ipnHmacSecret,
     redirectUrl,
   };
+}
+
+export function assertCreemCredentials(credentials: GenericCredentials): CreemCredentials {
+  rejectCustomGateway(credentials, "creem");
+  const apiKey = required(credentials, "apiKey");
+  if (!/^creem_(test_)?[A-Za-z0-9]+$/.test(apiKey) || apiKey.length < 16) {
+    throw new EntitlementException(
+      "VALIDATION_ERROR",
+      "creem apiKey must be an official creem_ or creem_test_ key",
+    );
+  }
+  const webhookSecret = required(credentials, "webhookSecret");
+  if (webhookSecret.length < 16) {
+    throw new EntitlementException(
+      "VALIDATION_ERROR",
+      "creem webhookSecret is required for creem-signature verification",
+    );
+  }
+  const productId = required(credentials, "productId");
+  if (!/^prod_[A-Za-z0-9]+$/.test(productId)) {
+    throw new EntitlementException(
+      "VALIDATION_ERROR",
+      "creem productId must be the Creem catalog product id (prod_…)",
+    );
+  }
+  const successUrl = optional(credentials, "successUrl");
+  if (successUrl) assertHttpsUrl(successUrl, "successUrl");
+  return { apiKey, webhookSecret, productId, successUrl };
+}
+
+const DOERFLOW_ASSETS: readonly DoerflowCreditAsset[] = ["USDC", "USDT", "PYUSD"];
+
+export function assertDoerflowCreditCredentials(
+  credentials: GenericCredentials,
+): DoerflowCreditCredentials {
+  const baseUrl = required(credentials, "baseUrl");
+  const parsed = parseDoerflowBaseUrl(baseUrl);
+  const serviceKey = required(credentials, "serviceKey");
+  if (serviceKey.length < 16) {
+    throw new EntitlementException("VALIDATION_ERROR", "doerflow_credit serviceKey is too short");
+  }
+  const webhookSecret = required(credentials, "webhookSecret");
+  if (webhookSecret.length < 16) {
+    throw new EntitlementException(
+      "VALIDATION_ERROR",
+      "doerflow_credit webhookSecret is required for x-lw-signature verification",
+    );
+  }
+  const merchantAccount = required(credentials, "merchantAccount");
+  const assetRaw = optional(credentials, "asset") ?? "USDC";
+  if (!DOERFLOW_ASSETS.includes(assetRaw as DoerflowCreditAsset)) {
+    throw new EntitlementException(
+      "VALIDATION_ERROR",
+      "doerflow_credit asset must be USDC, USDT, or PYUSD",
+    );
+  }
+  const chainRaw = optional(credentials, "chainId");
+  const chainId = chainRaw ? Number(chainRaw) : Number.NaN;
+  if (!Number.isInteger(chainId) || chainId <= 0) {
+    throw new EntitlementException(
+      "VALIDATION_ERROR",
+      "doerflow_credit chainId must be a positive integer",
+    );
+  }
+  return {
+    baseUrl: `${parsed.origin}${parsed.pathname.replace(/\/+$/, "")}`,
+    serviceKey,
+    webhookSecret,
+    merchantAccount,
+    asset: assetRaw as DoerflowCreditAsset,
+    chainId,
+  };
+}
+
+function parseDoerflowBaseUrl(raw: string): URL {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw new EntitlementException(
+      "VALIDATION_ERROR",
+      "doerflow_credit baseUrl is not a valid URL",
+    );
+  }
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new EntitlementException(
+      "VALIDATION_ERROR",
+      "doerflow_credit baseUrl must be an HTTP(S) URL",
+    );
+  }
+  if (parsed.username || parsed.password) {
+    throw new EntitlementException(
+      "VALIDATION_ERROR",
+      "doerflow_credit baseUrl must not include credentials",
+    );
+  }
+  if (!parsed.hostname) {
+    throw new EntitlementException("VALIDATION_ERROR", "doerflow_credit baseUrl host is required");
+  }
+  return parsed;
 }
 
 function rejectCustomGateway(credentials: GenericCredentials, provider: string): void {

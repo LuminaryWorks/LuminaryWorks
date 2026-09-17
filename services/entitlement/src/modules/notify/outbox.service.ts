@@ -11,6 +11,7 @@ import type { NotifyAdapter, NotifyMessage } from "./notify-adapter";
 import { NOTIFY_ADAPTERS } from "./notify-adapter";
 import { leaseExpiresAt, nextStatusAfterFailure, OUTBOX_CLAIM_SQL } from "./outbox-claim";
 import { outboxBackoffSeconds } from "./outbox-policy";
+import { deliverOrderFulfilled, type OrderFulfilledFetch } from "./order-fulfilled";
 import { deliverTrialPurge, type TrialPurgeFetch } from "./trial-purge";
 import { trialNotifyCopy, TRIAL_LIFECYCLE_EVENT_TYPES } from "../trials/trial-lifecycle";
 
@@ -20,6 +21,10 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
   private timer: NodeJS.Timeout | null = null;
   private running = false;
   purgeFetch: TrialPurgeFetch = async (url, init) => {
+    const res = await fetch(url, init);
+    return { status: res.status, text: () => res.text() };
+  };
+  orderFulfilledFetch: OrderFulfilledFetch = async (url, init) => {
     const res = await fetch(url, init);
     return { status: res.status, text: () => res.text() };
   };
@@ -127,6 +132,14 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
           timeoutMs: conf.trialPurgeTimeoutMs,
         });
         event.status = outcome === "canceled" ? "canceled" : "sent";
+      } else if (event.eventType === "order.fulfilled") {
+        await deliverOrderFulfilled({
+          event,
+          targets: conf.orderFulfilledTargets,
+          fetchImpl: this.orderFulfilledFetch,
+          timeoutMs: conf.orderFulfilledTimeoutMs,
+        });
+        event.status = "sent";
       } else {
         this.logger.warn(`No handler for outbox event_type=${event.eventType}; marking sent`);
         event.status = "sent";

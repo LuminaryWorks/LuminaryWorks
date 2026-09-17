@@ -260,3 +260,51 @@ export function bitpayConfig(overrides: Partial<ProviderConfig> = {}): ProviderC
     ...overrides,
   };
 }
+
+export function creemConfig(overrides: Partial<ProviderConfig> = {}): ProviderConfig {
+  return {
+    id: "cfg-creem",
+    providerId: "creem",
+    environment: "sandbox",
+    enabled: true,
+    status: "active",
+    marketScopes: ["GLOBAL"],
+    currencies: ["USD"],
+    priority: 15,
+    capabilities: defaultCapabilities("creem"),
+    merchantId: "creem-store",
+    credentials: {
+      apiKey: "creem_test_fixtureapikeyvalue",
+      webhookSecret: "creem_whsec_fixture_secret",
+      productId: "prod_fixtureProduct01",
+      successUrl: "https://app.example.com/billing/return",
+    },
+    metadata: {},
+    ...overrides,
+  };
+}
+
+export function doerflowCreditConfig(overrides: Partial<ProviderConfig> = {}): ProviderConfig {
+  return {
+    id: "cfg-doerflow-credit",
+    providerId: "doerflow_credit",
+    environment: "sandbox",
+    enabled: true,
+    status: "active",
+    marketScopes: ["GLOBAL"],
+    currencies: ["USD"],
+    priority: 25,
+    capabilities: defaultCapabilities("doerflow_credit"),
+    merchantId: "acct_lw_platform",
+    credentials: {
+      baseUrl: "https://doerflow.example.test",
+      serviceKey: "svc_doerflow_key_fixture_value",
+      webhookSecret: "whsec_doerflow_hmac_fixture",
+      merchantAccount: "acct_lw_platform",
+      asset: "USDC",
+      chainId: "8453",
+    },
+    metadata: {},
+    ...overrides,
+  };
+}

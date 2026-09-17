@@ -34,12 +34,16 @@ export async function fulfillPaidOrderTx(
   locked.providerRef = providerRef;
   await manager.save(locked);
 
+  let fulfilledProducts: Array<{ productCode: string; planCode: PlanCode | null }> = [];
+  let sku = resolveFulfilledSku(locked);
+
   if (locked.metadata?.kind === "quota_pack") {
     const packSku = String(locked.metadata.packSku ?? "");
     const pack = getQuotaPack(packSku);
     if (!pack) {
       throw new EntitlementException("VALIDATION_ERROR", `Unknown pack SKU ${packSku}`);
     }
+    if (!sku) sku = packSku;
     const startsAt = new Date();
     const endsAt =
       pack.validDays != null
@@ -62,13 +66,23 @@ export async function fulfillPaidOrderTx(
         revoked: false,
       }),
     );
+    fulfilledProducts = [{ productCode: pack.productCode, planCode: null }];
   } else {
-    await writeSubscriptionGrants(manager, locked);
+    fulfilledProducts = await writeSubscriptionGrants(manager, locked);
+  }
+
+  if (!sku) {
+    throw new EntitlementException("VALIDATION_ERROR", "Fulfilled order is missing sku");
+  }
+  if (fulfilledProducts.length === 0) {
+    throw new EntitlementException("VALIDATION_ERROR", "Fulfilled order has no products");
   }
 
   locked.status = "fulfilled";
   await manager.save(locked);
   await lockBillingProfile(manager, locked);
+  const paidAt = new Date().toISOString();
+  const primary = fulfilledProducts[0]!;
   await manager.save(
     manager.create(OutboxEventEntity, {
       eventType: "order.fulfilled",
@@ -76,15 +90,32 @@ export async function fulfillPaidOrderTx(
       payload: {
         orderId: locked.id,
         subjectId: locked.subjectId,
-        productCode: locked.productCode,
-        planCode: locked.planCode,
+        productCode: locked.productCode ?? primary.productCode,
+        planCode: locked.planCode ?? primary.planCode,
+        sku,
+        paidAt,
+        products: fulfilledProducts,
       },
     }),
   );
   return locked;
 }
 
-async function writeSubscriptionGrants(manager: EntityManager, locked: OrderEntity): Promise<void> {
+function resolveFulfilledSku(locked: OrderEntity): string {
+  const offering = locked.offeringSku?.trim() ?? "";
+  if (offering) return offering;
+  const bundle = locked.bundleSku?.trim() ?? "";
+  if (bundle) return bundle;
+  if (locked.metadata?.kind === "quota_pack") {
+    return String(locked.metadata.packSku ?? "").trim();
+  }
+  return "";
+}
+
+async function writeSubscriptionGrants(
+  manager: EntityManager,
+  locked: OrderEntity,
+): Promise<Array<{ productCode: string; planCode: PlanCode }>> {
   const now = new Date();
   const interval: BillingInterval = isBillingInterval(locked.interval) ? locked.interval : "month";
   const items: Array<{ productCode: string; planCode: PlanCode }> = [];
@@ -193,6 +224,7 @@ async function writeSubscriptionGrants(manager: EntityManager, locked: OrderEnti
       await cancelTrialLifecycle(manager, locked.subjectId, item.productCode);
     }
   }
+  return items;
 }
 
 export async function revokeOrderEntitlements(

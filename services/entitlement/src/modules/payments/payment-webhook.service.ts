@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
-import { DataSource, QueryFailedError, type Repository } from "typeorm";
+import { DataSource, In, QueryFailedError, type Repository } from "typeorm";
 import { EntitlementException } from "../../common/errors";
 import { redactPaymentSecrets } from "../../common/payment-crypto";
 import { PaymentAttemptEntity } from "../../database/entities/payment-attempt.entity";
@@ -68,10 +68,19 @@ export class PaymentWebhookService {
         }),
       );
     } catch (err) {
-      if (isUniqueViolation(err)) {
+      if (!isUniqueViolation(err)) throw err;
+      const existing = await this.events.findOne({
+        where: { provider: row.providerId, configId: row.id, eventId: verified.eventId },
+      });
+      // A prior attempt that failed after debit must be retried. Only skip
+      // in-flight / already-processed events.
+      if (existing?.status !== "failed") {
         return ack;
       }
-      throw err;
+      await this.events.update(
+        { provider: row.providerId, configId: row.id, eventId: verified.eventId },
+        { status: "received", error: null, attemptId: verified.attemptId || existing.attemptId },
+      );
     }
 
     try {
@@ -165,6 +174,24 @@ export class PaymentWebhookService {
       return;
     }
 
+    if (observed.status === "refunded") {
+      const reason =
+        typeof verified.payload.reason === "string"
+          ? verified.payload.reason
+          : "provider_initiated_refund";
+      await this.payments.applyInboundRefund({
+        orderId: order.id,
+        attemptId: attempt.id,
+        providerRef: observed.providerRef,
+        amountCents: observed.amountCents,
+        currency: observed.currency,
+        eventId: verified.eventId,
+        reason,
+        actor: "payment-webhook",
+      });
+      return;
+    }
+
     this.payments.assertSnapshotMatch(order, attempt, {
       amountCents: observed.amountCents,
       currency: observed.currency,
@@ -210,7 +237,7 @@ export class PaymentWebhookService {
       if (byRef) return byRef;
     }
     return this.attempts.findOne({
-      where: { orderId, status: "pending" },
+      where: { orderId, status: In(["created", "pending"]) },
       order: { createdAt: "DESC" },
     });
   }

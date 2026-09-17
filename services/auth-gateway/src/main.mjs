@@ -24,6 +24,13 @@ import {
   VERSION_PATHS,
 } from "./health.mjs";
 import {
+  clientIp,
+  createIpQuotaStore,
+  inspectRegisterAbuse,
+  loadRegisterAbuseConfig,
+  publicRegisterPolicy,
+} from "./register-abuse.mjs";
+import {
   createTransportRewriter,
   isDiscoveryPath,
   parsePathList,
@@ -70,6 +77,14 @@ const CORS_ORIGINS = (process.env.AUTH_GATEWAY_CORS_ORIGINS ||
   .map((s) => s.trim())
   .filter(Boolean);
 
+const registerAbuseConfig = loadRegisterAbuseConfig(process.env);
+const registerQuotas = createIpQuotaStore();
+
+function currentRegisterAbuseConfig() {
+  // Hot-reload policy JSON when the file mtime changes (default on).
+  return loadRegisterAbuseConfig(process.env);
+}
+
 function applyCors(req, res) {
   const origin = req.headers.origin;
   if (origin && CORS_ORIGINS.includes(origin)) {
@@ -84,13 +99,16 @@ function applyCors(req, res) {
   }
 }
 
-function proxyToUpstream(req, res, upstreamPathWithSearch) {
+function proxyToUpstream(req, res, upstreamPathWithSearch, bodyBuffer) {
   const target = new URL(upstreamPathWithSearch, UPSTREAM_ORIGIN);
   const headers = { ...req.headers };
   delete headers.host;
   // Buffering proxy cannot safely forward compressed bodies — ask for identity encoding.
   delete headers["accept-encoding"];
   headers.host = new URL(UPSTREAM_ORIGIN).host;
+  if (bodyBuffer) {
+    headers["content-length"] = String(bodyBuffer.length);
+  }
 
   const upstreamReq = http.request(target, { method: req.method, headers }, (upstreamRes) => {
     const chunks = [];
@@ -181,7 +199,30 @@ function proxyToUpstream(req, res, upstreamPathWithSearch) {
     res.end(JSON.stringify({ error: "bad_gateway", message: String(err.message), upstream: UPSTREAM }));
   });
 
-  req.pipe(upstreamReq);
+  if (bodyBuffer) {
+    upstreamReq.end(bodyBuffer);
+  } else {
+    req.pipe(upstreamReq);
+  }
+}
+
+function readRequestBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on("data", (c) => chunks.push(c));
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
+function needsRegisterAbuseInspect(method, pathname) {
+  if (method !== "POST" && method !== "PUT") return false;
+  const path = pathname.replace(/\/$/, "") || "/";
+  return (
+    path.includes("/api/experience") ||
+    path.endsWith("/verification/verification-code") ||
+    path.endsWith("/verification/new-password-identity")
+  );
 }
 
 function sendJson(req, res, statusCode, payload) {
@@ -251,7 +292,46 @@ function proxy(req, res) {
     return;
   }
 
+  if (
+    req.method === "GET" &&
+    (incoming.pathname === "/api/register-policy" ||
+      incoming.pathname === "/api/register-policy/")
+  ) {
+    sendJson(req, res, 200, publicRegisterPolicy(currentRegisterAbuseConfig()));
+    return;
+  }
+
   // Full reverse proxy so authorize → /sign-in stays on the gateway host (cookies).
+  if (needsRegisterAbuseInspect(req.method || "GET", incoming.pathname)) {
+    readRequestBody(req)
+      .then((buf) => {
+        const blocked = inspectRegisterAbuse({
+          method: req.method || "GET",
+          pathname: incoming.pathname,
+          bodyText: buf.length ? buf.toString("utf8") : "",
+          ip: clientIp(req),
+          config: currentRegisterAbuseConfig(),
+          quotas: registerQuotas,
+        });
+        if (blocked) {
+          applyCors(req, res);
+          if (blocked.headers) {
+            for (const [k, v] of Object.entries(blocked.headers)) res.setHeader(k, v);
+          }
+          res.writeHead(blocked.status, { "content-type": "application/json" });
+          res.end(JSON.stringify(blocked.body));
+          return;
+        }
+        proxyToUpstream(req, res, incoming.pathname + incoming.search, buf);
+      })
+      .catch((err) => {
+        applyCors(req, res);
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "bad_request", message: String(err?.message ?? err) }));
+      });
+    return;
+  }
+
   proxyToUpstream(req, res, incoming.pathname + incoming.search);
 }
 
@@ -262,4 +342,15 @@ server.listen(PORT, () => {
   console.log(`[auth-gateway] JWT issuer:    ${UPSTREAM}`);
   console.log(`[auth-gateway] experience:   ${PUBLIC_BASE}/api/experience`);
   console.log(`[auth-gateway] upstream:      ${UPSTREAM}`);
+  if (registerAbuseConfig.enabled) {
+    console.log(
+      `[auth-gateway] register abuse: email=${registerAbuseConfig.emailMode} ipDaily=${registerAbuseConfig.ipDailyLimit} codeHourly=${registerAbuseConfig.codeHourlyLimit}`,
+    );
+    console.log(
+      `[auth-gateway] register policy: ${registerAbuseConfig.policyLoaded ? registerAbuseConfig.policyFile : "builtin defaults (file missing)"}`,
+    );
+    console.log(`[auth-gateway] register policy GET: ${PUBLIC_BASE}/api/register-policy`);
+  } else {
+    console.log(`[auth-gateway] register abuse: off`);
+  }
 });

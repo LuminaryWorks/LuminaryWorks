@@ -88,17 +88,60 @@
   },
   "providers": {
     "title": "支付渠道",
+    "providerId": "渠道",
+    "environment": "环境",
+    "merchantId": "商户 / 店铺 id",
+    "merchantIdCreemHint": "Creem 店铺 id（与凭证中的 productId 不同）",
+    "marketScopes": "市场范围",
+    "currencies": "币种",
+    "priority": "优先级",
+    "capabilitiesTitle": "能力",
+    "cnMarket": "中国市场",
+    "cnHostedBlocked": "中国区托管结账不可用",
+    "cnCryptoBlocked": "IP 或账单国家为 CN 时不可用",
+    "lastFour": "凭证末四位",
+    "fingerprint": "凭证指纹",
+    "rotatedAt": "轮换时间",
+    "structuredCredentialsHint": "在下方填写渠道凭证。仅写入，保存后会清空。",
+    "rotateStructuredHint": "填写凭证以轮换；留空则仅更新元数据。",
     "credentials": "凭证 JSON（只写，永不回读）",
     "credentialsHint": "粘贴字符串字段组成的 JSON。保存或轮换成功后立即清空。浏览器不保存这些值。",
     "metadata": "元数据 JSON（非密钥）",
     "enabledFromApi": "启用状态以 Entitlement 返回值为准。本控制台不猜测商户审核或高可用。",
-    "create": "创建渠道配置"
+    "create": "创建渠道配置",
+    "fields": {
+      "apiKey": "API 密钥",
+      "webhookSecret": "Webhook 密钥",
+      "productId": "产品 id（prod_…）",
+      "successUrl": "成功回调 URL（可选）",
+      "baseUrl": "DoerFlow 账本 base URL",
+      "serviceKey": "Service key",
+      "merchantAccount": "商户账户",
+      "asset": "稳定币资产（可选）",
+      "chainId": "链 id"
+    },
+    "capabilities": {
+      "checkout": "结账",
+      "webhook": "Webhook",
+      "query": "查询",
+      "refund": "退款",
+      "partialRefund": "部分退款",
+      "hostedUrl": "托管 URL",
+      "qr": "二维码",
+      "requiresQueryBeforeFulfill": "履约前先查询"
+    }
   },
   "orders": {
     "title": "订单与支付",
     "orders": "订单",
     "attempts": "支付尝试",
-    "refunds": "退款"
+    "refunds": "退款",
+    "creemMorTitle": "Creem 商户代售（MoR）金额",
+    "creemFulfilmentNote": "履约以 gross（含税买家总额）为准。",
+    "grossAmount": "Gross（最小货币单位）",
+    "taxAmount": "Tax（最小货币单位）",
+    "netAmount": "Net（最小货币单位）",
+    "doerflowCreditNote": "DoerFlow credit 从链上稳定币账本余额扣款，无托管结账跳转。"
   },
   "cleanup": {
     "title": "试用清理任务"

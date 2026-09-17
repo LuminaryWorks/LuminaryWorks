@@ -58,14 +58,14 @@ IAM_PROVIDER=logto
 1. Use `@luminaryworks/auth-react`: `HeadlessLoginPanel` + the configured `LoginExperienceAdapter` (default Logto) + `readIdpConfigFromEnv` / product `lib/idp.ts` with **static** `import.meta.env.KEY` / `process.env.NEXT_PUBLIC_*` reads (bundlers do not inline dynamic env maps).
 2. **Login UI = product-branded adapter UI.** Logto defaults to Headless; providers without a supported Headless adapter use Hosted Redirect. Local product passwords stay behind `VITE_ALLOW_LOCAL_LOGIN` / `NEXT_PUBLIC_ALLOW_LOCAL_LOGIN` (dev). Production: `false`.
 3. **Social connectors:** default `showSocialConnectors={true}` (loads Google/GitHub/… from IdP). For **admin / internal consoles**, set **`showSocialConnectors={false}`** (or `socialProviders={[]}`) so Experience social buttons are not fetched or shown. End-user product login keeps social on unless product policy says otherwise. Enterprise SSO stays on the IdP — this prop only hides social connector UI.
-4. **Self-register:** default `showRegister={true}` (Logto Experience username + password). For **admin / internal consoles**, set **`showRegister={false}`**. Private deploys may set `VITE_ALLOW_SELF_REGISTER=false` / `PUBLIC_ALLOW_SELF_REGISTER=false`. Shared SPA dual hosts (e.g. VistaCast): hide register on `admin.*`. Email self-register needs verification codes — use username, social, or invite.
+4. **Self-register:** default `showRegister={true}`. Supports **email + verification code** (allowlisted consumer domains) and **username + password**. For **admin / internal consoles**, set **`showRegister={false}`**. Pass `registerEmailPolicy={readRegisterEmailPolicyFromEnv(...)}`. Optional `getCaptchaToken` for Logto CAPTCHA. Production register IP/email enforcement runs on **Auth Gateway** (`AUTH_REGISTER_*`). Private deploys may set `AUTH_REGISTER_EMAIL_MODE=off` or `VITE_ALLOW_SELF_REGISTER=false`.
 5. Routes: path `/auth/callback` (history fallback) even if the app uses HashRouter — mount callback before the hash router when `pathname === /auth/callback`.
 6. **Same-origin IdP proxy (local default):** `@luminaryworks/auth-dev-proxy`
    - Rsbuild/Vite: `createIdpDevProxyMap({ spaOrigin })` for `/oidc` + `/api/experience` **before** backend `/api` proxy.
    - Next.js: `forwardIdpFetch` route handlers at `app/oidc/[...path]` and `app/api/experience/[[...path]]` (so Experience is not swallowed by API rewrites).
    - Set `VITE_AUTH_EXPERIENCE_URL` / `PUBLIC_AUTH_EXPERIENCE_URL` / `NEXT_PUBLIC_AUTH_EXPERIENCE_URL` to the **SPA origin** (not `:3010`).
    - Keep `VITE_IDP_ISSUER=http://localhost:3001/oidc` so JWT `iss` matches Logto.
-   - Auth Gateway (`:3010`) is optional locally; preferred in multi-product / production.
+   - Auth Gateway (`:3010`) is optional locally; preferred in multi-product / production (**required for IP register quotas**).
 7. Attach `Authorization: Bearer <access_token>` to API client; exchange via product `POST …/auth/sso/login` when the API still issues a local session JWT.
 8. Drive UI from resource `permissions` fields — do not hardcode role names for buttons.
 9. Brand the login page per product (logo, copy). Use ecosystem primary `#1677ff`. Auth logic stays SDK/API.
@@ -84,6 +84,7 @@ VITE_IDP_REDIRECT_URI=http://localhost:<spa-port>/auth/callback
 VITE_ALLOW_LOCAL_LOGIN=false
 # Optional private deploy: disable end-user self-register
 # VITE_ALLOW_SELF_REGISTER=false
+# Optional: VITE_AUTH_REGISTER_EMAIL_MODE=allowlist
 ```
 
 Private / enterprise: set `IAM_PROVIDER=oidc` (or `zitadel` for hosted OIDC against a ZITADEL issuer) and point Gateway `UPSTREAM_ISSUER` (or product issuer) at the customer IdP / self-hosted Logto. Connectors (SAML/LDAP/OIDC) stay at the IdP. Do not add empty adapters for unintegrated providers. See `spec/iam-provider-selection.md`.

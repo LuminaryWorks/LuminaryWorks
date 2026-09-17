@@ -7,6 +7,7 @@ import {
   Unique,
   UpdateDateColumn,
 } from "typeorm";
+import type { PayerType } from "../../common/billing-profile";
 import type { SubjectKind } from "../../common/constants";
 
 @Entity({ name: "billing_profiles" })
@@ -23,8 +24,27 @@ export class BillingProfileEntity {
   @Column({ name: "subject_id", type: "varchar", length: 128 })
   subjectId!: string;
 
+  /** ISO 3166-1 alpha-2. Spec `countryCode` — do not add a duplicate column. */
   @Column({ type: "varchar", length: 8 })
   country!: string;
+
+  @Column({ name: "payer_type", type: "varchar", length: 16, default: "individual" })
+  payerType!: PayerType;
+
+  @Column({ name: "company_name", type: "varchar", length: 256, nullable: true })
+  companyName!: string | null;
+
+  @Column({ name: "tax_id", type: "varchar", length: 64, nullable: true })
+  taxId!: string | null;
+
+  @Column({ name: "address_line1", type: "varchar", length: 256, nullable: true })
+  addressLine1!: string | null;
+
+  @Column({ type: "varchar", length: 128, nullable: true })
+  city!: string | null;
+
+  @Column({ name: "postal_code", type: "varchar", length: 32, nullable: true })
+  postalCode!: string | null;
 
   @Column({ type: "varchar", length: 32, default: "user" })
   source!: "user" | "admin" | "geo";

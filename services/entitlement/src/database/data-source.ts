@@ -10,6 +10,7 @@ import { PricedCatalog1730500000000 } from "./migrations/1730500000000-PricedCat
 import { ResourceAllocations1730600000000 } from "./migrations/1730600000000-ResourceAllocations";
 import { PolicyAcceptanceAndCleanup1730700000000 } from "./migrations/1730700000000-PolicyAcceptanceAndCleanup";
 import { PaymentPlatform1730800000000 } from "./migrations/1730800000000-PaymentPlatform";
+import { BillingProfilePayerType1730900000000 } from "./migrations/1730900000000-BillingProfilePayerType";
 
 const url =
   process.env.ENTITLEMENT_DATABASE_URL ??
@@ -29,6 +30,7 @@ export default new DataSource({
     ResourceAllocations1730600000000,
     PolicyAcceptanceAndCleanup1730700000000,
     PaymentPlatform1730800000000,
+    BillingProfilePayerType1730900000000,
   ],
   synchronize: false,
 });

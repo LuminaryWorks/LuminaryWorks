@@ -1,8 +1,11 @@
 import { registerAs } from "@nestjs/config";
 import { parseCorsOrigins } from "../common/cors";
+import { parsePaymentsEnabled } from "../common/payments-enabled";
 import {
   DEFAULT_LEGAL_POLICY_VERSION,
+  parseOrderFulfilledTargets,
   parseTrialPurgeTargets,
+  type OrderFulfilledTargetMap,
   type TrialPurgeTargetMap,
 } from "../common/legal-policy";
 import { parsePublicKeyRing, type PublicKeyRing } from "../license/ed25519";
@@ -58,6 +61,9 @@ export interface EntitlementConfig {
   /** productCode → HTTPS/internal purge URL + HMAC secret. Empty object is valid. */
   trialPurgeTargets: TrialPurgeTargetMap;
   trialPurgeTimeoutMs: number;
+  /** productCode → signed order.fulfilled ingress URL + HMAC secret. */
+  orderFulfilledTargets: OrderFulfilledTargetMap;
+  orderFulfilledTimeoutMs: number;
   /** 32-byte hex/base64. Required in production when provider configs are enabled. */
   paymentConfigMasterKey?: string;
   /** Comma-separated IPs/CIDRs allowed to inject CF-IPCountry (CDN/Caddy). */
@@ -68,6 +74,11 @@ export interface EntitlementConfig {
   paymentMarketPolicy: "hosted" | "scopes_only";
   paymentReconcilePendingMinutes: number;
   paymentCredentialRetiringHours: number;
+  /**
+   * When false, PaymentsModule is not registered (webhook/admin payment routes 404).
+   * Default true. Private/on-prem deployments can ship without a PSP surface.
+   */
+  paymentsEnabled: boolean;
   /**
    * Browser origins allowed to call this API with CORS.
    * Empty (the production default) closes CORS — same-origin / non-browser only.
@@ -140,6 +151,10 @@ export default registerAs("entitlement", (): EntitlementConfig => {
       "https://docs.luminaryworks.dev/legal",
     trialPurgeTargets: parseTrialPurgeTargets(process.env.ENTITLEMENT_TRIAL_PURGE_TARGETS),
     trialPurgeTimeoutMs: Number(process.env.ENTITLEMENT_TRIAL_PURGE_TIMEOUT_MS ?? 15000),
+    orderFulfilledTargets: parseOrderFulfilledTargets(
+      process.env.ENTITLEMENT_ORDER_FULFILLED_TARGETS,
+    ),
+    orderFulfilledTimeoutMs: Number(process.env.ENTITLEMENT_ORDER_FULFILLED_TIMEOUT_MS ?? 15000),
     paymentConfigMasterKey: process.env.PAYMENT_CONFIG_MASTER_KEY?.trim() || undefined,
     paymentTrustedProxies: (process.env.PAYMENT_TRUSTED_PROXIES ?? "")
       .split(",")
@@ -150,6 +165,7 @@ export default registerAs("entitlement", (): EntitlementConfig => {
       process.env.PAYMENT_MARKET_POLICY === "scopes_only" ? "scopes_only" : "hosted",
     paymentReconcilePendingMinutes: Number(process.env.PAYMENT_RECONCILE_PENDING_MINUTES ?? 5),
     paymentCredentialRetiringHours: Number(process.env.PAYMENT_CREDENTIAL_RETIRING_HOURS ?? 48),
+    paymentsEnabled: parsePaymentsEnabled(process.env.PAYMENTS_ENABLED),
     corsOrigins: parseCorsOrigins(process.env.ENTITLEMENT_CORS_ORIGINS),
   };
 });

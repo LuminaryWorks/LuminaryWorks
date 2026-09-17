@@ -7,6 +7,7 @@ import {
   ManualPaymentAdapter,
   MockPaymentAdapter,
   MOCK_SIGNATURE_HEADER,
+  UNIMPLEMENTED_PROVIDER_IDS,
 } from "../src/modules/payments/adapters";
 import { BitpayPaymentAdapter } from "../src/modules/payments/bitpay.adapter";
 import { BillingProfileService } from "../src/modules/payments/billing-profile.service";
@@ -134,6 +135,10 @@ describe("mock / manual / contract adapters", () => {
       okx.verifyWebhook(Buffer.from("{}"), {}, mockConfig({ providerId: "okx_onchain" })),
     ).rejects.toMatchObject({ code: "PAYMENT_WEBHOOK_INVALID" });
   });
+
+  it("does not leave doerflow_credit unimplemented", () => {
+    expect(UNIMPLEMENTED_PROVIDER_IDS).not.toContain("doerflow_credit");
+  });
 });
 
 describe("billing country lock", () => {
@@ -179,6 +184,72 @@ describe("billing country lock", () => {
     });
     expect(updated.country).toBe("DE");
   });
+
+  it("rejects a business profile missing companyName or country", async () => {
+    const svc = new BillingProfileService(
+      {
+        findOne: jest.fn().mockResolvedValue(null),
+        save: jest.fn(async (row: Record<string, unknown>) => row),
+        create: jest.fn((row: Record<string, unknown>) => row),
+      } as never,
+      { record: jest.fn() } as never,
+    );
+    await expect(
+      svc.upsertProfile({
+        subjectKind: "USER",
+        subjectId: "user-biz",
+        payerType: "business",
+        companyName: "Acme GmbH",
+        source: "user",
+        actor: "user-biz",
+      }),
+    ).rejects.toMatchObject({ code: "PAYMENT_BILLING_PROFILE_INCOMPLETE" });
+    await expect(
+      svc.upsertProfile({
+        subjectKind: "USER",
+        subjectId: "user-biz",
+        payerType: "business",
+        country: "DE",
+        source: "user",
+        actor: "user-biz",
+      }),
+    ).rejects.toMatchObject({ code: "PAYMENT_BILLING_PROFILE_INCOMPLETE" });
+    const created = await svc.upsertProfile({
+      subjectKind: "USER",
+      subjectId: "user-biz",
+      payerType: "business",
+      companyName: "Acme GmbH",
+      country: "DE",
+      taxId: "DE123456789",
+      source: "user",
+      actor: "user-biz",
+    });
+    expect(created.payerType).toBe("business");
+    expect(created.companyName).toBe("Acme GmbH");
+    expect(created.country).toBe("DE");
+  });
+
+  it("rejects taxId that fails shape checks without live verification", async () => {
+    const svc = new BillingProfileService(
+      {
+        findOne: jest.fn().mockResolvedValue(null),
+        save: jest.fn(async (row: Record<string, unknown>) => row),
+        create: jest.fn((row: Record<string, unknown>) => row),
+      } as never,
+      { record: jest.fn() } as never,
+    );
+    await expect(
+      svc.upsertProfile({
+        subjectKind: "USER",
+        subjectId: "user-1",
+        payerType: "individual",
+        country: "US",
+        taxId: "!!!",
+        source: "user",
+        actor: "user-1",
+      }),
+    ).rejects.toMatchObject({ code: "VALIDATION_ERROR" });
+  });
 });
 
 describe("public webhook orchestration", () => {
@@ -213,6 +284,10 @@ describe("public webhook orchestration", () => {
       create: jest.fn((row: Record<string, unknown>) => row),
       save: opts.insert ?? jest.fn().mockResolvedValue(undefined),
       update: jest.fn(),
+      findOne: jest.fn().mockResolvedValue({
+        status: "processed",
+        attemptId: opts.attempt?.id ?? null,
+      }),
     };
     const paymentConfigs = {
       loadEnabled: jest.fn().mockResolvedValue(configRow),

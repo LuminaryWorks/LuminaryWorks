@@ -14,6 +14,7 @@ import {
   assertAlipayF2fCredentials,
   assertBitpayCredentials,
   assertCoinbaseCommerceCredentials,
+  assertCreemCredentials,
   assertOkxOnchainCredentials,
   assertPaypalCredentials,
   assertStripeCheckoutCredentials,
@@ -193,6 +194,14 @@ describe("payment credential envelope", () => {
         notificationUrl: "https://entitlement.example.com/ipn",
         merchantToken: "B".repeat(44),
         privateKey: "/tmp/bitpay.key",
+      }),
+    ).toThrow(EntitlementException);
+    expect(() =>
+      assertCreemCredentials({
+        apiKey: "creem_test_fixtureapikeyvalue",
+        webhookSecret: "creem_whsec_fixture_secret",
+        productId: "prod_fixtureProduct01",
+        gatewayUrl: "https://evil.example",
       }),
     ).toThrow(EntitlementException);
     expect(

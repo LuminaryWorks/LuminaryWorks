@@ -4,6 +4,7 @@ import {
   DEFAULT_LEGAL_POLICY_VERSION,
   LEGAL_DOCUMENT_KEYS,
   legalDocumentsForVersion,
+  parseOrderFulfilledTargets,
   parseTrialPurgeTargets,
 } from "../src/common/legal-policy";
 import { LegalService } from "../src/modules/legal/legal.service";
@@ -70,6 +71,38 @@ describe("parseTrialPurgeTargets", () => {
     expect(() =>
       parseTrialPurgeTargets(JSON.stringify({ dataluminary: { url: "ftp://x", secret: "s" } })),
     ).toThrow(/https or internal http/);
+  });
+});
+
+describe("parseOrderFulfilledTargets", () => {
+  it("accepts empty and strict product maps", () => {
+    expect(parseOrderFulfilledTargets(undefined)).toEqual({});
+    expect(
+      parseOrderFulfilledTargets(
+        JSON.stringify({
+          vistaremote: {
+            url: "http://server:3000/api/v1/commerce/webhooks/entitlement",
+            secret: "replace-with-hmac-secret",
+          },
+        }),
+      ),
+    ).toEqual({
+      vistaremote: {
+        url: "http://server:3000/api/v1/commerce/webhooks/entitlement",
+        secret: "replace-with-hmac-secret",
+      },
+    });
+  });
+
+  it("rejects invalid JSON and non-http URLs with ORDER_FULFILLED env name", () => {
+    expect(() => parseOrderFulfilledTargets("{")).toThrow(
+      /ENTITLEMENT_ORDER_FULFILLED_TARGETS must be valid JSON/,
+    );
+    expect(() =>
+      parseOrderFulfilledTargets(JSON.stringify({ vistaremote: { url: "ftp://x", secret: "s" } })),
+    ).toThrow(
+      /ENTITLEMENT_ORDER_FULFILLED_TARGETS\.vistaremote url must be https or internal http/,
+    );
   });
 });
 

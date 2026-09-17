@@ -171,6 +171,25 @@ Paid upgrade (`order.pay` for a non-trial plan) acquires the same per-user/produ
 4. Signs with HMAC-SHA256 over `` `${timestamp}.${nonce}.${rawBody}` `` (`x-lw-signature: v1=<base64url>`), plus `x-lw-timestamp`, `x-lw-nonce`, `x-lw-event-id`, `x-lw-job-id`
 5. Expects HTTP 2xx JSON `{ "ok": true, "jobId"?: "...", "eventId"?: "..." }`. Non-2xx or invalid ack retries. Missing target retries / dead-letters and **never** marks sent.
 
+## Outbox: `order.fulfilled` product fan-out
+
+After payment succeeds and grants are written, the service enqueues `order.fulfilled` with:
+
+| Field | Notes |
+| :--- | :--- |
+| `orderId`, `subjectId` | Subject is Logto OIDC `sub` |
+| `sku`, `paidAt` | Offering / bundle / pack SKU; UTC RFC 3339 when fulfilled |
+| `products[]` | Bundle fan-out list `{ productCode, planCode }`; single-product orders have one entry |
+
+Outbox delivery (not a silent “No handler” mark-sent):
+
+1. Resolve `products[]` (or primary `productCode`)
+2. For each product, POST raw JSON to `ENTITLEMENT_ORDER_FULFILLED_TARGETS[productCode]`
+3. Sign with HMAC-SHA256 over `` `${timestamp}.${nonce}.${rawBody}` `` (`x-lw-signature: v1=<base64url>`), plus `x-lw-timestamp`, `x-lw-nonce`, `x-lw-event-id` (`{outboxId}:{productCode}`)
+4. Expect HTTP 2xx JSON `{ "ok": true, "eventId"?: "..." }`. Missing target **retries / dead-letters** and never marks sent.
+
+VistaRemote ingress: `POST /api/v1/commerce/webhooks/entitlement` with product `ENTITLEMENT_WEBHOOK_SECRET` equal to `TARGETS.vistaremote.secret`. PSP merchant notify stays on Entitlement `POST /v1/payments/webhooks/:provider/:configId` (see `deploy/PAYMENTS.md`).
+
 Current legal version defaults to `lw-legal-v2026-09-07` (`ENTITLEMENT_LEGAL_POLICY_VERSION`). `POST /v1/trials/ensure` returns `TRIAL_POLICY_NOT_ACCEPTED` (400) until Terms, Privacy, and Trial-deletion for that version are accepted. Subject is always the verified token `sub` (or `X-Act-As-Subject` for service/admin). Disabled-trial products (DoerFlow / VistaCast / SyncroBrain) still fail with `PRODUCT_TRIAL_DISABLED` before any acceptance write. Enterprise and private-license skip paths still skip Trial without requiring a new accept.
 
 Product HTTP purge endpoints are **not** implemented in this change; each product must accept the signed body and respond with the ack shape above. Deletion is irreversible and must key off `trialRedemptionId` + billing owner, not a vague creator match.

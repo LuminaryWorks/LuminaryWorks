@@ -88,17 +88,60 @@
   },
   "providers": {
     "title": "Payment providers",
+    "providerId": "Provider",
+    "environment": "Environment",
+    "merchantId": "Merchant / store id",
+    "merchantIdCreemHint": "Creem store id (separate from productId in credentials)",
+    "marketScopes": "Market scopes",
+    "currencies": "Currencies",
+    "priority": "Priority",
+    "capabilitiesTitle": "Capabilities",
+    "cnMarket": "CN market",
+    "cnHostedBlocked": "Unavailable in CN hosted checkout",
+    "cnCryptoBlocked": "Blocked when IP or billing country is CN",
+    "lastFour": "Credential last four",
+    "fingerprint": "Credential fingerprint",
+    "rotatedAt": "Rotated at",
+    "structuredCredentialsHint": "Enter provider credentials below. Values are write-only and cleared after save.",
+    "rotateStructuredHint": "Fill credentials to rotate. Leave blank to update metadata only.",
     "credentials": "Credentials JSON (write-only; never read back)",
     "credentialsHint": "Paste a JSON object of string fields. The textarea is cleared after a successful save or rotate. Values are not stored in the browser.",
     "metadata": "Metadata JSON (non-secret)",
     "enabledFromApi": "Enabled state comes from Entitlement. This console does not guess merchant approval or HA.",
-    "create": "Create provider config"
+    "create": "Create provider config",
+    "fields": {
+      "apiKey": "API key",
+      "webhookSecret": "Webhook secret",
+      "productId": "Product id (prod_…)",
+      "successUrl": "Success URL (optional)",
+      "baseUrl": "DoerFlow ledger base URL",
+      "serviceKey": "Service key",
+      "merchantAccount": "Merchant account",
+      "asset": "Stablecoin asset (optional)",
+      "chainId": "Chain id"
+    },
+    "capabilities": {
+      "checkout": "Checkout",
+      "webhook": "Webhook",
+      "query": "Query",
+      "refund": "Refund",
+      "partialRefund": "Partial refund",
+      "hostedUrl": "Hosted URL",
+      "qr": "QR",
+      "requiresQueryBeforeFulfill": "Query before fulfil"
+    }
   },
   "orders": {
     "title": "Orders & payments",
     "orders": "Orders",
     "attempts": "Attempts",
-    "refunds": "Refunds"
+    "refunds": "Refunds",
+    "creemMorTitle": "Creem merchant-of-record amounts",
+    "creemFulfilmentNote": "Fulfilment is judged on gross (tax-inclusive buyer total).",
+    "grossAmount": "Gross (minor units)",
+    "taxAmount": "Tax (minor units)",
+    "netAmount": "Net (minor units)",
+    "doerflowCreditNote": "DoerFlow credit debits an on-chain stablecoin ledger balance. There is no hosted checkout redirect."
   },
   "cleanup": {
     "title": "Trial cleanup jobs"

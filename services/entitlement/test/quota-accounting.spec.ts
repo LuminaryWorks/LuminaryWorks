@@ -317,7 +317,9 @@ describe("planned gauge catalog", () => {
     expect(ultra?.features.find((row) => row.code === "telemetry.points.daily")?.limitValue).toBe(
       50_000,
     );
-    expect(pro?.features.find((row) => row.code === "telemetry.retention.days")?.limitValue).toBe(7);
+    expect(pro?.features.find((row) => row.code === "telemetry.retention.days")?.limitValue).toBe(
+      7,
+    );
     expect(ultra?.features.find((row) => row.code === "telemetry.retention.days")?.limitValue).toBe(
       30,
     );

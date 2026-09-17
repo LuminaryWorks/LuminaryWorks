@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { isPaymentsEnabled } from "../../common/payments-enabled";
 import { BillingProfileEntity } from "../../database/entities/billing-profile.entity";
 import { GrantEntity } from "../../database/entities/grant.entity";
 import { OrderEntity } from "../../database/entities/order.entity";
@@ -23,6 +24,7 @@ import { BillingProfileController } from "./billing-profile.controller";
 import { BillingProfileService } from "./billing-profile.service";
 import { CoinbaseCommercePaymentAdapter } from "./coinbase-commerce.adapter";
 import { defaultCoinbaseJwtSigner } from "./coinbase-cdp-auth";
+import { DoerflowCreditPaymentAdapter } from "./doerflow-credit.adapter";
 import { OkxOnchainPaymentAdapter } from "./okx-onchain.adapter";
 import { defaultBitpayMerchantFactory } from "./bitpay-sdk";
 import { defaultOkxX402Factory } from "./okx-x402-sdk";
@@ -45,6 +47,7 @@ import {
 import { PaypalPaymentAdapter } from "./paypal.adapter";
 import { PaymentsService } from "./payments.service";
 import { StripeCheckoutPaymentAdapter } from "./stripe-checkout.adapter";
+import { CreemPaymentAdapter } from "./creem.adapter";
 import { UnionpayQuickpassPaymentAdapter } from "./unionpay-quickpass.adapter";
 import { WechatPayV3PaymentAdapter } from "./wechat-pay-v3.adapter";
 
@@ -87,6 +90,8 @@ import { WechatPayV3PaymentAdapter } from "./wechat-pay-v3.adapter";
     CoinbaseCommercePaymentAdapter,
     OkxOnchainPaymentAdapter,
     BitpayPaymentAdapter,
+    CreemPaymentAdapter,
+    DoerflowCreditPaymentAdapter,
     {
       provide: PAYMENT_ADAPTERS,
       useFactory: (
@@ -101,6 +106,8 @@ import { WechatPayV3PaymentAdapter } from "./wechat-pay-v3.adapter";
         coinbase: CoinbaseCommercePaymentAdapter,
         okx: OkxOnchainPaymentAdapter,
         bitpay: BitpayPaymentAdapter,
+        creem: CreemPaymentAdapter,
+        doerflowCredit: DoerflowCreditPaymentAdapter,
       ) => [
         mock,
         manual,
@@ -113,6 +120,8 @@ import { WechatPayV3PaymentAdapter } from "./wechat-pay-v3.adapter";
         coinbase,
         okx,
         bitpay,
+        creem,
+        doerflowCredit,
         ...UNIMPLEMENTED_PROVIDER_IDS.map((provider) => new UnimplementedPaymentAdapter(provider)),
       ],
       inject: [
@@ -127,6 +136,8 @@ import { WechatPayV3PaymentAdapter } from "./wechat-pay-v3.adapter";
         CoinbaseCommercePaymentAdapter,
         OkxOnchainPaymentAdapter,
         BitpayPaymentAdapter,
+        CreemPaymentAdapter,
+        DoerflowCreditPaymentAdapter,
       ],
     },
     PaymentConfigService,
@@ -152,6 +163,17 @@ import { WechatPayV3PaymentAdapter } from "./wechat-pay-v3.adapter";
     CoinbaseCommercePaymentAdapter,
     OkxOnchainPaymentAdapter,
     BitpayPaymentAdapter,
+    CreemPaymentAdapter,
+    DoerflowCreditPaymentAdapter,
   ],
 })
 export class PaymentsModule {}
+
+/**
+ * Conditional registration for D-PAY-P11 / FR-PAY-023.
+ * When PAYMENTS_ENABLED=false this returns [] so webhook and admin payment
+ * routes are never mounted (404, not 403).
+ */
+export function paymentsModuleImports(): Array<typeof PaymentsModule> {
+  return isPaymentsEnabled() ? [PaymentsModule] : [];
+}

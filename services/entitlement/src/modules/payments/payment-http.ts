@@ -56,6 +56,11 @@ export const BITPAY_API_BASE = {
   sandbox: "https://test.bitpay.com",
 } as const;
 
+export const CREEM_API_BASE = {
+  live: "https://api.creem.io/v1",
+  sandbox: "https://test-api.creem.io/v1",
+} as const;
+
 export function alipayAllowedHosts(): Set<string> {
   return new Set(
     [ALIPAY_GATEWAY.live, ...ALIPAY_SANDBOX_ALIASES].map((item) => new URL(item).hostname),
@@ -141,7 +146,21 @@ export function officialBitpayBase(environment: "sandbox" | "live"): string {
   return environment === "live" ? BITPAY_API_BASE.live : BITPAY_API_BASE.sandbox;
 }
 
-export function assertOfficialGatewayUrl(url: string, allowedHosts: ReadonlySet<string>): URL {
+export function creemAllowedHosts(): Set<string> {
+  return new Set(
+    [CREEM_API_BASE.live, CREEM_API_BASE.sandbox].map((item) => new URL(item).hostname),
+  );
+}
+
+export function officialCreemBase(environment: "sandbox" | "live"): string {
+  return environment === "live" ? CREEM_API_BASE.live : CREEM_API_BASE.sandbox;
+}
+
+export function assertOfficialGatewayUrl(
+  url: string,
+  allowedHosts: ReadonlySet<string>,
+  opts?: { allowHttp?: boolean },
+): URL {
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -151,7 +170,9 @@ export function assertOfficialGatewayUrl(url: string, allowedHosts: ReadonlySet<
       "Payment gateway URL is malformed",
     );
   }
-  if (parsed.protocol !== "https:") {
+  const httpsOk = parsed.protocol === "https:";
+  const httpOk = opts?.allowHttp === true && parsed.protocol === "http:";
+  if (!httpsOk && !httpOk) {
     throw new EntitlementException(
       "PAYMENT_PROVIDER_UNAVAILABLE",
       "Payment gateway must use HTTPS",
@@ -176,7 +197,7 @@ export async function paymentFetchJson(
   fetchImpl: typeof fetch,
   url: string,
   init: RequestInit,
-  opts: { timeoutMs?: number; allowedHosts: ReadonlySet<string> },
+  opts: { timeoutMs?: number; allowedHosts: ReadonlySet<string>; allowHttp?: boolean },
 ): Promise<{ status: number; text: string; json: unknown }> {
   const response = await paymentFetch(fetchImpl, url, init, opts);
   const text = await response.text();
@@ -195,9 +216,9 @@ export async function paymentFetch(
   fetchImpl: typeof fetch,
   url: string,
   init: RequestInit,
-  opts: { timeoutMs?: number; allowedHosts: ReadonlySet<string> },
+  opts: { timeoutMs?: number; allowedHosts: ReadonlySet<string>; allowHttp?: boolean },
 ): Promise<Response> {
-  assertOfficialGatewayUrl(url, opts.allowedHosts);
+  assertOfficialGatewayUrl(url, opts.allowedHosts, { allowHttp: opts.allowHttp });
   const timeoutMs = opts.timeoutMs ?? PAYMENT_HTTP_TIMEOUT_MS;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);

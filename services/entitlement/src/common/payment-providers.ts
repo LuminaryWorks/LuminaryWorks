@@ -9,6 +9,8 @@ export const PAYMENT_PROVIDER_IDS = [
   "coinbase_commerce",
   "okx_onchain",
   "bitpay",
+  "creem",
+  "doerflow_credit",
   "manual",
   "mock",
   "contract",
@@ -16,7 +18,12 @@ export const PAYMENT_PROVIDER_IDS = [
 
 export type ProviderId = (typeof PAYMENT_PROVIDER_IDS)[number];
 
-export const CRYPTO_PROVIDER_IDS = ["coinbase_commerce", "okx_onchain", "bitpay"] as const;
+export const CRYPTO_PROVIDER_IDS = [
+  "coinbase_commerce",
+  "okx_onchain",
+  "bitpay",
+  "doerflow_credit",
+] as const;
 export type CryptoProviderId = (typeof CRYPTO_PROVIDER_IDS)[number];
 
 export const DEV_MANUAL_PROVIDER_IDS = ["mock", "manual", "contract"] as const;
@@ -147,6 +154,26 @@ export const DEFAULT_PROVIDER_CAPABILITIES: Record<ProviderId, ProviderCapabilit
     qr: false,
     requiresQueryBeforeFulfill: true,
   },
+  creem: {
+    checkout: true,
+    webhook: true,
+    query: true,
+    refund: true,
+    partialRefund: true,
+    hostedUrl: true,
+    qr: false,
+    requiresQueryBeforeFulfill: false,
+  },
+  doerflow_credit: {
+    checkout: true,
+    webhook: true,
+    query: true,
+    refund: true,
+    partialRefund: true,
+    hostedUrl: false,
+    qr: false,
+    requiresQueryBeforeFulfill: false,
+  },
   manual: {
     checkout: true,
     webhook: false,
@@ -203,11 +230,7 @@ export function isRefundableOrderStatus(status: string): boolean {
   return status === "paid" || status === "fulfilled" || status === "partially_refunded";
 }
 
-export const CN_HOSTED_ALLOWLIST: readonly ProviderId[] = [
-  "alipay_f2f",
-  "manual",
-  "mock",
-];
+export const CN_HOSTED_ALLOWLIST: readonly ProviderId[] = ["alipay_f2f", "manual", "mock"];
 
 export type PaymentMarketPolicy = "hosted" | "scopes_only";
 

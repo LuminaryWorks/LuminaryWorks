@@ -21,6 +21,10 @@ export interface TrialPurgeTarget {
 
 export type TrialPurgeTargetMap = Record<string, TrialPurgeTarget>;
 
+/** Same shape as trial purge: productCode → { url, secret }. */
+export type OrderFulfilledTarget = TrialPurgeTarget;
+export type OrderFulfilledTargetMap = TrialPurgeTargetMap;
+
 const PRODUCT_CODE_SET = new Set<string>(PRODUCT_CODES);
 
 export function isLegalDocumentKey(value: string): value is LegalDocumentKey {
@@ -72,44 +76,49 @@ export function isAllowedPurgeUrl(raw: string): boolean {
  * Strict JSON object: productCode → { url, secret }. Empty/unset → {}.
  * Rejects unknown value keys, empty secrets, and non-http(s) URLs.
  */
-export function parseTrialPurgeTargets(raw: string | undefined): TrialPurgeTargetMap {
+function parseProductWebhookTargets(raw: string | undefined, envName: string): TrialPurgeTargetMap {
   if (raw == null || raw.trim() === "") return {};
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new Error("ENTITLEMENT_TRIAL_PURGE_TARGETS must be valid JSON");
+    throw new Error(`${envName} must be valid JSON`);
   }
   if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("ENTITLEMENT_TRIAL_PURGE_TARGETS must be a JSON object keyed by productCode");
+    throw new Error(`${envName} must be a JSON object keyed by productCode`);
   }
   const out: TrialPurgeTargetMap = {};
   for (const [code, value] of Object.entries(parsed as Record<string, unknown>)) {
     if (!PRODUCT_CODE_SET.has(code) && !/^[a-z][a-z0-9_-]{1,62}$/.test(code)) {
-      throw new Error(`Invalid productCode in ENTITLEMENT_TRIAL_PURGE_TARGETS: ${code}`);
+      throw new Error(`Invalid productCode in ${envName}: ${code}`);
     }
     if (value == null || typeof value !== "object" || Array.isArray(value)) {
-      throw new Error(
-        `ENTITLEMENT_TRIAL_PURGE_TARGETS.${code} must be an object with url and secret`,
-      );
+      throw new Error(`${envName}.${code} must be an object with url and secret`);
     }
     const target = value as Record<string, unknown>;
     const extra = Object.keys(target).filter((key) => key !== "url" && key !== "secret");
     if (extra.length > 0) {
-      throw new Error(
-        `ENTITLEMENT_TRIAL_PURGE_TARGETS.${code} has unexpected keys: ${extra.join(", ")}`,
-      );
+      throw new Error(`${envName}.${code} has unexpected keys: ${extra.join(", ")}`);
     }
     if (typeof target.url !== "string" || typeof target.secret !== "string") {
-      throw new Error(`ENTITLEMENT_TRIAL_PURGE_TARGETS.${code} requires string url and secret`);
+      throw new Error(`${envName}.${code} requires string url and secret`);
     }
     if (!target.secret.trim()) {
-      throw new Error(`ENTITLEMENT_TRIAL_PURGE_TARGETS.${code} secret must be non-empty`);
+      throw new Error(`${envName}.${code} secret must be non-empty`);
     }
     if (!isAllowedPurgeUrl(target.url)) {
-      throw new Error(`ENTITLEMENT_TRIAL_PURGE_TARGETS.${code} url must be https or internal http`);
+      throw new Error(`${envName}.${code} url must be https or internal http`);
     }
     out[code] = { url: target.url, secret: target.secret };
   }
   return out;
+}
+
+export function parseTrialPurgeTargets(raw: string | undefined): TrialPurgeTargetMap {
+  return parseProductWebhookTargets(raw, "ENTITLEMENT_TRIAL_PURGE_TARGETS");
+}
+
+/** Product ingress for signed `order.fulfilled` fan-out (HMAC). */
+export function parseOrderFulfilledTargets(raw: string | undefined): OrderFulfilledTargetMap {
+  return parseProductWebhookTargets(raw, "ENTITLEMENT_ORDER_FULFILLED_TARGETS");
 }

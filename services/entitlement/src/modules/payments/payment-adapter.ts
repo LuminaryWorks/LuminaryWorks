@@ -1,7 +1,8 @@
 /**
  * Provider-neutral payment adapter contract (spec/payment-platform.md).
  * Alipay, PayPal, WeChat Pay v3, UnionPay/Cloud QuickPass, Stripe Checkout,
- * Coinbase Business Checkout, OKX x402, and BitPay are registered adapters.
+ * Coinbase Business Checkout, OKX x402, BitPay, Creem (MoR), and DoerFlow credit
+ * are registered ProviderIds. Unimplemented adapters refuse checkout.
  * Keep credential crypto in PaymentConfigService.
  */
 
@@ -28,6 +29,8 @@ export interface CreateCheckoutInput {
   attemptId: string;
   amountCents: number;
   currency: string;
+  /** Payer subject (Logto sub). Required by doerflow_credit merchant charges. */
+  subjectId?: string;
   returnUrl?: string | null;
   metadata?: Record<string, unknown>;
   config: ProviderConfig;
@@ -47,7 +50,7 @@ export interface VerifiedWebhook {
   orderId: string;
   attemptId?: string | null;
   providerRef: string;
-  status: "succeeded" | "failed" | "pending" | "ignored";
+  status: "succeeded" | "failed" | "pending" | "ignored" | "refunded";
   amountCents: number;
   currency: string;
   merchantId?: string | null;

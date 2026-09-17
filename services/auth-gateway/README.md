@@ -98,4 +98,21 @@ Logto routes in the gateway.
 
 Product Headless clients should set `VITE_AUTH_GATEWAY_URL` (Experience base is derived automatically) or `VITE_AUTH_EXPERIENCE_URL`.
 
-Still planned: per-product branding injection, bot detection, rate limits.
+Still planned: per-product branding injection, Redis-backed quotas for multi-replica.
+
+### Self-register abuse controls
+
+**Edit without code:** [`identity/register-email-policy.json`](../../identity/register-email-policy.json) — see [`register-email-policy.md`](../../identity/register-email-policy.md).
+
+| Env | Default | Meaning |
+|-----|---------|---------|
+| `AUTH_REGISTER_POLICY_FILE` | `identity/register-email-policy.json` | Path to JSON |
+| `AUTH_REGISTER_POLICY_HOT_RELOAD` | on | Re-read when file mtime changes |
+| `AUTH_REGISTER_ABUSE_GUARD` | on | Set `0` to disable |
+| `AUTH_REGISTER_EMAIL_MODE` | from file | Overrides file when set |
+| `AUTH_REGISTER_EMAIL_ALLOWLIST` | from file | Comma-separated override |
+| `AUTH_REGISTER_EMAIL_BLOCKLIST` | from file | Comma-separated override |
+| `AUTH_REGISTER_IP_DAILY_LIMIT` | from file / `5` | Register starts / IP / UTC day |
+| `AUTH_REGISTER_CODE_IP_HOURLY_LIMIT` | from file / `10` | Register email codes / IP / hour |
+
+Public: `GET /api/register-policy`. Enforced on Experience `verification-code` (Register) and `new-password-identity`.

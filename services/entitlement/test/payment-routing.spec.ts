@@ -1,4 +1,8 @@
-import { hostedMarketForCountry } from "../src/common/payment-providers";
+import {
+  CN_HOSTED_ALLOWLIST,
+  hostedMarketForCountry,
+  isCryptoProvider,
+} from "../src/common/payment-providers";
 import {
   cryptoCheckoutAllowed,
   hintForbiddenInDecision,
@@ -120,5 +124,91 @@ describe("hosted provider routing", () => {
     expect(pickProvider({ allowed: decision.allowed, hint: "alipay_f2f" }).config?.providerId).toBe(
       "paypal",
     );
+  });
+
+  it("excludes creem from hosted CN (MoR is not on the CN allowlist)", () => {
+    const creem = {
+      ...paypal,
+      id: "cfg-creem",
+      providerId: "creem",
+      currencies: ["CNY", "USD"],
+    };
+    expect(CN_HOSTED_ALLOWLIST).not.toContain("creem");
+    expect(CN_HOSTED_ALLOWLIST).not.toContain("doerflow_credit");
+    const cn = selectAvailableProviders({
+      configs: [alipay, creem],
+      market: "CN",
+      currency: "CNY",
+      ipCountry: "CN",
+      billingCountry: "CN",
+      marketPolicy: "hosted",
+    });
+    expect(cn.allowed.map((item) => item.providerId)).toEqual(["alipay_f2f"]);
+    expect(hintForbiddenInDecision(cn, "creem")).toBe(true);
+
+    const global = selectAvailableProviders({
+      configs: [creem],
+      market: "GLOBAL",
+      currency: "USD",
+      ipCountry: "DE",
+      billingCountry: "DE",
+      marketPolicy: "hosted",
+    });
+    expect(global.allowed.map((item) => item.providerId)).toEqual(["creem"]);
+  });
+
+  it("double-blocks doerflow_credit when IP or billing country is CN", () => {
+    const credit = {
+      ...coinbase,
+      id: "cfg-credit",
+      providerId: "doerflow_credit",
+    };
+    expect(isCryptoProvider("doerflow_credit")).toBe(true);
+    expect(isCryptoProvider("creem")).toBe(false);
+
+    const cnIp = selectAvailableProviders({
+      configs: [paypal, credit],
+      market: "GLOBAL",
+      currency: "USD",
+      ipCountry: "CN",
+      billingCountry: "US",
+      marketPolicy: "hosted",
+    });
+    expect(cnIp.allowed.map((item) => item.providerId)).toEqual(["paypal"]);
+    expect(hintForbiddenInDecision(cnIp, "doerflow_credit")).toBe(true);
+
+    const cnBilling = selectAvailableProviders({
+      configs: [paypal, credit],
+      market: "GLOBAL",
+      currency: "USD",
+      ipCountry: "US",
+      billingCountry: "CN",
+      marketPolicy: "hosted",
+    });
+    expect(cnBilling.allowed.map((item) => item.providerId)).toEqual(["paypal"]);
+    expect(hintForbiddenInDecision(cnBilling, "doerflow_credit")).toBe(true);
+
+    const allowed = selectAvailableProviders({
+      configs: [paypal, credit],
+      market: "GLOBAL",
+      currency: "USD",
+      ipCountry: "US",
+      billingCountry: "US",
+      marketPolicy: "hosted",
+    });
+    expect(allowed.allowed.map((item) => item.providerId)).toEqual(["paypal", "doerflow_credit"]);
+  });
+
+  it("offers PayPal for GLOBAL when operationally enabled", () => {
+    const decision = selectAvailableProviders({
+      configs: [paypal],
+      market: "GLOBAL",
+      currency: "USD",
+      ipCountry: "DE",
+      billingCountry: "DE",
+      marketPolicy: "hosted",
+    });
+    expect(decision.allowed.map((item) => item.providerId)).toEqual(["paypal"]);
+    expect(decision.rejected).toEqual([]);
   });
 });

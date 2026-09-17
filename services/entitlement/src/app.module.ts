@@ -15,7 +15,7 @@ import { LegalModule } from "./modules/legal/legal.module";
 import { NotifyModule } from "./modules/notify/notify.module";
 import { OrdersModule } from "./modules/orders/orders.module";
 import { PartnerModule } from "./modules/partner/partner.module";
-import { PaymentsModule } from "./modules/payments/payments.module";
+import { paymentsModuleImports } from "./modules/payments/payments.module";
 import { PromotionsModule } from "./modules/promotions/promotions.module";
 import { TrialsModule } from "./modules/trials/trials.module";
 
@@ -42,7 +42,7 @@ import { TrialsModule } from "./modules/trials/trials.module";
     EntitlementsModule,
     TrialsModule,
     OrdersModule,
-    PaymentsModule,
+    ...paymentsModuleImports(),
     PromotionsModule,
     AdminModule,
     HealthModule,

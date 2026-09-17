@@ -338,10 +338,7 @@ describe("DoerFlow integration resolution", () => {
     expect(ultra.features[DOERFLOW_INTEGRATION_FEATURE_CODES.providerRegister]).toBeUndefined();
     expect(ultra.features[DOERFLOW_INTEGRATION_FEATURE_CODES.eventSubmit]).toBeUndefined();
     expect(ultra.quotas[DOERFLOW_INTEGRATION_FEATURE_CODES.eventMonthly]).toBeUndefined();
-    const enterprise = mergeFeatureMaps(
-      [subscriptionSource("ent-1", "enterprise")],
-      planFeatures,
-    );
+    const enterprise = mergeFeatureMaps([subscriptionSource("ent-1", "enterprise")], planFeatures);
     expect(enterprise.features[DOERFLOW_INTEGRATION_FEATURE_CODES.providerRegister]?.allowed).toBe(
       true,
     );

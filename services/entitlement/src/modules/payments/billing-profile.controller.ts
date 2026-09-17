@@ -4,8 +4,8 @@ import type { AuthPrincipal } from "../../auth/auth.types";
 import { REQUEST_ID_KEY } from "../../auth/auth.types";
 import { CurrentPrincipal } from "../../auth/decorators";
 import { EntitlementException } from "../../common/errors";
-import { BillingProfileService } from "./billing-profile.service";
-import { BillingCountryDto } from "./payment.dto";
+import { BillingProfileService, publicBillingProfile } from "./billing-profile.service";
+import { BillingCountryDto, UpsertBillingProfileDto } from "./payment.dto";
 
 @ApiTags("billing")
 @ApiBearerAuth()
@@ -20,9 +20,36 @@ export class BillingProfileController {
     return {
       subjectKind: subject.subjectKind,
       subjectId: subject.subjectId,
-      country: profile?.country ?? null,
-      locked: profile?.locked ?? false,
-      source: profile?.source ?? null,
+      ...publicBillingProfile(profile),
+    };
+  }
+
+  @Put("profile")
+  async updateProfile(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Body() body: UpsertBillingProfileDto,
+    @Req() req: { [REQUEST_ID_KEY]?: string },
+  ) {
+    const subject = this.subject(principal);
+    const profile = await this.billing.upsertProfile({
+      subjectKind: subject.subjectKind,
+      subjectId: subject.subjectId,
+      payerType: body.payerType,
+      companyName: body.companyName,
+      taxId: body.taxId,
+      addressLine1: body.addressLine1,
+      city: body.city,
+      postalCode: body.postalCode,
+      country: body.country,
+      source: principal.kind === "admin" ? "admin" : "user",
+      actor: principal.subjectId,
+      requestId: req[REQUEST_ID_KEY],
+      adminOverride: principal.kind === "admin" || principal.kind === "service",
+    });
+    return {
+      subjectKind: subject.subjectKind,
+      subjectId: subject.subjectId,
+      ...publicBillingProfile(profile),
     };
   }
 

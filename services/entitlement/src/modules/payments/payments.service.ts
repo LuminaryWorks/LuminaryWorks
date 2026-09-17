@@ -2,10 +2,11 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
 import { DataSource, In, type Repository } from "typeorm";
+import { assertBillingProfileComplete } from "../../common/billing-profile";
 import type { BillingMarket } from "../../common/catalog-pricing";
+import { sha256Hex } from "../../common/crypto";
 import { EntitlementException } from "../../common/errors";
 import type { GeoContext } from "../../common/payment-geo";
-import { sha256Hex } from "../../common/crypto";
 import { redactPaymentSecrets } from "../../common/payment-crypto";
 import {
   isDevManualProvider,
@@ -106,6 +107,9 @@ export class PaymentsService {
     }
 
     const profile = await this.billing.get(order.subjectKind, order.subjectId);
+    if (profile) {
+      assertBillingProfileComplete(profile);
+    }
     const offeringMarket =
       typeof order.metadata?.market === "string" &&
       (order.metadata.market === "CN" || order.metadata.market === "GLOBAL")
@@ -136,14 +140,18 @@ export class PaymentsService {
     const adapter = this.paymentConfigs.adapterFor(configRow.providerId);
     const providerConfig = this.paymentConfigs.decryptForAdapter(configRow);
 
-    return this.dataSource.transaction(async (manager) => {
+    // Persist the attempt *before* calling the provider. doerflow_credit
+    // (and similar sync ledgers) fire the HMAC webhook during createCheckout;
+    // if that row is still uncommitted the webhook cannot find it and a later
+    // unique replay is treated as success without fulfillment.
+    const prepared = await this.dataSource.transaction(async (manager) => {
       const locked = await manager.findOne(OrderEntity, {
         where: { id: order.id },
         lock: { mode: "pessimistic_write" },
       });
       if (!locked) throw new EntitlementException("NOT_FOUND", `Order ${order.id} not found`);
       if (isPaidLikeOrderStatus(locked.status)) {
-        return { order: locked, payment: null, alreadyPaid: true, attempt: null };
+        return { alreadyPaid: true as const, order: locked, attempt: null };
       }
       const open = await manager.find(PaymentAttemptEntity, {
         where: { orderId: locked.id, status: In(["created", "pending"]) },
@@ -168,26 +176,9 @@ export class PaymentsService {
           },
         }),
       );
-      const session = await adapter.createCheckout({
-        orderId: locked.id,
-        attemptId: attempt.id,
-        amountCents: locked.amountCents,
-        currency: locked.currency,
-        returnUrl: locked.returnUrl,
-        metadata: locked.metadata,
-        config: providerConfig,
-      });
-      attempt.providerRef = session.providerRef;
-      attempt.checkoutUrl = session.checkoutUrl ?? null;
-      attempt.qrPayload = session.qrPayload ?? null;
-      attempt.action = session.action ?? null;
-      attempt.status = session.status === "failed" ? "failed" : "pending";
-      await manager.save(attempt);
-
       locked.paymentProvider = configRow.providerId;
       locked.paymentConfigId = configRow.id;
-      locked.providerRef = session.providerRef;
-      locked.status = attempt.status === "failed" ? "failed" : "pending_payment";
+      locked.status = "pending_payment";
       locked.metadata = {
         ...locked.metadata,
         geoCountry: input.geo.country,
@@ -195,25 +186,98 @@ export class PaymentsService {
         geoSource: input.geo.source,
       };
       await manager.save(locked);
+      return { alreadyPaid: false as const, order: locked, attempt };
+    });
+    if (prepared.alreadyPaid) {
+      return { order: prepared.order, payment: null, alreadyPaid: true, attempt: null };
+    }
+    const attempt = prepared.attempt;
+    if (!attempt) {
+      throw new EntitlementException("NOT_FOUND", `Order ${order.id} not found`);
+    }
+
+    let session: Awaited<ReturnType<typeof adapter.createCheckout>>;
+    try {
+      session = await adapter.createCheckout({
+        orderId: prepared.order.id,
+        attemptId: attempt.id,
+        amountCents: prepared.order.amountCents,
+        currency: prepared.order.currency,
+        subjectId: prepared.order.subjectId,
+        returnUrl: prepared.order.returnUrl,
+        metadata: prepared.order.metadata,
+        config: providerConfig,
+      });
+    } catch (err) {
+      await this.dataSource.transaction(async (manager) => {
+        const lockedAttempt = await manager.findOne(PaymentAttemptEntity, {
+          where: { id: attempt.id },
+          lock: { mode: "pessimistic_write" },
+        });
+        if (lockedAttempt && (lockedAttempt.status === "created" || lockedAttempt.status === "pending")) {
+          lockedAttempt.status = "failed";
+          await manager.save(lockedAttempt);
+        }
+      });
+      throw err;
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const lockedAttempt = await manager.findOne(PaymentAttemptEntity, {
+        where: { id: attempt.id },
+        lock: { mode: "pessimistic_write" },
+      });
+      const lockedOrder = await manager.findOne(OrderEntity, {
+        where: { id: prepared.order.id },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!lockedAttempt || !lockedOrder) {
+        throw new EntitlementException("NOT_FOUND", `Order ${order.id} not found`);
+      }
+      if (isPaidLikeOrderStatus(lockedOrder.status)) {
+        return { order: lockedOrder, payment: null, alreadyPaid: true, attempt: lockedAttempt };
+      }
+      lockedAttempt.providerRef = session.providerRef;
+      lockedAttempt.checkoutUrl = session.checkoutUrl ?? null;
+      lockedAttempt.qrPayload = session.qrPayload ?? null;
+      lockedAttempt.action = session.action ?? null;
+      if (lockedAttempt.status !== "succeeded") {
+        lockedAttempt.status = session.status === "failed" ? "failed" : "pending";
+      }
+      await manager.save(lockedAttempt);
+
+      lockedOrder.paymentProvider = configRow.providerId;
+      lockedOrder.paymentConfigId = configRow.id;
+      lockedOrder.providerRef = session.providerRef;
+      if (!isPaidLikeOrderStatus(lockedOrder.status)) {
+        lockedOrder.status = lockedAttempt.status === "failed" ? "failed" : "pending_payment";
+      }
+      lockedOrder.metadata = {
+        ...lockedOrder.metadata,
+        geoCountry: input.geo.country,
+        billingCountry: profile?.country ?? null,
+        geoSource: input.geo.source,
+      };
+      await manager.save(lockedOrder);
 
       await this.audit.record({
         actor: input.actor,
         action: "order.checkout",
         resourceType: "order",
-        resourceId: locked.id,
+        resourceId: lockedOrder.id,
         requestId: input.requestId,
         payload: redactPaymentSecrets({
           provider: configRow.providerId,
           configId: configRow.id,
-          attemptId: attempt.id,
+          attemptId: lockedAttempt.id,
           checkoutUrl: Boolean(session.checkoutUrl),
         }),
       });
 
       return {
-        order: locked,
+        order: lockedOrder,
         alreadyPaid: false,
-        attempt,
+        attempt: lockedAttempt,
         payment: {
           provider: session.provider,
           providerRef: session.providerRef,
@@ -543,22 +607,7 @@ export class PaymentsService {
     await this.refunds.save(refund);
 
     if (result.status === "succeeded") {
-      const net = already + input.amountCents;
-      await this.dataSource.transaction(async (manager) => {
-        const locked = await manager.findOne(OrderEntity, {
-          where: { id: order.id },
-          lock: { mode: "pessimistic_write" },
-        });
-        if (!locked) return;
-        if (net >= locked.amountCents) {
-          locked.status = "refunded";
-          await revokeOrderEntitlements(manager, locked, new Date());
-        } else {
-          locked.status = "partially_refunded";
-        }
-        await manager.save(locked);
-        Object.assign(order, locked);
-      });
+      await this.finalizeSucceededRefund(order, already + input.amountCents);
     } else if (result.status === "failed") {
       order.status = already > 0 ? "partially_refunded" : "fulfilled";
       await this.orders.save(order);
@@ -579,6 +628,111 @@ export class PaymentsService {
       }),
     });
     return { refund, order, idempotent: false };
+  }
+
+  /**
+   * MoR / provider-initiated refund or chargeback. The money already moved on
+   * the vendor side — do not call adapter.refund() again. Reuses the same
+   * grant-revocation path as admin refunds.
+   */
+  async applyInboundRefund(input: {
+    orderId: string;
+    attemptId?: string | null;
+    providerRef: string;
+    amountCents: number;
+    currency: string;
+    eventId: string;
+    reason: string;
+    actor: string;
+  }): Promise<{ refund: RefundEntity; order: OrderEntity; idempotent: boolean }> {
+    const existing = await this.refunds.findOne({
+      where: { idempotencyKey: input.eventId },
+    });
+    const order = await this.orders.findOne({ where: { id: input.orderId } });
+    if (!order) throw new EntitlementException("NOT_FOUND", `Order ${input.orderId} not found`);
+    if (existing) return { refund: existing, order, idempotent: true };
+    if (!isRefundableOrderStatus(order.status) && order.status !== "refund_pending") {
+      throw new EntitlementException(
+        "PAYMENT_REFUND_UNSUPPORTED",
+        `Order ${order.id} cannot be refunded in status ${order.status}`,
+      );
+    }
+    const succeeded = await this.refunds.find({
+      where: { orderId: order.id, status: "succeeded" },
+    });
+    const already = succeeded.reduce((sum, row) => sum + row.amountCents, 0);
+    const amountCents = Math.min(
+      Math.max(input.amountCents, 0),
+      Math.max(order.amountCents - already, 0),
+    );
+    if (amountCents <= 0) {
+      return {
+        refund: this.refunds.create({
+          orderId: order.id,
+          attemptId: input.attemptId ?? null,
+          idempotencyKey: input.eventId,
+          amountCents: 0,
+          currency: order.currency,
+          status: "succeeded",
+          providerRef: input.providerRef,
+          actor: input.actor,
+          reason: input.reason,
+        }),
+        order,
+        idempotent: true,
+      };
+    }
+
+    const refund = await this.refunds.save(
+      this.refunds.create({
+        orderId: order.id,
+        attemptId: input.attemptId ?? null,
+        idempotencyKey: input.eventId,
+        amountCents,
+        currency: (input.currency || order.currency).toUpperCase(),
+        status: "succeeded",
+        providerRef: input.providerRef,
+        actor: input.actor,
+        reason: input.reason,
+      }),
+    );
+    await this.finalizeSucceededRefund(order, already + amountCents);
+    await this.audit.record({
+      actor: input.actor,
+      action: "payment.refund",
+      resourceType: "refund",
+      resourceId: refund.id,
+      reason: input.reason,
+      payload: redactPaymentSecrets({
+        orderId: order.id,
+        amountCents,
+        status: refund.status,
+        inbound: true,
+        providerRef: input.providerRef,
+      }),
+    });
+    return { refund, order, idempotent: false };
+  }
+
+  private async finalizeSucceededRefund(
+    order: OrderEntity,
+    netRefundedCents: number,
+  ): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const locked = await manager.findOne(OrderEntity, {
+        where: { id: order.id },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!locked) return;
+      if (netRefundedCents >= locked.amountCents) {
+        locked.status = "refunded";
+        await revokeOrderEntitlements(manager, locked, new Date());
+      } else {
+        locked.status = "partially_refunded";
+      }
+      await manager.save(locked);
+      Object.assign(order, locked);
+    });
   }
 
   async listOrdersAdmin(filter: {

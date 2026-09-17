@@ -1,4 +1,4 @@
-# 支付渠道运营手册（Alipay / PayPal / WeChat / UnionPay / Stripe / Coinbase / OKX / BitPay）
+# 支付渠道运营手册（Alipay / PayPal / WeChat / UnionPay / Stripe / Coinbase / OKX / BitPay / Creem / DoerFlow Credit）
 
 > 契约权威：[`spec/payment-platform.md`](../spec/payment-platform.md)。  
 > 本文只写 **凭证、沙箱/生产、回调、商户开通**。不要把密钥写进产品 env 或前端。
@@ -22,6 +22,14 @@ POST /v1/orders/:id/complete
 ```
 
 需登录。忽略客户端金额与支付状态。PayPal **仅批准（APPROVED）不算已付**。Stripe `success_url`、银联 `frontUrl`、微信扫码回跳 **都不履约**。
+
+履约成功后 outbox 投递产品侧 `order.fulfilled`（HMAC）。配置 `ENTITLEMENT_ORDER_FULFILLED_TARGETS`（control-plane env / compose），例如 VistaRemote：
+
+```json
+{"vistaremote":{"url":"http://host.docker.internal:3000/api/v1/commerce/webhooks/entitlement","secret":"<same as product ENTITLEMENT_WEBHOOK_SECRET>"}}
+```
+
+缺失 target **不会**标成已发送（会重试 / dead-letter）。契约细节见 `services/entitlement/README.md`。
 
 本文 **没有** 对真实商户网关做过 live 验证；联调只在各渠道沙箱/验收工具中进行。
 
@@ -107,6 +115,87 @@ Gateway 由 `environment` 选择，**禁止**在凭证里自定义网关（防 S
 ### 沙箱
 
 [PayPal Developer](https://developer.paypal.com/) sandbox app + sandbox 买家。Webhook 在沙箱同样要配 ID。不要用沙箱 secret 开 `environment=live`。
+
+### 个人 / Personal-to-Business 启用 runbook（FR-PAY-025）
+
+目标：个人账号（或个人升级到 Business 后）把已实现的 `paypal` adapter **运营启用**，直到出现一笔 `order.fulfilled`。代码路径已存在，不要改 adapter。
+
+PayPal 控制台菜单会变，**具体点击路径请在 PayPal dashboard 现场核对**，不要凭记忆点菜单。下面只冻结本服务需要的字段与验收步骤。
+
+1. **账号能力（在 PayPal dashboard 核对）**  
+   确认当前账号能创建 REST app 并订阅 webhook。个人账号若被要求升级到 Business / 完成身份核验，按 dashboard 提示完成；本服务不区分 personal vs business 凭证形状。
+
+2. **REST 凭证**  
+   在 PayPal Developer 创建 REST app。Sandbox 与 Live **分两套** Client ID / Secret，对应本服务 `environment=sandbox|live`。需要的加密字段（见 adapter `assertPaypalCredentials`）：
+
+   | 字段 | 必填 | 说明 |
+   |---|---|---|
+   | `clientId` | 是 | REST Client ID，至少 8 字符 |
+   | `clientSecret` | 是 | REST Secret，至少 8 字符；GET **永不回显** |
+   | `webhookId` | 是 | Webhook 订阅 ID，`[A-Za-z0-9_-]{8,128}` |
+   | `returnUrl` / `cancelUrl` | 否 | HTTPS；也可用订单 `returnUrl` |
+   | `paypalPlanId` / `paypalProductId` / `subscriptionWebhookEnabled` | 否 | 仅存储 / 映射；Checkout 仍是一次性 CAPTURE |
+
+   禁止写入自定义 `apiBase` / `baseUrl` / `gatewayUrl`。Host 由 `environment` 选择。
+
+3. **先落配置行，再绑 webhook URL**  
+   Webhook URL 含 Entitlement `configId`，所以先创建禁用配置：
+
+   ```http
+   POST /v1/admin/payments/providers
+   Authorization: Bearer <admin>
+   ```
+
+   ```json
+   {
+     "providerId": "paypal",
+     "environment": "sandbox",
+     "enabled": false,
+     "marketScopes": ["GLOBAL"],
+     "currencies": ["USD"],
+     "priority": 20,
+     "credentials": {
+       "clientId": "<rest-client-id>",
+       "clientSecret": "<rest-secret>",
+       "webhookId": "WH-PLACEHOLDER-REPLACE"
+     }
+   }
+   ```
+
+   `webhookId` 必须先满足形状（8–128 位字母数字/`_`/`-`）。记下响应里的 `id`（即 `configId`）。然后在 PayPal dashboard **核对并创建** webhook，URL：
+
+   ```text
+   https://<entitlement-public-host>/v1/payments/webhooks/paypal/<configId>
+   ```
+
+   事件至少覆盖 adapter 会处理的：`PAYMENT.CAPTURE.COMPLETED`（履约）、`CHECKOUT.ORDER.APPROVED`（忽略，不算已付）、`PAYMENT.CAPTURE.DENIED`。把 dashboard 给出的 **Webhook ID** 写入轮换：
+
+   ```http
+   POST /v1/admin/payments/providers/<configId>/rotate
+   ```
+
+   ```json
+   {
+     "credentials": {
+       "clientId": "<rest-client-id>",
+       "clientSecret": "<rest-secret>",
+       "webhookId": "<paypal-webhook-id>"
+     }
+   }
+   ```
+
+4. **Healthcheck**  
+   `POST /v1/admin/payments/providers/<configId>/test` 会跑 `healthCheck({ remote: true })`：校验字段形状并向官方 Host 换 OAuth token。`ok: true` 且 `issues` 为空才算凭证活。GET 列表只返回 `credentialLastFour` / fingerprint，不含 secret。
+
+5. **运营启用**  
+   `POST /v1/admin/payments/providers/<configId>/enable`（`enabled=true` 且 status `active`）。Hosted GLOBAL 路由在 IP 与 billing country 均非 CN、币种匹配时会选出 `paypal`。用非 CN 客户端打 `GET /v1/payments/methods`，列表应出现 `providerId=paypal`。CN 市场不会展示 PayPal（不在 `CN_HOSTED_ALLOWLIST`）。
+
+6. **端到端到 `order.fulfilled`**  
+   - 已登录用户 `POST /v1/orders`（`offeringId` 或 `sku`，可选 `providerHint=paypal` + `returnUrl`）。  
+   - `POST /v1/orders/:id/pay` 创建 Checkout；买家在 PayPal 批准。  
+   - **批准 ≠ 已付。** 买家回站后必须 `POST /v1/orders/:id/complete`（内部 `CAPTURE`），或等待已验签的 `PAYMENT.CAPTURE.COMPLETED` webhook。  
+   - 订单进入 `paid` → 履约 `fulfilled`；outbox 投递产品 `order.fulfilled`（配置 `ENTITLEMENT_ORDER_FULFILLED_TARGETS`）。  
+   - 用 sandbox 买家完成一笔后，再考虑 `environment=live` 的第二套配置（独立 client id/secret/webhook id）。
 
 ---
 
@@ -314,6 +403,113 @@ createCheckout 返回 `action.type=x402`（`hostedUrl=false`），不是托管�
 
 ---
 
+## Creem `creem`（Merchant of Record）
+
+### 运营前提
+
+1. Creem 作为 **Merchant of Record（MoR）**：代扣代缴 VAT、向买家出具含税发票；平台侧只对接 API，不直接持有买家卡号。
+2. 个人 / 小团队可开户（**verify before enabling live** — 本文未对任何 live Creem 商户做过端到端验证）。
+3. Webhook 指向 `POST /v1/payments/webhooks/creem/:configId`；验签使用 **原始 body** 的 HMAC-SHA256，hex 摘要放在 `creem-signature` 头（也接受 Standard Webhooks `webhook-id` / `webhook-timestamp` / `webhook-signature`）。
+4. 官方 API Host 由 `environment` 选择，**禁止**在凭证里自定义 gateway：
+
+| environment | Base |
+|---|---|
+| `sandbox` | `https://test-api.creem.io/v1` |
+| `live` | `https://api.creem.io/v1` |
+
+沙箱 API key 必须以 `creem_test_` 开头；live key 以 `creem_` 开头（非 test 前缀）。Hosted checkout 仅接受 `https://checkout.creem.io/…`。
+
+### 凭证字段（写入 admin API，加密入库）
+
+| 字段 | 说明 |
+|---|---|
+| `apiKey` | Creem API key（`creem_test_…` 或 `creem_…`） |
+| `webhookSecret` | Webhook 验签密钥（`creem-signature` / Standard Webhooks） |
+| `productId` | Creem 目录产品 id（`prod_…`）；结账时作为 `product_id` |
+| `successUrl` | 可选 HTTPS 成功回跳；也可用订单 `returnUrl` |
+
+`merchantId` 列（配置行字段，非加密凭证）建议填 Creem store / seller 标识以便对账。
+
+### 行为
+
+- 创建：`POST /checkouts`，`custom_price` = 订单 minor 金额，`request_id` = `orderId`，metadata 含 `orderId` / `attemptId`。返回 hosted `checkout_url`（`action.type=redirect`，`merchantOfRecord=true`）。
+- 验签：HMAC-SHA256(raw body) → `creem-signature`；5 分钟重放窗。
+- 履约：`checkout.completed` 且 status `completed`/`paid` → 成功。金额以 **gross（含税买家实付）** 为准；`net` / `tax` 仅记录，**不得**用于快照比对。
+- 退款：平台可对 transaction 发起部分退款（`refund_amount`）。买家在 MoR 侧发起的退款以 inbound webhook `refund.created` / `dispute.created` 到达（`inbound: true`），按 gross 映射为 `refunded`。
+- 查询：`GET /checkouts?checkout_id=…` 或 `GET /transactions?transaction_id=…`。
+- Health：默认只校验字段形状与 sandbox/live key 前缀匹配。`POST /v1/admin/payments/providers/:id/test` 会 `healthCheck({ remote: true })`（`GET /products/search`）。
+
+### 运营注意（MoR）
+
+- 标价与履约金额均为 **含税 gross**；不要把 net 当订单金额。
+- MoR 结算为 **T+N 出款**；履约在 webhook 确认已付时发生，**不等待** payout 到账。
+- 买家可在 Creem 侧发起退款；须处理 inbound `refund.created` webhook，不要假设退款只能由本服务发起。
+
+### 沙箱
+
+`environment=sandbox` + `creem_test_` API key。在 Creem dashboard 配置 webhook 指向带 `configId` 的 Entitlement URL。沙箱通过 **不等于** live 已开通 MoR。
+
+---
+
+## DoerFlow Credit `doerflow_credit`
+
+链上稳定币账本余额扣款（无跳转收银台）。Entitlement 服务端定价 → DoerFlow API `POST /api/v1/payments/merchant/charges` → 账本借记 → HMAC 回调 Entitlement webhook。
+
+### 运营前提
+
+1. 运行中的 **DoerFlow API**（含 Postgres 账本 + Redis，见 DoerFlow `ledger.env.example`）。
+2. DoerFlow 侧配置 `DOERFLOW_MERCHANT_ACCOUNT`（收款账本账户，0x 地址）。
+3. Entitlement 与 DoerFlow 共享 **service key** 与 **webhook HMAC secret**（见下表）。
+4. 买家 `subjectId`（Logto `sub`）须在 DoerFlow 有已链接的钱包账本账户。
+5. **CN 双重阻断**：`doerflow_credit` 归类为 crypto provider；客户端 IP **或** billing country 为 CN 时路由拒绝（须非 CN IP 且持久化 billing country 非 CN）。
+
+### Entitlement 凭证字段（admin API，加密入库）
+
+| 字段 | 说明 |
+|---|---|
+| `baseUrl` | DoerFlow API 基址（live 须 HTTPS；sandbox 允许 HTTP） |
+| `serviceKey` | 调用 merchant API 的 `X-Service-Key` |
+| `webhookSecret` | 验证 DoerFlow 出站 webhook 的 `x-lw-signature` |
+| `merchantAccount` | 必须与 DoerFlow `DOERFLOW_MERCHANT_ACCOUNT` 一致 |
+| `asset` | `USDC` \| `USDT` \| `PYUSD`（默认 `USDC`） |
+| `chainId` | 正整数链 id（如 Base `8453`） |
+
+### DoerFlow API 环境变量（非 PSP 密钥，产品 deploy env）
+
+| 变量 | 说明 |
+|---|---|
+| `DOERFLOW_MERCHANT_ACCOUNT` | 收款账本账户（0x） |
+| `DOERFLOW_CREDIT_CONFIG_ID` | Entitlement 中该 provider 配置行 UUID（拼 webhook URL） |
+| `DOERFLOW_CREDIT_WEBHOOK_SECRET` | 与 Entitlement `webhookSecret` 相同 |
+| `PAYMENT_SERVICE_KEY` | 与 Entitlement `serviceKey` 相同（dev 可回退 `PAYMENT_SERVICE_JWT_SECRET`） |
+| `ENTITLEMENT_BASE_URL` | Entitlement 基址（出站 webhook 目标） |
+
+### 行为
+
+- 创建：同步 `POST …/merchant/charges`（`X-Service-Key`）；返回 `action.type=ledger_debit`。余额不足 → `LEDGER_INSUFFICIENT_FUNDS`（402）。
+- 出站 webhook：DoerFlow → `POST /v1/payments/webhooks/doerflow_credit/:configId`，`x-lw-timestamp` / `x-lw-nonce` / `x-lw-signature: v1=` HMAC-SHA256 over `ts.nonce.rawBody`。
+- 入站验签：Entitlement 校验签名、`merchantAccount` 与凭证/订单快照一致、`eventId` 形如 `dfc_<32 hex>`。
+- 退款：`POST …/merchant/refunds`（账本内，可用余额范围内）。
+- Health：`POST /v1/admin/payments/providers/:id/test` 远程 `GET {baseUrl}/api/v1/payments/merchant/health`（`remote: true`）。
+
+### 沙箱
+
+DoerFlow `environment=sandbox` 时 `baseUrl` 可为 HTTP。配对一套独立的 service key / webhook secret / merchant account；**verify before enabling live**。
+
+---
+
+## 私有交付（无支付面）
+
+私有化 / on-prem 交付若 **完全不需要收款**：
+
+1. **Entitlement**：`PAYMENTS_ENABLED=false` — `PaymentsModule` 不注册，`POST /v1/payments/webhooks/*` 与 `/v1/admin/payments/*` 返回 **404**（非 403），`POST /v1/orders` 返回 `PAYMENT_PROVIDER_UNAVAILABLE`。
+2. **产品**：`ENTITLEMENT_MODE=offline_license` + Ed25519 License 文件与公钥环（见各产品 deploy 文档）；不要依赖中央订单 / PSP。
+3. 当前 control-plane Compose **没有**可单独关闭的支付 sidecar；`entitlement` 服务本身留在默认 profile（会员权威）。无支付面仅靠 `PAYMENTS_ENABLED=false` 摘除模块，**不要**为此虚构 `commerce` profile 服务。
+
+**禁止**：在客户部署中复用 LuminaryWorks 自有商户凭证、`PAYMENT_CONFIG_MASTER_KEY`、Creem/PayPal/支付宝密钥或 DoerFlow `DOERFLOW_MERCHANT_ACCOUNT`。客户须使用自己的 PSP 账户或保持支付关闭。
+
+---
+
 ## Admin 写入示例（密钥勿提交）
 
 ```http
@@ -337,6 +533,10 @@ OKX x402：`providerId=okx_onchain`，Facilitator HMAC 凭证 + `payTo` + `netwo
 
 BitPay：`providerId=bitpay`，POS token + HTTPS `notificationUrl`；IPN 只触发查单，发票 `complete` 才履约。退款还需 `privateKey` + `merchantToken` 走官方 SDK。
 
+Creem MoR：`providerId=creem`，`marketScopes=["GLOBAL"]`，`apiKey` + `webhookSecret` + `productId`；CN hosted 市场不在 allowlist。
+
+DoerFlow Credit：`providerId=doerflow_credit`，`baseUrl` + `serviceKey` + `webhookSecret` + `merchantAccount` + `chainId`；配对 DoerFlow `DOERFLOW_MERCHANT_ACCOUNT` / `PAYMENT_SERVICE_KEY` / `DOERFLOW_CREDIT_WEBHOOK_SECRET` / `DOERFLOW_CREDIT_CONFIG_ID`。
+
 轮换：`POST /v1/admin/payments/providers/:id/rotate`。旧密钥在 retiring 窗口内仍可用于验签。
 
 ---
@@ -346,6 +546,7 @@ BitPay：`providerId=bitpay`，POS token + HTTPS `notificationUrl`；IPN 只触�
 - 不要把支付宝/PayPal/微信/银联/Stripe/Coinbase/OKX/BitPay 密钥放进产品仓 `.env` 或浏览器。
 - 不要用客户端 `amountCents` / 自报已支付。
 - 不要在生产凭证里塞自定义 gateway / apiBase。
-- 不要把 Hosted 支付宝商户号复用到客户私有化部署。
+- 不要把 Hosted 支付宝商户号、Creem API key、`PAYMENT_CONFIG_MASTER_KEY` 或 `DOERFLOW_MERCHANT_ACCOUNT` 复用到客户私有化部署。
+- 私有交付用 `PAYMENTS_ENABLED=false` + `ENTITLEMENT_MODE=offline_license`，不要留 LuminaryWorks 运营中的 provider 配置行。
 - 不要跑对本文件的 live smoke；联调在沙箱用真实商户工具，不在 CI 打真实网关。
 - 本文不声称已对上述渠道做 live 商户验证。

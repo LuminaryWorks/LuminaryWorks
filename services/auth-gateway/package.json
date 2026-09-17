@@ -8,8 +8,8 @@
   "scripts": {
     "start": "node src/main.mjs",
     "dev": "node --watch src/main.mjs",
-    "check": "node --check src/main.mjs && node --check src/transport.mjs && node --check src/health.mjs",
-    "build": "node --check src/main.mjs && node --check src/transport.mjs && node --check src/health.mjs",
+    "check": "node --check src/main.mjs && node --check src/transport.mjs && node --check src/health.mjs && node --check src/register-abuse.mjs",
+    "build": "node --check src/main.mjs && node --check src/transport.mjs && node --check src/health.mjs && node --check src/register-abuse.mjs",
     "test": "node --test src/*.test.mjs"
   },
   "engines": {

@@ -4,6 +4,7 @@ import { DataSource, In, type Repository } from "typeorm";
 import type { BillingInterval } from "../../common/catalog-pricing";
 import type { PlanCode, SubjectKind } from "../../common/constants";
 import { EntitlementException } from "../../common/errors";
+import { assertPaymentsAvailable, assertPaymentsEnabled } from "../../common/payments-enabled";
 import { isDevManualProvider, isPaidLikeOrderStatus } from "../../common/payment-providers";
 import type { GeoContext } from "../../common/payment-geo";
 import { assertTrialPlanAllowed } from "../../common/trial-policy";
@@ -34,12 +35,12 @@ export class OrdersService {
     private readonly webhooks: Repository<WebhookEventEntity>,
     @InjectRepository(ProductEntity)
     private readonly products: Repository<ProductEntity>,
-    @Inject(PAYMENT_ADAPTERS) adapters: PaymentAdapter[],
+    @Optional() @Inject(PAYMENT_ADAPTERS) adapters: PaymentAdapter[] | undefined,
     private readonly audit: AuditService,
     private readonly catalog: CatalogService,
-    @Optional() private readonly payments: PaymentsService | null = null,
+    @Optional() private readonly payments?: PaymentsService,
   ) {
-    this.adapters = new Map(adapters.map((a) => [a.provider, a]));
+    this.adapters = new Map((adapters ?? []).map((a) => [a.provider, a]));
   }
 
   async createOrder(input: {
@@ -59,6 +60,7 @@ export class OrdersService {
     actor: string;
     requestId?: string;
   }): Promise<OrderEntity> {
+    assertPaymentsEnabled();
     if (input.planCode === "trial") {
       await this.assertDeclaredBundleProducts([input.productCode ?? ""]);
       await assertTrialPlanAllowed(this.products, input.productCode ?? "", input.planCode);
@@ -227,14 +229,21 @@ export class OrdersService {
       providerHint?: string;
     },
   ) {
-    if (this.payments && opts.geo) {
+    assertPaymentsEnabled();
+    if (this.payments) {
+      const geo = opts.geo ?? {
+        country: null,
+        source: "unknown" as const,
+        trustedProxy: false,
+        directPeerIp: null,
+      };
       return this.payments.startCheckout({
         orderId,
         actor: opts.actor,
         requestId: opts.requestId,
         expectedSubjectId: opts.expectedSubjectId,
         allowAnyOrder: opts.allowAnyOrder,
-        geo: opts.geo,
+        geo,
         providerHint: opts.providerHint,
       });
     }
@@ -293,12 +302,8 @@ export class OrdersService {
       } | null;
     },
   ) {
-    if (!this.payments) {
-      throw new EntitlementException(
-        "PAYMENT_PROVIDER_UNAVAILABLE",
-        "Payment completion requires the payments module",
-      );
-    }
+    assertPaymentsEnabled();
+    assertPaymentsAvailable(this.payments);
     return this.payments.completeCheckout({
       orderId,
       actor: opts.actor,
@@ -319,6 +324,7 @@ export class OrdersService {
     payload: Record<string, unknown>,
     opts: { actor: string; requestId?: string },
   ) {
+    assertPaymentsEnabled();
     if (!isDevManualProvider(provider)) {
       throw new EntitlementException(
         "NOT_FOUND",

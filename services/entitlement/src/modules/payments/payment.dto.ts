@@ -12,6 +12,7 @@ import {
   Min,
   MinLength,
 } from "class-validator";
+import { PAYER_TYPES } from "../../common/billing-profile";
 import { PAYMENT_ENVIRONMENTS, PAYMENT_PROVIDER_IDS } from "../../common/payment-providers";
 
 export class CreatePaymentProviderConfigDto {
@@ -123,6 +124,54 @@ export class BillingCountryDto {
   @MinLength(2)
   @MaxLength(2)
   country!: string;
+}
+
+export class UpsertBillingProfileDto {
+  @ApiPropertyOptional({ enum: PAYER_TYPES })
+  @IsOptional()
+  @IsString()
+  @IsIn([...PAYER_TYPES])
+  payerType?: "individual" | "business";
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(256)
+  companyName?: string;
+
+  @ApiPropertyOptional({ description: "VAT ID / USCC. Shape-only; not live-verified." })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  taxId?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(256)
+  addressLine1?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  city?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  postalCode?: string;
+
+  @ApiPropertyOptional({
+    example: "US",
+    description: "ISO 3166-1 alpha-2. Spec countryCode; stored as country.",
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(2)
+  country?: string;
 }
 
 export class AdminBillingCountryDto extends BillingCountryDto {

@@ -151,6 +151,52 @@ pre {
   padding: 0.75rem;
   overflow: auto;
 }
+.badge {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #e8eef6;
+  color: #122033;
+}
+.badge-warn {
+  background: #fff4d6;
+  color: #6b4e00;
+}
+.cap-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.mor-amounts {
+  background: #fff;
+  border: 1px solid #d7dee8;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+}
+.mor-amounts dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.75rem;
+  margin: 0.5rem 0 0;
+}
+.mor-amounts dt {
+  font-size: 0.78rem;
+  color: #5b6b7c;
+  margin: 0;
+}
+.mor-amounts dd {
+  margin: 0.15rem 0 0;
+  font-weight: 600;
+}
+.mor-amounts .gross dd {
+  color: #0b5cab;
+  font-size: 1.05rem;
+}
 @media (max-width: 800px) {
   .shell {
     grid-template-columns: 1fr;

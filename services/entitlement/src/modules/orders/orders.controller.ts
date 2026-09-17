@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req } from "@nestjs/common";
+import { Body, Controller, Get, Optional, Param, Post, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type { AuthPrincipal } from "../../auth/auth.types";
 import { REQUEST_ID_KEY, REQUEST_RAW_BODY_KEY } from "../../auth/auth.types";
@@ -15,14 +15,11 @@ import { OrdersService } from "./orders.service";
 export class OrdersController {
   constructor(
     private readonly orders: OrdersService,
-    private readonly geo: PaymentGeoService,
+    @Optional() private readonly geo: PaymentGeoService | null,
   ) {}
 
   @Get(":id")
-  get(
-    @CurrentPrincipal() principal: AuthPrincipal,
-    @Param("id") id: string,
-  ) {
+  get(@CurrentPrincipal() principal: AuthPrincipal, @Param("id") id: string) {
     const subject = this.resolveOrderSubject(principal);
     return this.orders.getOwnedOrder(id, {
       expectedSubjectId: subject.subjectId,
@@ -80,7 +77,13 @@ export class OrdersController {
       payload: body,
       expectedSubjectId: subject.subjectId,
       allowAnyOrder: principal.kind === "admin" || principal.kind === "service",
-      geo: this.geo.resolveFromRequest(req),
+      geo:
+        this.geo?.resolveFromRequest(req) ?? {
+          country: null,
+          source: "unknown",
+          trustedProxy: false,
+          directPeerIp: null,
+        },
       providerHint: hint,
     });
   }

@@ -28,7 +28,6 @@ export function LoginPage({
           config={config}
           productName="LuminaryWorks Control Console"
           showSocialConnectors={false}
-          showRegister={false}
           socialProviders={[]}
           mode="redirect"
           returnUrl="/"

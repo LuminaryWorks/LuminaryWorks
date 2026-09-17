@@ -1,10 +1,70 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorBanner, PageHeader } from "../components/ErrorBanner";
 import type { createApiClient } from "../lib/api-client";
 import { confirmDestructive } from "../lib/confirm";
+import { collectCreemAmounts } from "../lib/payment-providers";
 
 type Api = ReturnType<typeof createApiClient>;
+
+function formatMinorAmount(value: number | null): string {
+  if (value == null) return "—";
+  return String(value);
+}
+
+function CreemMorAmountsPanel({
+  detail,
+}: {
+  detail: {
+    order?: Record<string, unknown>;
+    attempts?: Record<string, unknown>[];
+    refunds?: Record<string, unknown>[];
+  };
+}) {
+  const { t } = useTranslation();
+  const order = detail.order;
+  const provider =
+    (typeof order?.paymentProvider === "string" && order.paymentProvider) ||
+    String(detail.attempts?.[0]?.provider ?? "");
+  if (provider !== "creem") return null;
+
+  const amounts = collectCreemAmounts(detail);
+  const hasBreakdown =
+    amounts.grossCents != null ||
+    amounts.taxCents != null ||
+    amounts.netCents != null;
+  if (!hasBreakdown) return null;
+
+  return (
+    <div className="mor-amounts">
+      <p>{t("orders.creemMorTitle")}</p>
+      <p className="muted">{t("orders.creemFulfilmentNote")}</p>
+      <dl>
+        <div className="gross">
+          <dt>{t("orders.grossAmount")}</dt>
+          <dd>{formatMinorAmount(amounts.grossCents)}</dd>
+        </div>
+        <div>
+          <dt>{t("orders.taxAmount")}</dt>
+          <dd>{formatMinorAmount(amounts.taxCents)}</dd>
+        </div>
+        <div>
+          <dt>{t("orders.netAmount")}</dt>
+          <dd>{formatMinorAmount(amounts.netCents)}</dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
+function rowProvider(
+  row: Record<string, unknown>,
+  tab: "orders" | "attempts" | "refunds",
+) {
+  if (tab === "orders") return String(row.paymentProvider ?? "");
+  if (tab === "attempts") return String(row.provider ?? "");
+  return String(row.provider ?? row.paymentProvider ?? "");
+}
 
 export function OrdersPage({ api }: { api: Api }) {
   const { t } = useTranslation();
@@ -40,6 +100,12 @@ export function OrdersPage({ api }: { api: Api }) {
   useEffect(() => {
     void load().catch(setError);
   }, [load]);
+
+  const detailProvider = useMemo(() => {
+    if (!detail) return "";
+    const order = detail.order as Record<string, unknown> | undefined;
+    return String(order?.paymentProvider ?? "");
+  }, [detail]);
 
   return (
     <section>
@@ -81,6 +147,7 @@ export function OrdersPage({ api }: { api: Api }) {
           <thead>
             <tr>
               <th>id</th>
+              <th>{t("providers.providerId")}</th>
               <th>{t("common.status")}</th>
               <th>{t("common.details")}</th>
             </tr>
@@ -89,6 +156,7 @@ export function OrdersPage({ api }: { api: Api }) {
             {rows.map((row) => (
               <tr key={String(row.id)}>
                 <td>{String(row.id)}</td>
+                <td>{rowProvider(row, tab)}</td>
                 <td>{String(row.status)}</td>
                 <td>
                   <button
@@ -127,6 +195,18 @@ export function OrdersPage({ api }: { api: Api }) {
       </p>
       {detail ? (
         <div className="stack">
+          <CreemMorAmountsPanel
+            detail={{
+              order: detail.order as Record<string, unknown> | undefined,
+              attempts: detail.attempts as
+                | Record<string, unknown>[]
+                | undefined,
+              refunds: detail.refunds as Record<string, unknown>[] | undefined,
+            }}
+          />
+          {detailProvider === "doerflow_credit" ? (
+            <p className="muted">{t("orders.doerflowCreditNote")}</p>
+          ) : null}
           <pre>{JSON.stringify(detail, null, 2)}</pre>
           <label>
             {t("common.reason")}
