@@ -34,7 +34,7 @@ test("expandPackTargets keeps products independent", () => {
 });
 
 test("control-plane pack lists the images compose will start", () => {
-  assert.ok(CONTROL_PLANE_PACK_IMAGES.includes("svhd/logto:1.22.0"));
+  assert.ok(CONTROL_PLANE_PACK_IMAGES.includes("luminaryworks/identity:1.22.0-lw1"));
   assert.equal(
     CONTROL_PLANE_PACK_IMAGES.some((image) => image.endsWith(":latest")),
     false,

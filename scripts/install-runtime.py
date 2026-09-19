@@ -1081,8 +1081,11 @@ def management_token_ok(endpoint: str, app_id: str, secret: str) -> bool:
         return False
 
 
-def run_identity_node(kit: Path, script: str) -> None:
+def run_identity_node(kit: Path, script: str, extra_env: dict | None = None) -> None:
     identity = kit / "identity"
+    env_args: list[str] = []
+    for key, value in (extra_env or {}).items():
+        env_args.extend(["-e", f"{key}={value}"])
     result = docker(
         "run",
         "--rm",
@@ -1094,6 +1097,7 @@ def run_identity_node(kit: Path, script: str) -> None:
         "/work",
         "-e",
         "IDENTITY_ACCOUNTS_PROFILE=product",
+        *env_args,
         NODE_IMAGE,
         "node",
         script,
@@ -1103,6 +1107,29 @@ def run_identity_node(kit: Path, script: str) -> None:
     sys.stderr.write(result.stderr or "")
     if result.returncode != 0:
         raise RuntimeError(f"{script} failed ({result.returncode})")
+
+
+def read_m_admin_secret(identity_db: str) -> str:
+    result = docker(
+        "exec",
+        identity_db,
+        "psql",
+        "-U",
+        "logto",
+        "-d",
+        "logto",
+        "-tAc",
+        "SET ROLE logto_tenant_logto_admin; SELECT secret FROM applications WHERE id = 'm-admin' LIMIT 1;",
+    )
+    secret = ""
+    for line in (result.stdout or "").splitlines():
+        value = line.strip()
+        if value and value != "SET":
+            secret = value
+            break
+    if not secret:
+        raise RuntimeError("admin tenant application m-admin secret missing")
+    return secret
 
 
 def bootstrap_identity(kit: Path) -> dict:
@@ -1119,6 +1146,15 @@ def bootstrap_identity(kit: Path) -> dict:
     run_identity_node(kit, "scripts/register-apps.mjs")
     print("[identity] ensure-sign-in-experience", flush=True)
     run_identity_node(kit, "scripts/ensure-sign-in-experience.mjs")
+    print("[identity] ensure-admin-console-branding", flush=True)
+    run_identity_node(
+        kit,
+        "scripts/ensure-admin-console-branding.mjs",
+        {
+            "IDENTITY_ADMIN_ENDPOINT": "http://127.0.0.1:3002",
+            "LOGTO_ADMIN_M2M_SECRET": read_m_admin_secret(identity_db),
+        },
+    )
     print("[identity] seed-accounts", flush=True)
     run_identity_node(kit, "scripts/seed-accounts.mjs")
     apply_product_public_env(kit)

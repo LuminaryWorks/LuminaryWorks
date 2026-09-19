@@ -83,9 +83,16 @@ services:
 
   # Identity = Logto. It exposes no /version endpoint of its own; the readiness
   # contract is the OIDC discovery document (see scripts/preflight-control-plane.mjs).
+  # Image is a brand overlay on official svhd/logto (static assets only; Logto
+  # source is untouched). Customer hosts run `--no-build --pull never`; `build:`
+  # is for the pack machine only.
   identity:
     <<: *restart
-    image: ${IDENTITY_IMAGE:-svhd/logto:1.22.0}
+    build:
+      context: ../../identity/branding
+      args:
+        LOGTO_VERSION: ${LOGTO_VERSION:-1.22.0}
+    image: ${IDENTITY_IMAGE:-luminaryworks/identity:1.22.0-lw1}
     depends_on:
       identity-db:
         condition: service_healthy

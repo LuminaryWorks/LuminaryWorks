@@ -6,8 +6,10 @@
 export const CONTROL_PLANE_PACK_IMAGES = [
   "postgres:16-alpine",
   "redis:7-alpine",
-  // Pin Logto — never ship floating :latest to pilot/production packs.
-  "svhd/logto:1.22.0",
+  // Brand overlay on official svhd/logto:1.22.0. Built locally on the pack
+  // machine (luminaryworks/ is never Hub-pulled). Version stays pinned —
+  // never ship floating :latest to pilot/production packs.
+  "luminaryworks/identity:1.22.0-lw1",
   "luminaryworks/auth-gateway:local",
   "luminaryworks/entitlement:local",
   "luminaryworks/control-console:local",

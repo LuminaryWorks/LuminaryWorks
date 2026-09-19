@@ -275,6 +275,8 @@ function packControlPlane(options, platform, packArch) {
         "IDENTITY_ADMIN_ENDPOINT=http://localhost:3002",
         "AUTH_GATEWAY_PUBLIC_URL=http://localhost:3010",
         "ENTITLEMENT_OIDC_ISSUER=http://localhost:3001/oidc",
+        "IDENTITY_IMAGE=luminaryworks/identity:1.22.0-lw1",
+        "LOGTO_VERSION=1.22.0",
         "AUTH_GATEWAY_IMAGE=luminaryworks/auth-gateway:local",
         "ENTITLEMENT_IMAGE=luminaryworks/entitlement:local",
         "CONTROL_CONSOLE_IMAGE=luminaryworks/control-console:local",
@@ -282,7 +284,7 @@ function packControlPlane(options, platform, packArch) {
         "",
       ].join("\n"),
     );
-    console.log(`[pack] building auth-gateway + entitlement + control-console (${platform}, npm=${npmRegistry})`);
+    console.log(`[pack] building identity + auth-gateway + entitlement + control-console (${platform}, npm=${npmRegistry})`);
     try {
       run("docker", [
         "compose",
@@ -291,6 +293,7 @@ function packControlPlane(options, platform, packArch) {
         "-f",
         "deploy/compose/control-plane.yaml",
         "build",
+        "identity",
         "auth-gateway",
         "entitlement",
         "control-console",

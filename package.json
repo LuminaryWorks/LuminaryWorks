@@ -28,6 +28,7 @@
     "cp:down": "docker compose --env-file deploy/env/control-plane.env -f deploy/compose/control-plane.yaml down",
     "cp:config": "docker compose --env-file deploy/env/control-plane.env -f deploy/compose/control-plane.yaml config",
     "id:probe": "node identity/scripts/probe-readiness.mjs",
+    "id:brand": "node identity/scripts/ensure-admin-console-branding.mjs",
     "test:contracts": "node --test scripts/lib/*.test.mjs",
     "preflight:scenario": "node scripts/preflight-scenario.mjs",
     "scenario:up": "node scripts/scenario-up.mjs",
