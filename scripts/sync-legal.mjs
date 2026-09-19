@@ -15,7 +15,12 @@ const ROOT = path.resolve(__dirname, "..");
 const SPEC_LEGAL = path.join(ROOT, "spec/legal");
 const WEBSITE_LEGAL = path.join(ROOT, "website/content/legal");
 
-const LOCALES = ["zh", "en"];
+/** spec/legal still uses `zh`; website stores Simplified Chinese as `zh-CN`. */
+const LOCALE_MAP = [
+  { spec: "zh", dest: "zh-CN", linkLocale: "zh-CN" },
+  { spec: "en", dest: "en", linkLocale: "en" },
+];
+
 const SLUGS = ["terms", "privacy", "trial-data-deletion"];
 
 const SLUG_FROM_FILE = {
@@ -30,15 +35,14 @@ function assertUtf8(text, fileLabel) {
   }
 }
 
-function localePath(locale, slug) {
-  return locale === "zh" ? `/legal/${slug}/` : `/en/legal/${slug}/`;
+function localePath(linkLocale, slug) {
+  return linkLocale === "zh-CN" ? `/legal/${slug}/` : `/en/legal/${slug}/`;
 }
 
-function rewriteLinks(markdown, locale) {
+function rewriteLinks(markdown, linkLocale) {
   return markdown.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (full, label, href) => {
     const trimmed = href.trim();
 
-    // Strip internal MetaRepo spec links — keep label text only
     if (
       trimmed.startsWith("../../") ||
       trimmed.startsWith("../decisions/") ||
@@ -52,13 +56,13 @@ function rewriteLinks(markdown, locale) {
     if (SLUG_FROM_FILE[fileName]) {
       const slug = SLUG_FROM_FILE[fileName];
       if (trimmed.startsWith("./")) {
-        return `[${label}](${localePath(locale, slug)})`;
+        return `[${label}](${localePath(linkLocale, slug)})`;
       }
       if (trimmed.startsWith("../en/")) {
         return `[${label}](${localePath("en", slug)})`;
       }
       if (trimmed.startsWith("../zh/")) {
-        return `[${label}](${localePath("zh", slug)})`;
+        return `[${label}](${localePath("zh-CN", slug)})`;
       }
     }
 
@@ -66,9 +70,9 @@ function rewriteLinks(markdown, locale) {
   });
 }
 
-function syncFile(locale, slug) {
-  const src = path.join(SPEC_LEGAL, locale, `${slug}.md`);
-  const dest = path.join(WEBSITE_LEGAL, locale, `${slug}.md`);
+function syncFile(specLocale, destLocale, linkLocale, slug) {
+  const src = path.join(SPEC_LEGAL, specLocale, `${slug}.md`);
+  const dest = path.join(WEBSITE_LEGAL, destLocale, `${slug}.md`);
 
   if (!fs.existsSync(src)) {
     throw new Error(`Missing source: ${src}`);
@@ -76,7 +80,7 @@ function syncFile(locale, slug) {
 
   const raw = fs.readFileSync(src, "utf8");
   assertUtf8(raw, src);
-  const rewritten = rewriteLinks(raw, locale);
+  const rewritten = rewriteLinks(raw, linkLocale);
   assertUtf8(rewritten, dest);
 
   return { src, dest, content: rewritten };
@@ -86,25 +90,25 @@ function main() {
   const checkOnly = process.argv.includes("--check");
   const synced = [];
 
-  for (const locale of LOCALES) {
+  for (const { spec, dest, linkLocale } of LOCALE_MAP) {
     for (const slug of SLUGS) {
-      const { src, dest, content } = syncFile(locale, slug);
+      const { src, dest: destPath, content } = syncFile(spec, dest, linkLocale, slug);
 
       if (checkOnly) {
-        if (!fs.existsSync(dest)) {
-          throw new Error(`Missing destination (run sync): ${dest}`);
+        if (!fs.existsSync(destPath)) {
+          throw new Error(`Missing destination (run sync): ${destPath}`);
         }
-        const existing = fs.readFileSync(dest, "utf8");
+        const existing = fs.readFileSync(destPath, "utf8");
         if (existing !== content) {
-          throw new Error(`Out of sync: ${dest} (source: ${src})`);
+          throw new Error(`Out of sync: ${destPath} (source: ${src})`);
         }
-        synced.push(dest);
+        synced.push(destPath);
         continue;
       }
 
-      fs.mkdirSync(path.dirname(dest), { recursive: true });
-      fs.writeFileSync(dest, content, "utf8");
-      synced.push(dest);
+      fs.mkdirSync(path.dirname(destPath), { recursive: true });
+      fs.writeFileSync(destPath, content, "utf8");
+      synced.push(destPath);
     }
   }
 

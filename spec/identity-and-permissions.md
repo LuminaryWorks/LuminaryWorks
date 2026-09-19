@@ -162,6 +162,16 @@ Product SPA  →  Luminary Auth SDK (@luminaryworks/auth-react)
 
 本地开发推荐：`AUTH_EXPERIENCE_URL=<SPA origin>` + `@luminaryworks/auth-dev-proxy` 直连 Logto `:3001`。生产与可售私有化包默认经 Gateway。注册、找回、MFA、企业 SSO 均走 IdP / Experience 能力，勿自造认证状态机。
 
+**MFA 策略（全生态）**：
+
+| 环境 | 策略 |
+|------|------|
+| 本地 / `IDENTITY_ACCOUNTS_PROFILE=dev` | **不强制 MFA**（`ensure-force-mfa --off`），便于 Headless 密码联调 |
+| 自动化测试 | 用例内临时 Mandatory + 可复现 TOTP，结束后恢复 |
+| 生产 / `product` / `LOGTO_FORCE_MFA=1` | **tenant Mandatory MFA**（TOTP + BackupCode），抑制恶意注册与资源浪费 |
+
+实现：`identity/scripts/ensure-force-mfa.mjs`；`bootstrap` 按 profile 自动开关。产品 Hosted 登录在强制 MFA 时走 Logto Hosted UI；Headless MFA 仍依赖 `@luminaryworks/auth-react` challenge API。
+
 **默认登录心智**：各产品登录页以「统一账号 / 企业 SSO」为主 CTA；本地账密仅 `ALLOW_LOCAL_LOGIN` 开发折叠入口，生产关闭。
 
 ### 3.3 多品牌
