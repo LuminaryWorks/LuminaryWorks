@@ -135,6 +135,7 @@ describe("hosted provider routing", () => {
     };
     expect(CN_HOSTED_ALLOWLIST).not.toContain("creem");
     expect(CN_HOSTED_ALLOWLIST).not.toContain("polar");
+    expect(CN_HOSTED_ALLOWLIST).not.toContain("paddle");
     expect(CN_HOSTED_ALLOWLIST).not.toContain("doerflow_credit");
     const cn = selectAvailableProviders({
       configs: [alipay, creem],

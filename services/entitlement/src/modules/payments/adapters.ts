@@ -362,5 +362,5 @@ export class UnimplementedPaymentAdapter implements PaymentAdapter {
   }
 }
 
-/** Paddle MoR stays out of this list until its adapter lands (D-PA-09 slot). */
+/** All registered ProviderIds have live adapters (Paddle MoR landed in D-PA-09). */
 export const UNIMPLEMENTED_PROVIDER_IDS: ProviderId[] = [];

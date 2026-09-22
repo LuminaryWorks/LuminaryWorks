@@ -109,6 +109,13 @@ export interface PolarCredentials {
   successUrl?: string;
 }
 
+export interface PaddleCredentials {
+  apiKey: string;
+  webhookSecret: string;
+  priceId: string;
+  successUrl?: string;
+}
+
 export type DoerflowCreditAsset = "USDC" | "USDT" | "PYUSD";
 
 export interface DoerflowCreditCredentials {
@@ -167,6 +174,10 @@ export function assertProviderCredentials(
   }
   if (providerId === "polar") {
     assertPolarCredentials(generic);
+    return generic;
+  }
+  if (providerId === "paddle") {
+    assertPaddleCredentials(generic);
     return generic;
   }
   if (providerId === "doerflow_credit") {
@@ -634,6 +645,34 @@ export function assertPolarCredentials(credentials: GenericCredentials): PolarCr
   const successUrl = optional(credentials, "successUrl");
   if (successUrl) assertHttpsUrl(successUrl, "successUrl");
   return { apiKey, webhookSecret, productId, successUrl };
+}
+
+export function assertPaddleCredentials(credentials: GenericCredentials): PaddleCredentials {
+  rejectCustomGateway(credentials, "paddle");
+  const apiKey = required(credentials, "apiKey");
+  if (!/^pdl_(sdbx|live)_apikey_[A-Za-z0-9_]+$/.test(apiKey) || apiKey.length < 24) {
+    throw new EntitlementException(
+      "VALIDATION_ERROR",
+      "paddle apiKey must be an official pdl_sdbx_apikey_ / pdl_live_apikey_ key",
+    );
+  }
+  const webhookSecret = required(credentials, "webhookSecret");
+  if (webhookSecret.length < 16) {
+    throw new EntitlementException(
+      "VALIDATION_ERROR",
+      "paddle webhookSecret is required for Paddle-Signature verification",
+    );
+  }
+  const priceId = required(credentials, "priceId");
+  if (!/^pri_[a-z0-9]+$/i.test(priceId)) {
+    throw new EntitlementException(
+      "VALIDATION_ERROR",
+      "paddle priceId must be the Paddle Billing catalog price id (pri_…)",
+    );
+  }
+  const successUrl = optional(credentials, "successUrl");
+  if (successUrl) assertHttpsUrl(successUrl, "successUrl");
+  return { apiKey, webhookSecret, priceId, successUrl };
 }
 
 const DOERFLOW_ASSETS: readonly DoerflowCreditAsset[] = ["USDC", "USDT", "PYUSD"];

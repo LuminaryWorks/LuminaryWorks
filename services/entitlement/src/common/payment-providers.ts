@@ -11,8 +11,7 @@ export const PAYMENT_PROVIDER_IDS = [
   "bitpay",
   "creem",
   "polar",
-  // Paddle MoR ProviderId slot (D-PA-09) — reserved; adapter deferred.
-  // "paddle",
+  "paddle",
   "doerflow_credit",
   "manual",
   "mock",
@@ -168,6 +167,16 @@ export const DEFAULT_PROVIDER_CAPABILITIES: Record<ProviderId, ProviderCapabilit
     requiresQueryBeforeFulfill: false,
   },
   polar: {
+    checkout: true,
+    webhook: true,
+    query: true,
+    refund: true,
+    partialRefund: true,
+    hostedUrl: true,
+    qr: false,
+    requiresQueryBeforeFulfill: false,
+  },
+  paddle: {
     checkout: true,
     webhook: true,
     query: true,

@@ -16,6 +16,7 @@ import {
   assertCoinbaseCommerceCredentials,
   assertCreemCredentials,
   assertOkxOnchainCredentials,
+  assertPaddleCredentials,
   assertPaypalCredentials,
   assertPolarCredentials,
   assertStripeCheckoutCredentials,
@@ -210,6 +211,14 @@ describe("payment credential envelope", () => {
         apiKey: "polar_oat_fixture_access_token01",
         webhookSecret: "polar_whsec_fixture_secret",
         productId: "00000000-0000-4000-8000-000000000001",
+        gatewayUrl: "https://evil.example",
+      }),
+    ).toThrow(EntitlementException);
+    expect(() =>
+      assertPaddleCredentials({
+        apiKey: "pdl_sdbx_apikey_01fixturekeyvaluefortests_only",
+        webhookSecret: "pdl_ntfset_fixture_webhook_secret",
+        priceId: "pri_01fixturepriceid0000000001",
         gatewayUrl: "https://evil.example",
       }),
     ).toThrow(EntitlementException);

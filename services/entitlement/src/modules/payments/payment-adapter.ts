@@ -1,8 +1,8 @@
 /**
  * Provider-neutral payment adapter contract (spec/payment-platform.md).
  * Alipay, PayPal, WeChat Pay v3, UnionPay/Cloud QuickPass, Stripe Checkout,
- * Coinbase Business Checkout, OKX x402, BitPay, Creem / Polar (MoR), and DoerFlow
- * credit are registered ProviderIds. Paddle MoR is a reserved slot only.
+ * Coinbase Business Checkout, OKX x402, BitPay, Creem / Polar / Paddle (MoR),
+ * and DoerFlow credit are registered ProviderIds.
  * Unimplemented adapters refuse checkout.
  * Keep credential crypto in PaymentConfigService.
  */

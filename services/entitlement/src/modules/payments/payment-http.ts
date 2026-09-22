@@ -66,6 +66,11 @@ export const POLAR_API_BASE = {
   sandbox: "https://sandbox-api.polar.sh/v1",
 } as const;
 
+export const PADDLE_API_BASE = {
+  live: "https://api.paddle.com",
+  sandbox: "https://sandbox-api.paddle.com",
+} as const;
+
 export function alipayAllowedHosts(): Set<string> {
   return new Set(
     [ALIPAY_GATEWAY.live, ...ALIPAY_SANDBOX_ALIASES].map((item) => new URL(item).hostname),
@@ -169,6 +174,16 @@ export function polarAllowedHosts(): Set<string> {
 
 export function officialPolarBase(environment: "sandbox" | "live"): string {
   return environment === "live" ? POLAR_API_BASE.live : POLAR_API_BASE.sandbox;
+}
+
+export function paddleAllowedHosts(): Set<string> {
+  return new Set(
+    [PADDLE_API_BASE.live, PADDLE_API_BASE.sandbox].map((item) => new URL(item).hostname),
+  );
+}
+
+export function officialPaddleBase(environment: "sandbox" | "live"): string {
+  return environment === "live" ? PADDLE_API_BASE.live : PADDLE_API_BASE.sandbox;
 }
 
 export function assertOfficialGatewayUrl(

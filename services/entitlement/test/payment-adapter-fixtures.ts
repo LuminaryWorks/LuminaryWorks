@@ -307,6 +307,29 @@ export function polarConfig(overrides: Partial<ProviderConfig> = {}): ProviderCo
   };
 }
 
+export function paddleConfig(overrides: Partial<ProviderConfig> = {}): ProviderConfig {
+  return {
+    id: "cfg-paddle",
+    providerId: "paddle",
+    environment: "sandbox",
+    enabled: true,
+    status: "active",
+    marketScopes: ["GLOBAL"],
+    currencies: ["USD"],
+    priority: 13,
+    capabilities: defaultCapabilities("paddle"),
+    merchantId: "paddle-seller",
+    credentials: {
+      apiKey: "pdl_sdbx_apikey_01fixturekeyvaluefortests_only",
+      webhookSecret: "pdl_ntfset_fixture_webhook_secret",
+      priceId: "pri_01fixturepriceid0000000001",
+      successUrl: "https://app.example.com/billing/checkout",
+    },
+    metadata: {},
+    ...overrides,
+  };
+}
+
 export function doerflowCreditConfig(overrides: Partial<ProviderConfig> = {}): ProviderConfig {
   return {
     id: "cfg-doerflow-credit",
