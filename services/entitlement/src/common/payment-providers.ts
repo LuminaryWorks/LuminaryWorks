@@ -10,6 +10,9 @@ export const PAYMENT_PROVIDER_IDS = [
   "okx_onchain",
   "bitpay",
   "creem",
+  "polar",
+  // Paddle MoR ProviderId slot (D-PA-09) — reserved; adapter deferred.
+  // "paddle",
   "doerflow_credit",
   "manual",
   "mock",
@@ -155,6 +158,16 @@ export const DEFAULT_PROVIDER_CAPABILITIES: Record<ProviderId, ProviderCapabilit
     requiresQueryBeforeFulfill: true,
   },
   creem: {
+    checkout: true,
+    webhook: true,
+    query: true,
+    refund: true,
+    partialRefund: true,
+    hostedUrl: true,
+    qr: false,
+    requiresQueryBeforeFulfill: false,
+  },
+  polar: {
     checkout: true,
     webhook: true,
     query: true,

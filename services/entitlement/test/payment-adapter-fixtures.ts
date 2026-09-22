@@ -284,6 +284,29 @@ export function creemConfig(overrides: Partial<ProviderConfig> = {}): ProviderCo
   };
 }
 
+export function polarConfig(overrides: Partial<ProviderConfig> = {}): ProviderConfig {
+  return {
+    id: "cfg-polar",
+    providerId: "polar",
+    environment: "sandbox",
+    enabled: true,
+    status: "active",
+    marketScopes: ["GLOBAL"],
+    currencies: ["USD"],
+    priority: 14,
+    capabilities: defaultCapabilities("polar"),
+    merchantId: "polar-org",
+    credentials: {
+      apiKey: "polar_oat_fixture_access_token01",
+      webhookSecret: "polar_whsec_fixture_secret",
+      productId: "00000000-0000-4000-8000-000000000001",
+      successUrl: "https://app.example.com/billing/return",
+    },
+    metadata: {},
+    ...overrides,
+  };
+}
+
 export function doerflowCreditConfig(overrides: Partial<ProviderConfig> = {}): ProviderConfig {
   return {
     id: "cfg-doerflow-credit",

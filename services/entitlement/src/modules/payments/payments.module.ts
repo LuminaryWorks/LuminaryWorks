@@ -48,6 +48,7 @@ import { PaypalPaymentAdapter } from "./paypal.adapter";
 import { PaymentsService } from "./payments.service";
 import { StripeCheckoutPaymentAdapter } from "./stripe-checkout.adapter";
 import { CreemPaymentAdapter } from "./creem.adapter";
+import { PolarPaymentAdapter } from "./polar.adapter";
 import { UnionpayQuickpassPaymentAdapter } from "./unionpay-quickpass.adapter";
 import { WechatPayV3PaymentAdapter } from "./wechat-pay-v3.adapter";
 
@@ -91,6 +92,7 @@ import { WechatPayV3PaymentAdapter } from "./wechat-pay-v3.adapter";
     OkxOnchainPaymentAdapter,
     BitpayPaymentAdapter,
     CreemPaymentAdapter,
+    PolarPaymentAdapter,
     DoerflowCreditPaymentAdapter,
     {
       provide: PAYMENT_ADAPTERS,
@@ -107,6 +109,7 @@ import { WechatPayV3PaymentAdapter } from "./wechat-pay-v3.adapter";
         okx: OkxOnchainPaymentAdapter,
         bitpay: BitpayPaymentAdapter,
         creem: CreemPaymentAdapter,
+        polar: PolarPaymentAdapter,
         doerflowCredit: DoerflowCreditPaymentAdapter,
       ) => [
         mock,
@@ -121,6 +124,7 @@ import { WechatPayV3PaymentAdapter } from "./wechat-pay-v3.adapter";
         okx,
         bitpay,
         creem,
+        polar,
         doerflowCredit,
         ...UNIMPLEMENTED_PROVIDER_IDS.map((provider) => new UnimplementedPaymentAdapter(provider)),
       ],
@@ -137,6 +141,7 @@ import { WechatPayV3PaymentAdapter } from "./wechat-pay-v3.adapter";
         OkxOnchainPaymentAdapter,
         BitpayPaymentAdapter,
         CreemPaymentAdapter,
+        PolarPaymentAdapter,
         DoerflowCreditPaymentAdapter,
       ],
     },
@@ -164,6 +169,7 @@ import { WechatPayV3PaymentAdapter } from "./wechat-pay-v3.adapter";
     OkxOnchainPaymentAdapter,
     BitpayPaymentAdapter,
     CreemPaymentAdapter,
+    PolarPaymentAdapter,
     DoerflowCreditPaymentAdapter,
   ],
 })

@@ -49,10 +49,22 @@ describe("billing profile payer type", () => {
 });
 
 describe("new provider plumbing", () => {
-  it("registers creem and doerflow_credit capabilities", () => {
+  it("registers creem, polar, and doerflow_credit capabilities", () => {
     expect(isProviderId("creem")).toBe(true);
+    expect(isProviderId("polar")).toBe(true);
     expect(isProviderId("doerflow_credit")).toBe(true);
+    expect(isProviderId("paddle")).toBe(false);
     expect(defaultCapabilities("creem")).toMatchObject({
+      checkout: true,
+      webhook: true,
+      query: true,
+      refund: true,
+      partialRefund: true,
+      hostedUrl: true,
+      qr: false,
+      requiresQueryBeforeFulfill: false,
+    });
+    expect(defaultCapabilities("polar")).toMatchObject({
       checkout: true,
       webhook: true,
       query: true,

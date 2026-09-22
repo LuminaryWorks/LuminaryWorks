@@ -102,6 +102,13 @@ export interface CreemCredentials {
   successUrl?: string;
 }
 
+export interface PolarCredentials {
+  apiKey: string;
+  webhookSecret: string;
+  productId: string;
+  successUrl?: string;
+}
+
 export type DoerflowCreditAsset = "USDC" | "USDT" | "PYUSD";
 
 export interface DoerflowCreditCredentials {
@@ -156,6 +163,10 @@ export function assertProviderCredentials(
   }
   if (providerId === "creem") {
     assertCreemCredentials(generic);
+    return generic;
+  }
+  if (providerId === "polar") {
+    assertPolarCredentials(generic);
     return generic;
   }
   if (providerId === "doerflow_credit") {
@@ -588,6 +599,36 @@ export function assertCreemCredentials(credentials: GenericCredentials): CreemCr
     throw new EntitlementException(
       "VALIDATION_ERROR",
       "creem productId must be the Creem catalog product id (prod_…)",
+    );
+  }
+  const successUrl = optional(credentials, "successUrl");
+  if (successUrl) assertHttpsUrl(successUrl, "successUrl");
+  return { apiKey, webhookSecret, productId, successUrl };
+}
+
+export function assertPolarCredentials(credentials: GenericCredentials): PolarCredentials {
+  rejectCustomGateway(credentials, "polar");
+  const apiKey = required(credentials, "apiKey");
+  if (!/^polar_(oat|pat|at)_[A-Za-z0-9_-]+$/.test(apiKey) || apiKey.length < 20) {
+    throw new EntitlementException(
+      "VALIDATION_ERROR",
+      "polar apiKey must be an official polar_oat_ / polar_pat_ Organization Access Token",
+    );
+  }
+  const webhookSecret = required(credentials, "webhookSecret");
+  if (webhookSecret.length < 16) {
+    throw new EntitlementException(
+      "VALIDATION_ERROR",
+      "polar webhookSecret is required for Standard Webhooks verification",
+    );
+  }
+  const productId = required(credentials, "productId");
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId)
+  ) {
+    throw new EntitlementException(
+      "VALIDATION_ERROR",
+      "polar productId must be the Polar catalog product UUID",
     );
   }
   const successUrl = optional(credentials, "successUrl");

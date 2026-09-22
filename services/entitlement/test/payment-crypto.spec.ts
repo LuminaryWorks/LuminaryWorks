@@ -17,6 +17,7 @@ import {
   assertCreemCredentials,
   assertOkxOnchainCredentials,
   assertPaypalCredentials,
+  assertPolarCredentials,
   assertStripeCheckoutCredentials,
   assertUnionpayQuickpassCredentials,
   assertWechatPayV3Credentials,
@@ -201,6 +202,14 @@ describe("payment credential envelope", () => {
         apiKey: "creem_test_fixtureapikeyvalue",
         webhookSecret: "creem_whsec_fixture_secret",
         productId: "prod_fixtureProduct01",
+        gatewayUrl: "https://evil.example",
+      }),
+    ).toThrow(EntitlementException);
+    expect(() =>
+      assertPolarCredentials({
+        apiKey: "polar_oat_fixture_access_token01",
+        webhookSecret: "polar_whsec_fixture_secret",
+        productId: "00000000-0000-4000-8000-000000000001",
         gatewayUrl: "https://evil.example",
       }),
     ).toThrow(EntitlementException);

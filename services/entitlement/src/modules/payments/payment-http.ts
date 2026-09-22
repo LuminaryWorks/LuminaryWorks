@@ -61,6 +61,11 @@ export const CREEM_API_BASE = {
   sandbox: "https://test-api.creem.io/v1",
 } as const;
 
+export const POLAR_API_BASE = {
+  live: "https://api.polar.sh/v1",
+  sandbox: "https://sandbox-api.polar.sh/v1",
+} as const;
+
 export function alipayAllowedHosts(): Set<string> {
   return new Set(
     [ALIPAY_GATEWAY.live, ...ALIPAY_SANDBOX_ALIASES].map((item) => new URL(item).hostname),
@@ -154,6 +159,16 @@ export function creemAllowedHosts(): Set<string> {
 
 export function officialCreemBase(environment: "sandbox" | "live"): string {
   return environment === "live" ? CREEM_API_BASE.live : CREEM_API_BASE.sandbox;
+}
+
+export function polarAllowedHosts(): Set<string> {
+  return new Set(
+    [POLAR_API_BASE.live, POLAR_API_BASE.sandbox].map((item) => new URL(item).hostname),
+  );
+}
+
+export function officialPolarBase(environment: "sandbox" | "live"): string {
+  return environment === "live" ? POLAR_API_BASE.live : POLAR_API_BASE.sandbox;
 }
 
 export function assertOfficialGatewayUrl(
