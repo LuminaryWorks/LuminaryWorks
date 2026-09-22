@@ -28,6 +28,8 @@ The control plane is **optional**. Every product ships and runs standalone with 
 | `PAYMENTS.md` | Alipay Face-to-Face / PayPal credential, sandbox/live, and callback ops |
 | `HOSTED-SAAS.md` | Single-VPS go-live: TLS, trusted proxy, MinIO watermarks, Doris Pilot, trial purge, N-1 rollback |
 | `WEBSITE-GO-LIVE.md` | 官网上线：`luminaryworks.dev` → Cloudflare Pages；docs 迁回 `docs.luminaryworks.dev`；法律 URL 与 Entitlement |
+| `vistaremote-clients.md` | VistaRemote Electron/RN：**GitHub 包烤 `*.remote.vistacast.dev`**；局域网包 `pnpm pack:lan` 不发 latest |
+| `native-client-login.md` | 全产品桌面/App：**Headless + 社交系统浏览器**（交互一致，品牌各异）；参考 VistaRemote Agent/Viewer |
 
 ## Quick start
 

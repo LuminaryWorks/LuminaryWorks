@@ -49,14 +49,24 @@ SITE_PRODUCTS = [
     "syncrobrain",
 ]
 BLOCKYEDU_PACK_IDS = ["syncrobrain", "dataluminary", "vistacast", "doerflow", "vistaremote"]
-DEFAULT_BLOCKYEDU_SEED = {"profile": "full-demo", "packs": list(BLOCKYEDU_PACK_IDS)}
+BLOCKYEDU_OER_CATALOG_IDS = ["oer-growth-v1"]
+DEFAULT_BLOCKYEDU_SEED = {
+    "profile": "full-demo",
+    "packs": list(BLOCKYEDU_PACK_IDS),
+    "oerGrowth": list(BLOCKYEDU_OER_CATALOG_IDS),
+}
 
 
 def resolve_blockyedu_seed(seed) -> dict:
     src = seed if isinstance(seed, dict) else {}
     profile = str(src.get("profile") or DEFAULT_BLOCKYEDU_SEED["profile"]).strip() or DEFAULT_BLOCKYEDU_SEED["profile"]
     packs = list(src["packs"]) if isinstance(src.get("packs"), list) else list(DEFAULT_BLOCKYEDU_SEED["packs"])
-    return {"profile": profile, "packs": packs}
+    oer_growth = (
+        list(src["oerGrowth"])
+        if isinstance(src.get("oerGrowth"), list)
+        else list(DEFAULT_BLOCKYEDU_SEED["oerGrowth"])
+    )
+    return {"profile": profile, "packs": packs, "oerGrowth": oer_growth}
 
 LOGIN_ACCOUNTS = [
     {

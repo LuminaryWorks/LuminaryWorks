@@ -17,6 +17,7 @@ import {
   VISTACAST_UNGRANTED_FEATURES,
   VISTAREMOTE_ENTERPRISE_ONLY_FEATURES,
   VISTAREMOTE_PLAN_LIMITS,
+  VISTAREMOTE_SESSION_FEATURE_CODE,
 } from "../src/database/seed-catalog";
 
 describe("gauge delta math", () => {
@@ -154,6 +155,12 @@ describe("planned gauge catalog", () => {
   it("seeds VistaRemote device and recording gauges", () => {
     const { product, features } = byCode("vistaremote");
     expect(features.get("device.limit")).toMatchObject({ meteringMode: "gauge" });
+    expect(features.get(VISTAREMOTE_SESSION_FEATURE_CODE)).toMatchObject({
+      kind: "quota",
+      meteringMode: "gauge",
+      quotaPeriod: "concurrent",
+    });
+    expect(features.has("session.concurrent")).toBe(false);
     expect(features.get("recording.storage.bytes")).toMatchObject({
       kind: "quota",
       meteringMode: "gauge",
@@ -172,6 +179,18 @@ describe("planned gauge catalog", () => {
     expect(ultra?.features.find((row) => row.code === "device.limit")?.limitValue).toBe(
       VISTAREMOTE_PLAN_LIMITS.ultra.devices,
     );
+    expect(
+      trial?.features.find((row) => row.code === VISTAREMOTE_SESSION_FEATURE_CODE)?.limitValue,
+    ).toBe(VISTAREMOTE_PLAN_LIMITS.trial.concurrentSessions);
+    expect(
+      pro?.features.find((row) => row.code === VISTAREMOTE_SESSION_FEATURE_CODE)?.limitValue,
+    ).toBe(VISTAREMOTE_PLAN_LIMITS.pro.concurrentSessions);
+    expect(
+      ultra?.features.find((row) => row.code === VISTAREMOTE_SESSION_FEATURE_CODE)?.limitValue,
+    ).toBe(VISTAREMOTE_PLAN_LIMITS.ultra.concurrentSessions);
+    expect(
+      enterprise?.features.find((row) => row.code === VISTAREMOTE_SESSION_FEATURE_CODE)?.limitValue,
+    ).toBe(VISTAREMOTE_PLAN_LIMITS.enterprise.concurrentSessions);
     expect(trial?.features.find((row) => row.code === "recording.storage.bytes")?.limitValue).toBe(
       STORAGE_BYTE_LIMITS.vistaremote.recording.trial,
     );

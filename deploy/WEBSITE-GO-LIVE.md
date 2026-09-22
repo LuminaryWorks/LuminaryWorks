@@ -143,7 +143,7 @@ https://luminaryworks.dev/legal
 | 项 | 说明 |
 |----|------|
 | **商务邮箱** | 官网「联系商务」为 `admin@luminaryworks.dev` — 需确认该地址真实可收信（MX / 转发）。 |
-| **VistaRemote 域名** | 品牌口径为 **`remote.vistacast.dev`**；安装向导默认 `deploy/luminaryworks-install/hosts.defaults.json` 为 **`vistaremote.vistacast.dev`**。运维按实际 DNS 对齐，勿混用未解析主机名。 |
+| **VistaRemote 域名** | 品牌口径为 **`remote.vistacast.dev`**；产品 API 为 **`api.remote.vistacast.dev`**。安装向导默认 `vistaremote.vistacast.dev`。Electron/RN GitHub 包见 [`vistaremote-clients.md`](./vistaremote-clients.md)。没有 `vistaremote.vistacast.com`。 |
 
 ---
 

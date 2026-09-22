@@ -482,10 +482,13 @@ blocky = ((site.get("products") or {}).get("blockyedu") or {})
 if product == "blockyedu" and blocky.get("enabled"):
     seed = blocky.get("seed") or {}
     default_packs = ["syncrobrain", "dataluminary", "vistacast", "doerflow", "vistaremote"]
+    default_oer = ["oer-growth-v1"]
     packs = seed["packs"] if isinstance(seed.get("packs"), list) else default_packs
+    oer_growth = seed["oerGrowth"] if isinstance(seed.get("oerGrowth"), list) else default_oer
     patches = {
         "EDU_SEED_PROFILE": str(seed.get("profile") or "full-demo"),
         "EDU_SEED_PACKS": ",".join(str(p) for p in packs),
+        "EDU_OER_GROWTH": ",".join(str(c) for c in oer_growth),
         "ALLOW_LOCAL_LOGIN": "false",
     }
     for env_path in list(root.rglob("*.env")):

@@ -130,6 +130,17 @@ LuminaryWorks IAM Adapter
 | Hosted Redirect | 企业 OIDC 或不提供 Headless API 的 IdP 默认路径 |
 | 自研完整 IAM | 禁止 |
 
+### 3.2 桌面 / 移动壳：社交登录走系统浏览器（RFC 8252）
+
+Web SPA 继续用同页 `mode="redirect"` / popup。**Electron / RN 等原生壳**对 Google / GitHub（及 Hosted SSO）必须：
+
+1. `HeadlessLoginPanel` `mode="external"` + `openExternalUrl`（系统浏览器 / Custom Tabs / ASWebAuthenticationSession）
+2. Logto 回调到已登记的 **loopback**（如 `http://127.0.0.1:17892/auth/callback`）或 **custom scheme**
+3. 壳把回调 URL 交回应用窗（PKCE `localStorage` 与 `prepareSignInRequestUrl` 同窗），浏览器页仅提示「可关闭」
+4. **账密 Headless 仍在应用内**（Experience API）
+
+共享实现：`@luminaryworks/auth-react` ≥ 0.5.0。参考：VistaRemote Electron Agent（`:17891`）与 Viewer（`:17892`）。操作清单：[deploy/native-client-login.md](../deploy/native-client-login.md)。DoerFlow / VistaCast / BlockyEdu 等桌面与 App 按同一契约接入，勿再嵌 WebView 做社交 OAuth。
+
 ### 3.1 Experience API vs Management API
 
 | | Experience API | Management API |

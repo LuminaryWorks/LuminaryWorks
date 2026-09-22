@@ -9,6 +9,8 @@ import {
   DOERFLOW_TOC_UNSOLD_FEATURE_CODES,
   SAMPLE_BUNDLE,
   SEED_OFFERINGS,
+  VISTAREMOTE_PLAN_LIMITS,
+  VISTAREMOTE_SESSION_FEATURE_CODE,
   doerflowIntegrationPlanFeatures,
 } from "../src/database/seed-catalog";
 import { applyCatalog } from "../src/database/seed-apply";
@@ -314,6 +316,19 @@ describe("applyCatalog idempotency", () => {
     expect(enterpriseMapping?.limitValue).toBe(
       String(DOERFLOW_INTEGRATION_QUOTAS.enterprise.eventMonthly),
     );
+
+    const vistaremote = products.find((product) => product.code === "vistaremote");
+    const sessionFeature = features.find(
+      (feature) =>
+        feature.productId === vistaremote?.id && feature.code === VISTAREMOTE_SESSION_FEATURE_CODE,
+    );
+    expect(sessionFeature?.quotaPeriod).toBe("concurrent");
+    expect(sessionFeature?.meteringMode).toBe("gauge");
+    const vrPro = plans.find((plan) => plan.productId === vistaremote?.id && plan.code === "pro");
+    expect(
+      planFeatures.find((row) => row.planId === vrPro?.id && row.featureId === sessionFeature?.id)
+        ?.limitValue,
+    ).toBe(String(VISTAREMOTE_PLAN_LIMITS.pro.concurrentSessions));
   });
 
   it("re-seed prunes stale Pro provider/event write mappings", async () => {

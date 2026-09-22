@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import {
+  BLOCKYEDU_OER_CATALOG_IDS,
   BLOCKYEDU_PACK_IDS,
   DEFAULT_BLOCKYEDU_SEED,
   enabledPackTargets,
@@ -47,6 +48,7 @@ test("BlockyEdu seed patches course packs without passwords", () => {
   assert.deepEqual(seedEnvPatches(intent).blockyedu, {
     EDU_SEED_PROFILE: "none",
     EDU_SEED_PACKS: "syncrobrain,dataluminary",
+    EDU_OER_GROWTH: BLOCKYEDU_OER_CATALOG_IDS.join(","),
     ALLOW_LOCAL_LOGIN: "false",
   });
 });
@@ -63,8 +65,23 @@ test("enabled BlockyEdu without seed follows AI demo plus all course packs", () 
   assert.deepEqual(seedEnvPatches(intent).blockyedu, {
     EDU_SEED_PROFILE: "full-demo",
     EDU_SEED_PACKS: BLOCKYEDU_PACK_IDS.join(","),
+    EDU_OER_GROWTH: BLOCKYEDU_OER_CATALOG_IDS.join(","),
     ALLOW_LOCAL_LOGIN: "false",
   });
+});
+
+test("explicit empty BlockyEdu oerGrowth means no OER catalog", () => {
+  const intent = parseSiteIntent({
+    publicHost: "app.example.com",
+    platform: "linux/amd64",
+    protocol: "https",
+    products: {
+      blockyedu: { enabled: true, seed: { profile: "full-demo", packs: ["syncrobrain"], oerGrowth: [] } },
+    },
+  });
+  assert.equal(intent.ok, true, JSON.stringify(intent.issues));
+  assert.deepEqual(intent.products.blockyedu.seed.oerGrowth, []);
+  assert.equal(seedEnvPatches(intent).blockyedu.EDU_OER_GROWTH, "");
 });
 
 test("explicit empty BlockyEdu packs means no platform packs", () => {

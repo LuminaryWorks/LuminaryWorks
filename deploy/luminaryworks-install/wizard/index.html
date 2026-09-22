@@ -83,7 +83,19 @@
         if (host) draft.hosts[item.id] = host.value.trim();
       }
       if (draft.products.blockyedu) {
-        draft.products.blockyedu.seed = (state.products.blockyedu && state.products.blockyedu.seed) || { profile: "full-demo", packs: ["syncrobrain", "dataluminary", "vistacast", "doerflow", "vistaremote"] };
+        const prevSeed =
+          draft.products.blockyedu.seed ||
+          (state.products.blockyedu && state.products.blockyedu.seed) ||
+          { profile: "full-demo", packs: ["syncrobrain", "dataluminary", "vistacast", "doerflow", "vistaremote"], oerGrowth: ["oer-growth-v1"] };
+        const oerBoxes = document.querySelectorAll("[data-oer]");
+        const oerGrowth = oerBoxes.length
+          ? Array.from(oerBoxes).filter((el) => el.checked).map((el) => el.getAttribute("data-oer"))
+          : Array.isArray(prevSeed.oerGrowth) ? prevSeed.oerGrowth : ["oer-growth-v1"];
+        draft.products.blockyedu.seed = {
+          profile: prevSeed.profile || "full-demo",
+          packs: Array.isArray(prevSeed.packs) ? prevSeed.packs : ["syncrobrain", "dataluminary", "vistacast", "doerflow", "vistaremote"],
+          oerGrowth,
+        };
       }
       for (const item of state.accounts || []) {
         const email = document.querySelector(`[data-email="${item.product}"]`);
@@ -161,8 +173,31 @@
       const update = () => {
         capture();
         const el = document.getElementById("ip-access-alert");
-        if (!el) return;
-        el.outerHTML = accessAlertHtml();
+        if (el) el.outerHTML = accessAlertHtml();
+        const wrap = document.getElementById("blockyedu-seed-wrap");
+        if (!wrap) return;
+        const on = draft.products.blockyedu && draft.products.blockyedu.enabled;
+        if (!on) {
+          wrap.innerHTML = "";
+          return;
+        }
+        if (!wrap.querySelector("[data-oer]")) {
+          const seed = (draft.products.blockyedu && draft.products.blockyedu.seed)
+            || (state.products.blockyedu && state.products.blockyedu.seed)
+            || { oerGrowth: ["oer-growth-v1"] };
+          const oerOn = Array.isArray(seed.oerGrowth) ? seed.oerGrowth.includes("oer-growth-v1") : true;
+          wrap.innerHTML = `<div class="prod" id="blockyedu-seed-row" style="border-bottom:none;padding-top:4px">
+          <div style="width:18px"></div>
+          <div style="flex:1;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:12px 14px">
+            <label style="margin:0 0 6px">BlockyEdu 获客公开课</label>
+            <label style="font-weight:500;display:flex;gap:8px;align-items:flex-start;margin:0">
+              <input type="checkbox" data-oer="oer-growth-v1" ${oerOn ? "checked" : ""} style="margin-top:3px" />
+              <span>导入 OER Growth v1（10 门公开课）。默认勾选；取消勾选则首次部署不导入。</span>
+            </label>
+            <p class="note">写入 <code>EDU_OER_GROWTH</code>。与平台课包、演示种子正交。</p>
+          </div>
+        </div>`;
+        }
       };
       document.querySelectorAll("[data-host], [data-enabled], #protocol, #publicHost").forEach((el) => {
         el.addEventListener("input", update);
@@ -184,6 +219,21 @@
           </div>
         </div>`;
       }).join("");
+      const seed = (draft.products.blockyedu && draft.products.blockyedu.seed)
+        || (state.products.blockyedu && state.products.blockyedu.seed)
+        || { oerGrowth: ["oer-growth-v1"] };
+      const oerOn = Array.isArray(seed.oerGrowth) ? seed.oerGrowth.includes("oer-growth-v1") : true;
+      const blockyeduSeed = `<div class="prod" id="blockyedu-seed-row" style="border-bottom:none;padding-top:4px">
+          <div style="width:18px"></div>
+          <div style="flex:1;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:12px 14px">
+            <label style="margin:0 0 6px">BlockyEdu 获客公开课</label>
+            <label style="font-weight:500;display:flex;gap:8px;align-items:flex-start;margin:0">
+              <input type="checkbox" data-oer="oer-growth-v1" ${oerOn ? "checked" : ""} style="margin-top:3px" />
+              <span>导入 OER Growth v1（10 门公开课）。默认勾选；取消勾选则首次部署不导入。</span>
+            </label>
+            <p class="note">写入 <code>EDU_OER_GROWTH</code>。与平台课包、演示种子正交。</p>
+          </div>
+        </div>`;
       const dockerHint = state.checks.docker
         ? "Docker 已就绪（不会卸载已有 Docker）。"
         : "本机没有 Docker 时，开始安装会安装 Engine，不会删除已有软件。";
@@ -194,7 +244,8 @@
           <div><label>协议</label><select id="protocol"><option value="https" ${(draft.protocol || state.protocol) !== "http" ? "selected" : ""}>https</option><option value="http" ${(draft.protocol || state.protocol) === "http" ? "selected" : ""}>http（仅应急 IP）</option></select></div>
         </div>
         ${accessAlertHtml()}
-        ${rows}`;
+        ${rows}
+        <div id="blockyedu-seed-wrap">${(state.products.blockyedu && state.products.blockyedu.enabled) || (draft.products.blockyedu && draft.products.blockyedu.enabled) ? blockyeduSeed : ""}</div>`;
     }
 
     function viewLogins() {

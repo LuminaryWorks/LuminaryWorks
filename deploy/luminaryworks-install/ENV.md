@@ -66,8 +66,9 @@ BlockyEdu 课包用 `products.blockyedu.seed`，不要写到 Identity 账号文�
 
 - `EDU_SEED_PROFILE=full-demo` — AI 口语 / 英语演示课 + Python 等 LMS 演示目录
 - `EDU_SEED_PACKS=syncrobrain,dataluminary,vistacast,doerflow,vistaremote` — 平台 Markdown 课包（已打进 kit 的 `products/blockyedu/edu-server/content/course-packs/`）
+- `EDU_OER_GROWTH=oer-growth-v1` — 获客公开课（安装表单默认勾选；`seed.oerGrowth: []` 则写入空字符串，不导入）
 
-只要 `packs: []` 才不导入课包。`profile: none` 关闭演示目录，但仍可只导入课包。
+只要 `packs: []` 才不导入课包。`profile: none` 关闭演示目录，但仍可只导入课包或获客公开课。
 
 ## 不要开
 

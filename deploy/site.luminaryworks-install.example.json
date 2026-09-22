@@ -23,7 +23,8 @@
       "enabled": false,
       "seed": {
         "profile": "full-demo",
-        "packs": ["syncrobrain", "dataluminary", "vistacast", "doerflow", "vistaremote"]
+        "packs": ["syncrobrain", "dataluminary", "vistacast", "doerflow", "vistaremote"],
+        "oerGrowth": ["oer-growth-v1"]
       }
     },
     "doerflow": { "enabled": false },

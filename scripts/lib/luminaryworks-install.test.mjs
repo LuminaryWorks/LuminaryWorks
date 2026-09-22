@@ -185,6 +185,7 @@ test("luminaryworks-install site example is a checkbox with control-plane only",
     "doerflow",
     "vistaremote",
   ]);
+  assert.deepEqual(raw.products.blockyedu.seed.oerGrowth, ["oer-growth-v1"]);
 });
 
 test("install-runtime.py patches public IdP URLs and accept.sh wraps it", () => {

@@ -10,6 +10,8 @@ import {
   DOERFLOW_INTEGRATION_FEATURE_CODES,
   DOERFLOW_INTEGRATION_QUOTAS,
   DOERFLOW_INTEGRATION_WRITE_CODES,
+  VISTAREMOTE_PLAN_LIMITS,
+  VISTAREMOTE_SESSION_FEATURE_CODE,
 } from "../src/database/seed-catalog";
 import {
   type ActiveSource,
@@ -282,9 +284,9 @@ describe("trial expired denial reason", () => {
   });
 });
 
-function doerflowPlanFeatureMap(): Map<PlanCode, PlanFeatureDef[]> {
-  const product = CATALOG.find((item) => item.code === "doerflow");
-  if (!product) throw new Error("missing doerflow catalog");
+function catalogPlanFeatureMap(productCode: string): Map<PlanCode, PlanFeatureDef[]> {
+  const product = CATALOG.find((item) => item.code === productCode);
+  if (!product) throw new Error(`missing ${productCode} catalog`);
   const meta = new Map(product.features.map((feature) => [feature.code, feature]));
   const map = new Map<PlanCode, PlanFeatureDef[]>();
   for (const plan of product.plans) {
@@ -305,6 +307,27 @@ function doerflowPlanFeatureMap(): Map<PlanCode, PlanFeatureDef[]> {
     );
   }
   return map;
+}
+
+function catalogQuotaMeta(productCode: string) {
+  const product = CATALOG.find((item) => item.code === productCode);
+  if (!product) throw new Error(`missing ${productCode} catalog`);
+  return new Map(
+    product.features
+      .filter((feature) => feature.kind === "quota")
+      .map((feature) => [
+        feature.code,
+        {
+          period: feature.quotaPeriod ?? ("lifetime" as const),
+          merge: feature.quotaMerge ?? ("max" as const),
+          meteringMode: feature.meteringMode,
+        },
+      ]),
+  );
+}
+
+function doerflowPlanFeatureMap(): Map<PlanCode, PlanFeatureDef[]> {
+  return catalogPlanFeatureMap("doerflow");
 }
 
 function subscriptionSource(id: string, planCode: PlanCode): ActiveSource {
@@ -365,5 +388,49 @@ describe("DoerFlow integration resolution", () => {
     expect(merged.quotas[DOERFLOW_INTEGRATION_FEATURE_CODES.apiMonthly]?.limit).toBe(
       DOERFLOW_INTEGRATION_QUOTAS.enterprise.apiMonthly,
     );
+  });
+});
+
+describe("VistaRemote remote.session resolution", () => {
+  const planFeatures = catalogPlanFeatureMap("vistaremote");
+  const catalogQuotas = catalogQuotaMeta("vistaremote");
+
+  it("resolves concurrent session limits per plan after merge", () => {
+    const expected: Array<[PlanCode, number]> = [
+      ["trial", VISTAREMOTE_PLAN_LIMITS.trial.concurrentSessions],
+      ["pro", VISTAREMOTE_PLAN_LIMITS.pro.concurrentSessions],
+      ["ultra", VISTAREMOTE_PLAN_LIMITS.ultra.concurrentSessions],
+      ["enterprise", VISTAREMOTE_PLAN_LIMITS.enterprise.concurrentSessions],
+    ];
+    for (const [planCode, limit] of expected) {
+      const merged = mergeFeatureMaps(
+        [subscriptionSource(`${planCode}-1`, planCode)],
+        planFeatures,
+        catalogQuotas,
+      );
+      expect(merged.quotas[VISTAREMOTE_SESSION_FEATURE_CODE]?.limit).toBe(limit);
+      expect(merged.quotas[VISTAREMOTE_SESSION_FEATURE_CODE]?.period).toBe("concurrent");
+      expect(merged.quotas[VISTAREMOTE_SESSION_FEATURE_CODE]?.meteringMode).toBe("gauge");
+      expect(merged.quotas["session.concurrent"]).toBeUndefined();
+    }
+  });
+
+  it("takes max remote.session when Pro and Ultra union", () => {
+    const merged = mergeFeatureMaps(
+      [subscriptionSource("pro-1", "pro"), subscriptionSource("ultra-1", "ultra")],
+      planFeatures,
+      catalogQuotas,
+    );
+    expect(merged.quotas[VISTAREMOTE_SESSION_FEATURE_CODE]?.limit).toBe(
+      VISTAREMOTE_PLAN_LIMITS.ultra.concurrentSessions,
+    );
+  });
+
+  it("does not add remote.session to other product catalogs", () => {
+    for (const product of CATALOG.filter((item) => item.code !== "vistaremote")) {
+      expect(
+        product.features.some((feature) => feature.code === VISTAREMOTE_SESSION_FEATURE_CODE),
+      ).toBe(false);
+    }
   });
 });

@@ -10,7 +10,7 @@
 | D-N1 | Notification 是**平台级**能力，不属于任一产品后台 | `@luminaryworks/notification` |
 | D-N2 | **一期**：共享 NestJS 代码包，随产品进程部署 | `LuminaryWorks/shared/packages/notification` |
 | D-N3 | **后期**：独立 `notification-service`（K8s / HTTP / 事件） | 保持契约不变，换实现 |
-| D-N4 | 一期只实现 **Email**；Slack / Teams / Webhook / SMS 仅保留通道枚举 | 扩展点不写死实现 |
+| D-N4 | 一期 Email + 群机器人 **WeCom / Feishu / DingTalk**（`sendImWebhook`，无 Nest）；Slack / Teams / 通用 Webhook / SMS 仍仅枚举 | 扩展点不写死实现 |
 | D-N5 | **不引入** BullMQ、独立 DB、独立 HTTP 服务 | 用户量上来后再加队列 |
 | D-N6 | SMTP 凭据只进环境变量 / Secret，**禁止**写入源码或示例真实值 | 见 §5 |
 

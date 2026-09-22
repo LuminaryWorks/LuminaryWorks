@@ -116,7 +116,7 @@ pnpm pack:luminaryworks
 
 `site.json` **不要写密码**。管理员密码未填则随机生成，到 `identity/ACCOUNTS.product.env` 或安装完成后的 CSV 查找。
 
-源码 kit 的 tar 大约几十到一百 MiB 是正常的：六个产品源码都在 `products/`，不含 `node_modules` 和镜像。BlockyEdu 勾选后默认 `seed.profile=full-demo`（含 AI 课）并导入全部平台课包；详见 [`luminaryworks-install/README.md`](luminaryworks-install/README.md)。
+源码 kit 的 tar 大约几十到一百 MiB 是正常的：六个产品源码都在 `products/`，不含 `node_modules` 和镜像。BlockyEdu 勾选后默认 `seed.profile=full-demo`（含 AI 课）、导入全部平台课包，并**默认勾选**获客公开课 `oer-growth-v1`；详见 [`luminaryworks-install/README.md`](luminaryworks-install/README.md)。
 
 ### 4.2 断网离线镜像包（U 盘 / 内网导入）
 
@@ -324,6 +324,7 @@ HMAC、M2M 密钥 **按产品复制**，见场景包 `peers.secrets.env`（不�
 | 套餐目录 | Entitlement 镜像启动时的 catalog seed | 控制面包，无需再填课 |
 | BlockyEdu 演示 LMS | 产品 env `EDU_SEED_PROFILE=full-demo\|none` | 由 `site.json` 打印出的值写入 BlockyEdu `.env` |
 | BlockyEdu 平台课包（含 SyncroBrain 实体课） | `EDU_SEED_PACKS=syncrobrain,dataluminary,…` | 随 edu-server 镜像里的 Markdown 包幂等导入 |
+| BlockyEdu 获客公开课（OER Growth） | `EDU_OER_GROWTH=oer-growth-v1`（安装表单默认勾选） | `origin=oer-growth`；取消勾选写入空字符串 |
 | DataLuminary 获客 Demo 库 | 产品自己的 `demo:data` 流程，默认 **不上** 生产库 | 不要写进 `data_talk` |
 
 运维怎么填：

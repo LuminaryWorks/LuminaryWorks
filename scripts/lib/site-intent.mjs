@@ -65,19 +65,26 @@ export const BLOCKYEDU_PACK_IDS = [
   "vistaremote",
 ];
 
+/** Catalog ids under edu-server/content/oer-growth/ — install wizard checkboxes. */
+export const BLOCKYEDU_OER_CATALOG_IDS = ["oer-growth-v1"];
+
 export const BLOCKYEDU_SEED_PROFILES = ["full-demo", "catalog-demo", "none"];
 
-/** Private-install default: AI / LMS demo catalog plus every platform Markdown pack. */
+/** Private-install default: AI / LMS demo, every platform pack, and OER growth catalog. */
 export const DEFAULT_BLOCKYEDU_SEED = {
   profile: "full-demo",
   packs: [...BLOCKYEDU_PACK_IDS],
+  oerGrowth: [...BLOCKYEDU_OER_CATALOG_IDS],
 };
 
 export function resolveBlockyeduSeed(seed) {
   const src = seed && typeof seed === "object" && !Array.isArray(seed) ? seed : {};
   const profile = String(src.profile || DEFAULT_BLOCKYEDU_SEED.profile).trim() || DEFAULT_BLOCKYEDU_SEED.profile;
   const packs = Array.isArray(src.packs) ? src.packs.map(String) : [...DEFAULT_BLOCKYEDU_SEED.packs];
-  return { profile, packs };
+  const oerGrowth = Array.isArray(src.oerGrowth)
+    ? src.oerGrowth.map(String)
+    : [...DEFAULT_BLOCKYEDU_SEED.oerGrowth];
+  return { profile, packs, oerGrowth };
 }
 
 const SECRET_KEY = /password|secret|token|private[_-]?key|credential|api[_-]?key/i;
@@ -243,6 +250,18 @@ export function parseSiteIntent(raw) {
         issues.push(issue("error", "unknown_edu_pack", "products.blockyedu.seed.packs", `Unknown pack "${pack}"`));
       }
     }
+    for (const catalog of resolved.oerGrowth) {
+      if (!BLOCKYEDU_OER_CATALOG_IDS.includes(catalog)) {
+        issues.push(
+          issue(
+            "error",
+            "unknown_edu_oer_catalog",
+            "products.blockyedu.seed.oerGrowth",
+            `Unknown OER catalog "${catalog}"`,
+          ),
+        );
+      }
+    }
     blocky.seed = resolved;
   }
 
@@ -278,6 +297,7 @@ export function seedEnvPatches(intent) {
     patches.blockyedu = {
       EDU_SEED_PROFILE: resolved.profile,
       EDU_SEED_PACKS: resolved.packs.join(","),
+      EDU_OER_GROWTH: resolved.oerGrowth.join(","),
       ALLOW_LOCAL_LOGIN: "false",
     };
   }

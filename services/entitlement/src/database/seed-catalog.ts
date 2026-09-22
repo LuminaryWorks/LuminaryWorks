@@ -170,14 +170,20 @@ export const STORAGE_BYTE_LIMITS = {
 } as const;
 
 /**
- * VistaRemote ToC gauges. Trial matches Pro on device.limit.
+ * Canonical concurrent remote-session gauge (not org member seats).
+ * Alias (docs/local shadow only): `session.concurrent`. Seed primary key is `remote.session`.
+ */
+export const VISTAREMOTE_SESSION_FEATURE_CODE = "remote.session";
+
+/**
+ * VistaRemote ToC gauges. Trial matches Pro on device.limit and remote.session.
  * `ai.cloud_infer`, `recording.sfu_server`, and `telemetry.enterprise` stay enterprise/manual only.
  */
 export const VISTAREMOTE_PLAN_LIMITS = {
-  trial: { devices: 2 },
-  pro: { devices: 2 },
-  ultra: { devices: 8 },
-  enterprise: { devices: 500 },
+  trial: { devices: 2, concurrentSessions: 2 },
+  pro: { devices: 2, concurrentSessions: 2 },
+  ultra: { devices: 8, concurrentSessions: 8 },
+  enterprise: { devices: 500, concurrentSessions: 500 },
 } as const;
 
 export const VISTAREMOTE_ENTERPRISE_ONLY_FEATURES = [
@@ -267,6 +273,14 @@ export const CATALOG: ProductSeed[] = [
         meteringMode: "gauge",
       },
       {
+        // Canonical code `remote.session`; alias `session.concurrent` is not a catalog key.
+        code: VISTAREMOTE_SESSION_FEATURE_CODE,
+        name: "Concurrent remote sessions",
+        kind: "quota",
+        quotaPeriod: "concurrent",
+        meteringMode: "gauge",
+      },
+      {
         code: "recording.storage.bytes",
         name: "Recording storage bytes",
         kind: "quota",
@@ -286,6 +300,10 @@ export const CATALOG: ProductSeed[] = [
           { code: "batch.remote" },
           { code: "device.limit", limitValue: VISTAREMOTE_PLAN_LIMITS.trial.devices },
           {
+            code: VISTAREMOTE_SESSION_FEATURE_CODE,
+            limitValue: VISTAREMOTE_PLAN_LIMITS.trial.concurrentSessions,
+          },
+          {
             code: "recording.storage.bytes",
             limitValue: STORAGE_BYTE_LIMITS.vistaremote.recording.trial,
           },
@@ -302,6 +320,10 @@ export const CATALOG: ProductSeed[] = [
           { code: "batch.remote" },
           { code: "device.limit", limitValue: VISTAREMOTE_PLAN_LIMITS.pro.devices },
           {
+            code: VISTAREMOTE_SESSION_FEATURE_CODE,
+            limitValue: VISTAREMOTE_PLAN_LIMITS.pro.concurrentSessions,
+          },
+          {
             code: "recording.storage.bytes",
             limitValue: STORAGE_BYTE_LIMITS.vistaremote.recording.pro,
           },
@@ -317,6 +339,10 @@ export const CATALOG: ProductSeed[] = [
           { code: "ai.recording_summarize" },
           { code: "batch.remote" },
           { code: "device.limit", limitValue: VISTAREMOTE_PLAN_LIMITS.ultra.devices },
+          {
+            code: VISTAREMOTE_SESSION_FEATURE_CODE,
+            limitValue: VISTAREMOTE_PLAN_LIMITS.ultra.concurrentSessions,
+          },
           {
             code: "recording.storage.bytes",
             limitValue: STORAGE_BYTE_LIMITS.vistaremote.recording.ultra,
@@ -336,6 +362,10 @@ export const CATALOG: ProductSeed[] = [
           { code: "telemetry.enterprise" },
           { code: "batch.remote" },
           { code: "device.limit", limitValue: VISTAREMOTE_PLAN_LIMITS.enterprise.devices },
+          {
+            code: VISTAREMOTE_SESSION_FEATURE_CODE,
+            limitValue: VISTAREMOTE_PLAN_LIMITS.enterprise.concurrentSessions,
+          },
           {
             code: "recording.storage.bytes",
             limitValue: STORAGE_BYTE_LIMITS.vistaremote.recording.enterprise,

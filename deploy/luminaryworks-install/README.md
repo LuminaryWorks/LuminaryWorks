@@ -48,15 +48,17 @@ VistaCast / SyncroBrain 目前 `sellable=false`，仍在包里，默认不勾。
 |---|---|---|
 | `seed.profile` | `full-demo` | LMS 演示目录：**AI 一对一口语 / 发音纠正 / AI English**、Python 等演示课（写在 edu-server 源码里，启动时注入数据库） |
 | `seed.packs` | 五个平台课包全开 | `edu-server/content/course-packs/` 里已有的 Markdown 课：SyncroBrain 实体课、DataLuminary、VistaCast、DoerFlow、VistaRemote |
+| `seed.oerGrowth` | `["oer-growth-v1"]`（安装表单**默认勾选**） | `edu-server/content/oer-growth/oer-growth-v1/` 获客公开课 10 门；取消勾选 → `[]` → `EDU_OER_GROWTH=` 不导入 |
 
-仓库里 **没有** 另存一份「抓取下来的视频课」。能跟的种子就是上面两层。只要 `packs: []` 才会跳过平台课包。
+仓库里 **没有** 另存一份「抓取下来的视频课」。能跟的种子就是上面三层。只要 `packs: []` 才会跳过平台课包；只要 `oerGrowth: []` 才会跳过获客公开课。
 
 ```json
 "blockyedu": {
   "enabled": true,
   "seed": {
     "profile": "full-demo",
-    "packs": ["syncrobrain", "dataluminary", "vistacast", "doerflow", "vistaremote"]
+    "packs": ["syncrobrain", "dataluminary", "vistacast", "doerflow", "vistaremote"],
+    "oerGrowth": ["oer-growth-v1"]
   }
 }
 ```
