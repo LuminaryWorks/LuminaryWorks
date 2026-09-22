@@ -15,7 +15,8 @@
     "preview": "vite preview"
   },
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=24.0.0",
+    "pnpm": ">=11"
   },
   "dependencies": {
     "@fastify/static": "^10.1.2",

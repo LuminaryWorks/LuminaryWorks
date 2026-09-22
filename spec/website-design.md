@@ -310,7 +310,7 @@ License 行：`Polyform Noncommercial License 1.0.0 · 商业使用须另行授�
 | 目录 | `app/`（`page.tsx` + `[locale]/`）、`components/{site,sections}/`、`lib/`、`styles/`、`content/legal/{zh,en}/`、`public/brand/` |
 | 法律页 | `spec/legal/{zh,en}/*.md` 由 MetaRepo 脚本同步进 `content/legal/`，构建时用 `marked` 渲染为静态页；页头显示 `policyVersion`（当前 `lw-legal-v2026-09-07`）与「非法律意见」提示 |
 | SEO | `app/sitemap.ts` + `app/robots.ts`（`dynamic = 'force-static'`）、每页 `generateMetadata` 带 `alternates.languages`、OG 图用静态 SVG/PNG（不用 `next/og`，静态导出不支持） |
-| Lint | biome（照抄 `tooling` preset），`engines.node >= 24.0.0`，`packageManager: pnpm@9.15.0` |
+| Lint | biome（照抄 `tooling` preset），`engines.node >= 24.0.0`，`engines.pnpm >=11`（勿钉死 `packageManager` 精确版本，以免日后 pnpm 12 报错） |
 | 端口 | `next dev -p 13000`（避开产品站 13010 / 13106） |
 | 部署 | `wrangler.toml`：`pages_build_output_dir = "out"`、项目名 `luminaryworks-website`；GitHub Actions 照抄 DoerFlow 的 `deploy.yml`（`npx wrangler@4 pages deploy out --project-name=luminaryworks-website`，需 `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`） |
 | 仓库 | 新建 `LuminaryWorks/website`，本地嵌套在 MetaRepo `website/`（与 `docs/` 同模式，MetaRepo `.gitignore` 增加 `/website/`），MetaRepo 增加 `pnpm web:dev` / `web:build` / `web:check` / `legal:sync`（`pnpm --dir website`）并接入 `bootstrap.mjs`。**注意** `site:*` 已被「部署站点意图」（`deploy/site.json`）占用，官网一律用 `web:*` |

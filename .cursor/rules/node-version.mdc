@@ -11,3 +11,11 @@ alwaysApply: true
 - Prefer `@types/node` `^24` when adding or bumping Node types.
 - Do **not** lower the engine range for convenience (no `>=18` / `>=20` / `>=22`).
 - Re-sync: `node scripts/lock-node24-ecosystem.mjs` from LuminaryWorks MetaRepo.
+
+# pnpm version (LuminaryWorks ecosystem)
+
+- **Required minimum:** pnpm **>= 11** via `"engines": { "pnpm": ">=11" }` (with `engine-strict=true`).
+- This range **allows pnpm 12+** — do not add `<12` or other upper bounds unless the ecosystem deliberately freezes a major.
+- **Do not** set `"packageManager": "pnpm@x.y.z"`. Corepack only accepts an exact version; a pin makes install fail when the local CLI differs (e.g. pinned 11.27.1 while using 12).
+- Developers should keep a current pnpm 11+ on PATH (`corepack enable` then `corepack prepare pnpm@latest --activate`, or the standalone installer). Avoid leaving Corepack `lastKnownGood` on 9/10 after visiting old clones.
+- Re-sync engines (and strip stray `packageManager`): `pnpm lock:pnpm11` from LuminaryWorks MetaRepo.

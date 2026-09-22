@@ -69,6 +69,7 @@
     "ai:client:build": "pnpm --dir shared/packages/ai-client run build",
     "ai:dev": "pnpm --dir services/ai-platform run start:dev",
     "lock:node24": "node scripts/lock-node24-ecosystem.mjs",
+    "lock:pnpm11": "node scripts/lock-pnpm11-ecosystem.mjs",
     "sync:cursor-i18n-rule": "node scripts/write-i18n-no-defaultvalue.mjs",
     "sync:cursor-model-policy": "node scripts/write-model-usage-policy.mjs",
     "sync:cursor-local-docker-rule": "node scripts/write-local-docker-sidecars-rule.mjs",
@@ -78,6 +79,7 @@
     "sync:commit-branches": "node scripts/sync-commit-branches.mjs"
   },
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=24.0.0",
+    "pnpm": ">=11"
   }
 }
