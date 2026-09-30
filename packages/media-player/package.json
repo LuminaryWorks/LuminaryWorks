@@ -1,0 +1,18 @@
+{
+  "name": "@luminaryworks/media-player",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Polyform-Noncommercial-1.0.0",
+  "description": "xgplayer HLS session player for LuminaryWorks media-gateway. The playlist URL is issued by a product API.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "xgplayer": "^3.0.26",
+    "xgplayer-hls": "^3.0.24"
+  },
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=11"
+  }
+}

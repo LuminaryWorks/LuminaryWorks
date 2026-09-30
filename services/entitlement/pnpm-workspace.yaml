@@ -1,0 +1,9 @@
+packages:
+  - "."
+allowBuilds:
+  '@parcel/watcher': true
+  'unrs-resolver': true
+  'mediasoup': true
+  'esbuild': true
+  'core-js': true
+  '@scarf/scarf': true

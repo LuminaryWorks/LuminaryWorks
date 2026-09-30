@@ -133,7 +133,11 @@ describe("hosted provider routing", () => {
       providerId: "creem",
       currencies: ["CNY", "USD"],
     };
+    expect(CN_HOSTED_ALLOWLIST).toEqual(
+      expect.arrayContaining(["alipay_f2f", "wechat_pay_v3", "unionpay_quickpass", "manual", "mock"]),
+    );
     expect(CN_HOSTED_ALLOWLIST).not.toContain("creem");
+    expect(CN_HOSTED_ALLOWLIST).not.toContain("paypal");
     expect(CN_HOSTED_ALLOWLIST).not.toContain("polar");
     expect(CN_HOSTED_ALLOWLIST).not.toContain("paddle");
     expect(CN_HOSTED_ALLOWLIST).not.toContain("doerflow_credit");
@@ -212,5 +216,40 @@ describe("hosted provider routing", () => {
     });
     expect(decision.allowed.map((item) => item.providerId)).toEqual(["paypal"]);
     expect(decision.rejected).toEqual([]);
+  });
+
+  it("lists CNY and USD providers when the methods call omits currency", () => {
+    const decision = selectAvailableProviders({
+      configs: [alipay, paypal],
+      market: "GLOBAL",
+      ipCountry: "DE",
+      billingCountry: "DE",
+      marketPolicy: "hosted",
+    });
+    expect(decision.allowed.map((item) => item.providerId)).toEqual(["alipay_f2f", "paypal"]);
+  });
+
+  it("shows enabled WeChat and UnionPay on hosted CN", () => {
+    const wechat = { ...alipay, id: "cfg-wechat", providerId: "wechat_pay_v3", priority: 20 };
+    const unionpay = {
+      ...alipay,
+      id: "cfg-unionpay",
+      providerId: "unionpay_quickpass",
+      priority: 30,
+    };
+    const decision = selectAvailableProviders({
+      configs: [alipay, wechat, unionpay, paypal],
+      market: "CN",
+      currency: "CNY",
+      ipCountry: "CN",
+      billingCountry: "CN",
+      marketPolicy: "hosted",
+    });
+    expect(decision.allowed.map((item) => item.providerId)).toEqual([
+      "alipay_f2f",
+      "wechat_pay_v3",
+      "unionpay_quickpass",
+    ]);
+    expect(hintForbiddenInDecision(decision, "paypal")).toBe(true);
   });
 });

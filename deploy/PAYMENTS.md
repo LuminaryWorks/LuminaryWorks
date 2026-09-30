@@ -5,6 +5,63 @@
 
 **内置 adapter ≠ 对用户开放。** `enabled=true` 且 `POST /v1/admin/payments/providers/:id/test` 通过才算运营启用。个人商户是否已通过支付宝/PayPal/微信/银联/Stripe 审核，代码 **不会** 假设；未签约就不要 `enable`。
 
+## 收银台为什么是空的
+
+VistaRemote、DataLuminary、BlockyEdu 的会员页都只展示 Entitlement `GET /v1/payments/methods` 返回的渠道。没有第二条产品侧支付名单。
+
+页面写「暂无可用支付方式」时，按这个顺序查：
+
+1. Entitlement 进程在 `ENTITLEMENT_PORT`（生态默认 **3040**）上可访问。产品 `ENTITLEMENT_BASE_URL` 必须指向它。历史端口 `7090` 已废弃。
+2. 产品 BFF 用 `ENTITLEMENT_SERVICE_API_KEY`（请求头 `X-Service-Key`）加上已登录用户的 `X-Act-As-Subject` 调用 Entitlement。不要把支付密钥放进浏览器。
+3. `PAYMENT_CONFIG_MASTER_KEY` 已配置，且与当初加密凭证的那把密钥相同。密钥丢失时，旧配置行 health 失败，收银台会把它们藏起来。
+4. 该渠道 `enabled=true`、health 通过，并且币种覆盖当前套餐（CN 目录是 CNY，海外目录是 USD）。未传 `currency` 时，methods 列出该市场下所有币种；下单仍按订单快照币种拒绝不匹配的渠道。
+
+本地实验室：没有真实商户凭证时，非生产环境会在「零条 enabled 配置 + 已设置 master key」时种下一行 `mock`（CNY 与 USD）。会员页应出现「沙箱模拟支付」。`POST /v1/orders/:id/complete` 会把这笔 mock 标成已付并履约，**不会**向支付宝或微信扣款。`ENTITLEMENT_SEED_MOCK_PAYMENT=false` 可关掉自动播种。
+
+## 个人能开通的，和必须等公司主体的
+
+| 渠道 | 个人现在能不能收款 | 你要做的事 |
+|------|-------------------|------------|
+| 沙箱 `mock` | 仅本地/非生产 | 配好 master key 并重启 Entitlement。用来验收下单→支付→履约，不是真实收款 |
+| PayPal `paypal` | 沙箱个人开发者账号可以；正式收款常要升级到 Business | 见下文 PayPal runbook。CN 市场不展示 |
+| Creem `creem` | 个人 / 小团队可注册 MoR | 见下文 Creem。CN 市场不展示。用 `creem_test_` 做沙箱 |
+| DoerFlow Credit `doerflow_credit` | 自托管账本，不需要公司 PSP | 见下文配对步骤。IP 或账单国家为 CN 时不展示、不能下单 |
+| Stripe `stripe_checkout` | 视注册国家；大陆主体通常过不了 | Adapter 已实现。支持国家的个人账号按 Stripe 控制台开通后再把密钥写入控制台 |
+| 支付宝当面付 `alipay_f2f` | **不是**任意个人支付宝账号。开放平台签约当面付通常要个体工商户或企业主体 | 有执照再启用。没有执照保持 disabled。步骤见「支付宝当面付」 |
+| 微信支付 `wechat_pay_v3` | 个人不能开通 Native/JSAPI 商户 | Adapter、验签、查询、退款已实现。注册公司并拿到商户号后，按下文写入配置并 enable，CN 收银台就会出现 |
+| 云闪付 `unionpay_quickpass` | 需要银联入网商户 | 同上。`checkoutMode` 只能是已实现的 `hosted` 或 `qr` |
+| Coinbase / OKX / BitPay | 加密渠道，且 CN 双重阻断 | 功能在库里。非 CN 的 IP **和** 已保存的非 CN 账单国家同时满足才展示 |
+
+客户管理员维护收银台的地方是 **LuminaryWorks 控制台 → 收银台**：
+
+- 本机：`http://127.0.0.1:3050/providers`
+- 生产：`CONTROL_CONSOLE_PUBLIC_URL` 下的 `/providers`
+
+用带 `entitlement:admin` 的部署管理员登录（不是各产品里买会员的用户，也不是 Logto `:3002`）。在这一页开通渠道、填写商户配置、测试、启用或停用。凭证保存后不再显示。各产品会员页只读取这里已经启用的渠道。
+
+先创建为未启用，页面上 Test 通过后再 Enable。
+
+### 支付宝（有个体工商户时）
+
+1. 用个体工商户或企业主体登录 [支付宝开放平台](https://open.alipay.com/)，创建应用并签约 **当面付**。沙箱应用与沙箱买家用于联调，不代表生产已签约。
+2. 记下 AppId、应用私钥（RSA2）、支付宝公钥。异步通知必须是公网 HTTPS：`https://<entitlement-host>/v1/payments/webhooks/alipay_f2f/<configId>`。所以先创建禁用配置，拿到 `configId`，再去开放平台填 URL。
+3. 在控制台写入 `providerId=alipay_f2f`，`environment=sandbox` 或 `live`，`currencies=["CNY"]`，`marketScopes=["CN"]`。不要在凭证里写自定义网关。
+4. Test 通过后 enable。用 CN 网络打开任一产品会员页，应看到支付宝，而不是写死的按钮。
+
+没有营业执照时不要 enable。届时会员页只显示已经健康的渠道（本地通常是 mock）。
+
+### 微信支付 / 云闪付（公司主体之后）
+
+代码路径已经闭合：下单、回调验签、查单、退款。现在缺的只是商户凭证。
+
+1. 微信支付：商户平台拿到 mchid、API v3 密钥、商户私钥、证书序列号、平台证书。产品是 Native 或 JSAPI，以你入网的为准。
+2. 云闪付：入网商户号、签名证书与口令。`checkoutMode` 填 `hosted` 或 `qr`。
+3. 控制台创建对应 `providerId`，`currencies=["CNY"]`，`marketScopes=["CN"]`，`enabled=false`。
+4. Webhook：`https://<entitlement-host>/v1/payments/webhooks/wechat_pay_v3/<configId>` 或 `…/unionpay_quickpass/<configId>`。
+5. Test 通过后 enable。CN 会员页会列出该渠道。不需要再改产品代码。
+
+PayPal、Creem、DoerFlow 的字段级步骤在下面各渠道小节，不要凭记忆点对方控制台菜单。
+
 信封密钥：`PAYMENT_CONFIG_MASTER_KEY`（32 字节 hex 或 standard base64）。生产在已启用 provider 配置时必填。GET / 审计 / 日志永不回显明文。
 
 公开回调（原始 body 先验签）：
@@ -540,6 +597,17 @@ DoerFlow Credit：`providerId=doerflow_credit`，`baseUrl` + `serviceKey` + `web
 轮换：`POST /v1/admin/payments/providers/:id/rotate`。旧密钥在 retiring 窗口内仍可用于验签。
 
 ---
+
+## 本地验收（2026-09-25）
+
+在本机非生产 Entitlement（`:3040`）上核对过：
+
+- `GET /v1/payments/methods` 返回 `providerId=mock`，币种 `CNY` 与 `USD`。
+- 用该渠道为 `vistaremote`、`dataluminary`、`blockyedu`、`doerflow` 的已发布 SKU 下单、`/pay`、`/complete` 后，订单状态为 `fulfilled`。没有调用支付宝、微信或银联，也没有真实扣款。
+- `complete` 的响应体带回更新后的 `order.status`，产品 BFF 可以据此做权益投影。
+- 路由测试：未传币种时 CNY 与 USD 渠道都列出；已启用的微信与云闪付会出现在 CN 市场；PayPal、Creem、DoerFlow Credit 仍不进入 CN 名单。
+
+产品页面要看到「沙箱模拟支付」，需要：Entitlement 在 3040 运行、产品 `ENTITLEMENT_BASE_URL` 指向它、`ENTITLEMENT_SERVICE_API_KEY` 与 Entitlement 一致，并且用已登录账号打开会员页。Admin 会员页不再写死微信/支付宝按钮。
 
 ## 不要做的事
 

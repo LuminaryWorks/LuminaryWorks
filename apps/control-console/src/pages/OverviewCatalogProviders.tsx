@@ -13,6 +13,7 @@ import {
   buildCredentialsObject,
   capabilityKeys,
   DEFAULT_PROVIDER_CAPABILITIES,
+  defaultCurrencies,
   defaultMarketScopes,
   PAYMENT_ENVIRONMENTS,
   PAYMENT_PROVIDER_IDS,
@@ -352,8 +353,7 @@ export function ProvidersPage({ api }: { api: Api }) {
 
   useEffect(() => {
     setMarketScopes(defaultMarketScopes(providerId).join(", "));
-    if (providerId === "creem") setCurrencies("USD");
-    if (providerId === "doerflow_credit") setCurrencies("USD");
+    setCurrencies(defaultCurrencies(providerId).join(", "));
   }, [providerId]);
 
   useEffect(() => {
@@ -411,6 +411,7 @@ export function ProvidersPage({ api }: { api: Api }) {
   return (
     <section>
       <PageHeader title={t("providers.title")} />
+      <p className="muted">{t("providers.lead")}</p>
       <p className="muted">{t("providers.enabledFromApi")}</p>
       <ErrorBanner error={error} />
       <form
@@ -448,7 +449,7 @@ export function ProvidersPage({ api }: { api: Api }) {
           >
             {PAYMENT_PROVIDER_IDS.map((id) => (
               <option key={id} value={id}>
-                {id}
+                {t(`providers.names.${id}`)}
               </option>
             ))}
           </select>
@@ -574,7 +575,7 @@ export function ProvidersPage({ api }: { api: Api }) {
             {items.map((row) => (
               <tr key={String(row.id)}>
                 <td>{String(row.id)}</td>
-                <td>{String(row.providerId)}</td>
+                <td>{t(`providers.names.${String(row.providerId)}`)}</td>
                 <td>{String(row.environment ?? "")}</td>
                 <td>{String(row.enabled)}</td>
                 <td>{String(row.status)}</td>

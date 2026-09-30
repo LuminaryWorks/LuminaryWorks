@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildCredentialsObject,
   collectCreemAmounts,
+  defaultCurrencies,
   defaultMarketScopes,
   providerCnRestriction,
 } from "./payment-providers";
@@ -11,11 +12,18 @@ describe("payment-providers", () => {
     expect(providerCnRestriction("creem")).toBe("hosted_cn_blocked");
     expect(providerCnRestriction("doerflow_credit")).toBe("crypto_cn_blocked");
     expect(providerCnRestriction("alipay_f2f")).toBe(null);
+    expect(providerCnRestriction("wechat_pay_v3")).toBe(null);
+    expect(providerCnRestriction("unionpay_quickpass")).toBe(null);
+    expect(providerCnRestriction("paypal")).toBe("hosted_cn_blocked");
   });
 
   it("defaults GLOBAL market scope for new MoR and ledger providers", () => {
     expect(defaultMarketScopes("creem")).toEqual(["GLOBAL"]);
     expect(defaultMarketScopes("doerflow_credit")).toEqual(["GLOBAL"]);
+    expect(defaultMarketScopes("alipay_f2f")).toEqual(["CN"]);
+    expect(defaultMarketScopes("wechat_pay_v3")).toEqual(["CN"]);
+    expect(defaultCurrencies("alipay_f2f")).toEqual(["CNY"]);
+    expect(defaultCurrencies("paypal")).toEqual(["USD"]);
   });
 
   it("builds structured credential maps without empty optional fields", () => {

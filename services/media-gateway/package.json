@@ -1,0 +1,42 @@
+{
+  "name": "@luminaryworks/media-gateway",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Polyform-Noncommercial-1.0.0",
+  "description": "LuminaryWorks VOD gateway. Issues short-lived HLS playlists and AES-128 keys. Segment bytes stay on the edge.",
+  "scripts": {
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "start:dev": "nest start --watch",
+    "start:edge": "node dist/local-edge-main.js",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.cjs --runInBand --forceExit",
+    "spike": "node spike/run.mjs"
+  },
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=11"
+  },
+  "dependencies": {
+    "@nestjs/common": "^12.1.2",
+    "@nestjs/core": "^12.1.2",
+    "@nestjs/platform-fastify": "^12.1.2",
+    "fastify": "^5.12.5",
+    "redis": "^5.8.2",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^12.0.8",
+    "@nestjs/testing": "^12.1.2",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.25.10",
+    "jest": "^30.5.2",
+    "playwright": "^1.55.0",
+    "ts-jest": "^29.4.14",
+    "typescript": "6.0.3",
+    "xgplayer": "^3.0.26",
+    "xgplayer-hls": "^3.0.26"
+  }
+}

@@ -31,7 +31,7 @@
 | WebRTC 信令 | — | — | — | ✅ | — | **私有** | vistacast | — |
 | EMQX / ThingsBoard | — | — | — | — | ✅ | **私有** | syncrobrain | — |
 | media-platform | — | ✅ | — | 复用? | 摄像头 | **候选** | 评估 P3 | — |
-| Notify（Email） | ✅ 接入中 | 分散 | 分散 | 分散 | 分散 | **共享包** | `shared/notification` | 一期包 / 后期服务 |
+| Notify（Email） | ✅ 接入中 | 分散 | 分散 | 分散 | 分散 | **共享包 + 认证邮件服务** | `shared/notification`、`services/notification` | 报表走共享包 SMTP；认证信走 Notification Service |
 | File | 分散 | 分散 | 分散 | 分散 | 分散 | **共享契约** | 自建 MinIO 兼容（Hosted：AIStor Free 单节点）；禁止公有云 S3/R2 | 见 [decisions/2026-09-storage-doris-payment.md](./decisions/2026-09-storage-doris-payment.md) |
 | 订阅 / 权益（Trial·Pro·Ultra·企业·License） | 待接入 | 本地 memberTier 等 | **接入中：无 Trial；双身份客户端 + membership/402** | 目录可占位；默认不可售 / 无 Trial | 目录可占位；默认不可售 / 无 Trial | **共享服务** | `services/entitlement` + `shared/entitlement-client` | LW-ENT |
 | 资源 ACL（Casbin） | ✅ / 规划 | ✅ / 规划 | 规划 | 规划 | 规划 | **产品私有** | 各产品 PermissionService | 与 IAM 规范一致 |

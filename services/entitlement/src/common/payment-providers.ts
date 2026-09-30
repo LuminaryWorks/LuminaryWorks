@@ -252,7 +252,18 @@ export function isRefundableOrderStatus(status: string): boolean {
   return status === "paid" || status === "fulfilled" || status === "partially_refunded";
 }
 
-export const CN_HOSTED_ALLOWLIST: readonly ProviderId[] = ["alipay_f2f", "manual", "mock"];
+/**
+ * Hosted CN checkout. Company-only adapters stay hidden until a config row is
+ * enabled and healthy; listing them here means “configure credentials, then it shows”.
+ * PayPal / MoR / card PSPs and crypto stay off this list.
+ */
+export const CN_HOSTED_ALLOWLIST: readonly ProviderId[] = [
+  "alipay_f2f",
+  "wechat_pay_v3",
+  "unionpay_quickpass",
+  "manual",
+  "mock",
+];
 
 export type PaymentMarketPolicy = "hosted" | "scopes_only";
 

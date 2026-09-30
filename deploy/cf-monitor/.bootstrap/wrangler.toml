@@ -1,0 +1,4 @@
+name = "lw-cf-bootstrap"
+main = "index.js"
+compatibility_date = "2026-03-01"
+account_id = "af0e854078b49637d63673c75566906b"

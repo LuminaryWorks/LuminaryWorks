@@ -1,0 +1,10 @@
+node_modules
+dist
+data
+origin
+spike/out
+spike/www
+spike/origin
+spike/data
+.env
+*.tsbuildinfo

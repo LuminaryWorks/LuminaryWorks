@@ -52,7 +52,8 @@ export function cryptoCheckoutAllowed(input: {
 export function selectAvailableProviders(input: {
   configs: RoutableProviderConfig[];
   market: BillingMarket;
-  currency: string;
+  /** Omit or blank to list every currency the provider config supports. Checkout still uses the order currency. */
+  currency?: string | null;
   ipCountry: string | null;
   billingCountry: string | null;
   marketPolicy: PaymentMarketPolicy;
@@ -95,7 +96,12 @@ export function selectAvailableProviders(input: {
       });
       continue;
     }
-    if (config.currencies.length > 0 && !config.currencies.includes(input.currency)) {
+    const currency = input.currency?.trim().toUpperCase() || "";
+    if (
+      currency &&
+      config.currencies.length > 0 &&
+      !config.currencies.some((item) => item.toUpperCase() === currency)
+    ) {
       rejected.push({
         configId: config.id,
         providerId: config.providerId,
@@ -110,7 +116,8 @@ export function selectAvailableProviders(input: {
           configId: config.id,
           providerId: config.providerId,
           code: "PAYMENT_PROVIDER_FORBIDDEN_MARKET",
-          reason: "Hosted CN market only allows Alipay, mock (lab), and manual",
+          reason:
+            "Hosted CN market allows Alipay, WeChat Pay, UnionPay, mock (lab), and manual once enabled",
         });
         continue;
       }

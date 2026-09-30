@@ -1,0 +1,49 @@
+{
+  "name": "@luminaryworks/notification-service",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Polyform-Noncommercial-1.0.0",
+  "description": "LuminaryWorks auth-mail delivery. Logto calls one HTTP endpoint; Brevo, Resend, and SMTP stay behind it.",
+  "scripts": {
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main.js",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "precheck": "pnpm --dir ../../shared/packages/notification run build",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.cjs",
+    "pretest": "pnpm --dir ../../shared/packages/notification run build",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts"
+  },
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=11"
+  },
+  "dependencies": {
+    "@fastify/static": "^10.1.2",
+    "@luminaryworks/notification": "file:../../shared/packages/notification",
+    "@nestjs/common": "^12.1.2",
+    "@nestjs/config": "^12.0.1",
+    "@nestjs/core": "^12.1.2",
+    "@nestjs/platform-fastify": "^12.1.2",
+    "@nestjs/swagger": "^12.0.2",
+    "@nestjs/terminus": "^12.1.0",
+    "@nestjs/typeorm": "^12.0.2",
+    "fastify": "^5.12.5",
+    "pg": "^8.22.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "typeorm": "^0.3.27"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^12.0.8",
+    "@nestjs/schematics": "^12.0.6",
+    "@nestjs/testing": "^12.1.2",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.0",
+    "jest": "^30.5.2",
+    "ts-jest": "^29.4.14",
+    "ts-node": "^10.9.2",
+    "typescript": "6.0.3"
+  }
+}

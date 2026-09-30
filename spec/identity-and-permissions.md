@@ -173,15 +173,17 @@ Product SPA  →  Luminary Auth SDK (@luminaryworks/auth-react)
 
 本地开发推荐：`AUTH_EXPERIENCE_URL=<SPA origin>` + `@luminaryworks/auth-dev-proxy` 直连 Logto `:3001`。生产与可售私有化包默认经 Gateway。注册、找回、MFA、企业 SSO 均走 IdP / Experience 能力，勿自造认证状态机。
 
-**MFA 策略（全生态）**：
+**认证邮件与 MFA 策略（全生态）**：
+
+邮箱验证、密码、MFA、Adaptive MFA 不是同一件事。验证码状态机在 Logto；投递在 Notification Service（见 [notification-service.md](./notification-service.md) §7）。
 
 | 环境 | 策略 |
 |------|------|
-| 本地 / `IDENTITY_ACCOUNTS_PROFILE=dev` | **不强制 MFA**（`ensure-force-mfa --off`），便于 Headless 密码联调 |
-| 自动化测试 | 用例内临时 Mandatory + 可复现 TOTP，结束后恢复 |
-| 生产 / `product` / `LOGTO_FORCE_MFA=1` | **tenant Mandatory MFA**（TOTP + BackupCode），抑制恶意注册与资源浪费 |
+| 本地 / `dev`，或 `EMAIL_AUTH_ENABLED=0` | **不发认证邮件、不强制 MFA**。内网私有化用这个开关 |
+| SaaS / `product` 且 `EMAIL_AUTH_ENABLED=1`（product 未设置时默认开） | 注册 Email OTP（`signUp.verify`）。日常登录邮箱+密码，`verificationCode=false`。MFA 因素含 Email / TOTP / WebAuthn / BackupCode，全局策略 `NoPrompt`。`adaptiveMfa.enabled=true`（Logto 1.42 按登录上下文决定要不要第二因素）。组织 `isMfaRequired` 时 `organizationRequiredMfaPolicy=Mandatory` |
+| 自动化测试 | 仍可用 `ensure-force-mfa.mjs --on` 临时 Mandatory TOTP，结束后 `--restore` / `--off`。bootstrap **不再**因 product profile 打开全员 Mandatory |
 
-实现：`identity/scripts/ensure-force-mfa.mjs`；`bootstrap` 按 profile 自动开关。产品 Hosted 登录在强制 MFA 时走 Logto Hosted UI；Headless MFA 仍依赖 `@luminaryworks/auth-react` challenge API。
+实现：`identity/scripts/ensure-auth-mail.mjs`（connector + 分级 MFA）、`ensure-sign-in-experience.mjs`（有 Email connector 才 `signUp.verify`）、`ensure-org-mfa.mjs`（单个组织强制 MFA）。`ensure-force-mfa.mjs --on` 只留给测试。Headless MFA 仍走 `@luminaryworks/auth-react` challenge API。若运行中的 Logto 拒绝 `adaptiveMfa` 字段，脚本退化为 Email MFA 因素 + 可选策略，不自研风险引擎。
 
 **默认登录心智**：各产品登录页以「统一账号 / 企业 SSO」为主 CTA；本地账密仅 `ALLOW_LOCAL_LOGIN` 开发折叠入口，生产关闭。
 

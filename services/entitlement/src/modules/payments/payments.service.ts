@@ -60,7 +60,7 @@ export class PaymentsService {
     const market = this.geo.marketFor(input.geo.country);
     const decision = await this.route({
       market,
-      currency: input.currency ?? "USD",
+      currency: input.currency?.trim() || undefined,
       ipCountry: input.geo.country,
       billingCountry: profile?.country ?? null,
     });
@@ -378,7 +378,8 @@ export class PaymentsService {
         providerRef: query.providerRef,
       }),
     });
-    return { order, alreadyPaid: false, attempt, query, fulfilled: true };
+    const fresh = await this.orders.findOne({ where: { id: order.id } });
+    return { order: fresh ?? order, alreadyPaid: false, attempt, query, fulfilled: true };
   }
 
   async confirmManual(input: {
@@ -835,7 +836,7 @@ export class PaymentsService {
 
   private async route(input: {
     market: BillingMarket;
-    currency: string;
+    currency?: string;
     ipCountry: string | null;
     billingCountry: string | null;
   }) {

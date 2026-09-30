@@ -166,6 +166,7 @@ export default registerAs("entitlement", (): EntitlementConfig => {
     paymentReconcilePendingMinutes: Number(process.env.PAYMENT_RECONCILE_PENDING_MINUTES ?? 5),
     paymentCredentialRetiringHours: Number(process.env.PAYMENT_CREDENTIAL_RETIRING_HOURS ?? 48),
     paymentsEnabled: parsePaymentsEnabled(process.env.PAYMENTS_ENABLED),
+    // Browser origins allowed to call Entitlement. Control Console checkout admin uses this.
     corsOrigins: parseCorsOrigins(process.env.ENTITLEMENT_CORS_ORIGINS),
   };
 });

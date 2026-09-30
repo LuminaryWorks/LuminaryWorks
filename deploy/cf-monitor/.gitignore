@@ -1,0 +1,6 @@
+*.local
+.DS_Store
+.admin-token.local
+.dev.vars
+.wrangler/
+node_modules/

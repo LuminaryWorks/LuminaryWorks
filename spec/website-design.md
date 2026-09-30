@@ -258,7 +258,7 @@ PRODUCT PLANES  ·  各自数据库与 ACL
 | `smart-site` | 上层完整闭环（叠加而非替代） | 前者 + VistaRemote + DataLuminary（+ BlockyEdu 培训入口） |
 | `air-gapped` | 断网 / 内网交付 | 单品或组合，无出网；离线 License、本地 BYOK |
 
-- 能力模式 mono 行：`identity=central|external_oidc|local` · `entitlement=off|shadow_read|enforce|offline_license` · `ai=off|central|local_byok` · `notification=none|smtp`
+- 能力模式 mono 行：`identity=central|external_oidc|local` · `entitlement=off|shadow_read|enforce|offline_license` · `ai=off|central|local_byok` · `notification=none|smtp|platform`
 - CTA：`查看部署方案` → `/deploy/`
 
 ### 06 · 为什么是工坊（`06 / WHY`）

@@ -86,6 +86,7 @@ LuminaryWorks/shared (@luminary/*)
 | DoerFlow Job invoke / 生命周期回调 → VistaCast / SyncroBrain | REST + HMAC CloudEvents | 签名调用供应方；回调不自动 ack/resolve；SyncroBrain 命令必须 Safety Kernel；VistaCast stub 不可生产变现 |
 | 任意 API → PAL | guard | 权限 |
 | 任意产品 orchestrator → AI Platform | `@luminaryworks/ai-client` | LLM / embed / BYOK vault / metering |
+| BlockyEdu / EntFunHub → media-gateway | 服务凭证 + 短时 m3u8 | 自有片点播。分片走 Cloudflare，不经业务进程。见 [media-gateway.md](./media-gateway.md) |
 | SyncroBrain 控制台 → DataLuminary | iframe + JWT | 大屏 |
 | VistaCast 告警 → VistaRemote | 事件 / 深链 | 人工远程介入 |
 | VistaCast / VistaRemote → DataLuminary | REST / 导出 | 报表大屏 |

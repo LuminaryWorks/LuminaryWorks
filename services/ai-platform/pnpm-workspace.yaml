@@ -1,2 +1,8 @@
+packages:
+  - "."
 allowBuilds:
-  esbuild: set this to true or false
+  esbuild: true
+minimumReleaseAgeExclude:
+  - '@nestjs/common@12.1.2'
+  - '@nestjs/core@12.1.2'
+  - '@nestjs/platform-fastify@12.1.2'

@@ -15,7 +15,7 @@
 | D-PAY-P2 | 价格、币种、期限以服务端 catalog revision 为准；拒绝客户端 `amountCents` 作为权威金额 |
 | D-PAY-P3 | 公开回调先对 **原始 body** 验签，再幂等落库，最后事务性完成订单与订阅 |
 | D-PAY-P4 | Provider 配置含市场、币种、优先级、能力与信封加密凭证；超管可更新 / 轮换，**不得回显明文** |
-| D-PAY-P5 | Hosted SaaS：`CN` 默认已启用支付宝；海外展示全部已启用渠道；加密渠道双重检查 IP 与 billing country |
+| D-PAY-P5 | Hosted SaaS：`CN` 展示已启用的支付宝、微信支付、云闪付（后两者须商户号，未启用则不出现）；海外展示全部已启用且未被加密政策挡住的渠道；加密渠道双重检查 IP 与 billing country |
 | D-PAY-P6 | Manual 是一等 provider（人工确认），不是后门改价 |
 | D-PAY-P7 | **个人运营阶段**：资质门槛最低的三条通道并行 —— `paypal`（已实现）、`creem`（MoR 代扣代缴）、`doerflow_credit`（链上自托管收款）。需 KYB / 营业执照的渠道保持 disabled |
 | D-PAY-P8 | MoR 供应商是**记录商户**：金额含税，回传 gross/tax/net；履约比对用 **gross**，`net` 仅入对账。必须处理 MoR 侧发起的退款 |
@@ -186,7 +186,7 @@ PaymentAttempt:
 
 | 市场 | 展示与下单 |
 |------|------------|
-| `CN` | 默认仅 *operationally enabled* 的 `alipay_f2f`。超管可人工确认例外，须审计 |
+| `CN` | *operationally enabled* 的 `alipay_f2f`、`wechat_pay_v3`、`unionpay_quickpass`，以及 `manual` / 实验室 `mock`。PayPal、MoR、卡组织与加密渠道不在此列。未启用的公司渠道不会出现在收银台 |
 | `GLOBAL`（非 CN） | 全部 *operationally enabled* 的非受限渠道 |
 | 加密渠道（Coinbase / OKX / BitPay） | IP **或** 账户 billing country 为 CN → UI 隐藏且 `createCheckout` 拒绝。两者都非 CN 才允许 |
 | 未知地域 | 保守：按 GLOBAL 展示非加密渠道；加密渠道在 billing country 明确前拒绝 |

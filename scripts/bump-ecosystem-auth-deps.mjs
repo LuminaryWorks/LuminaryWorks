@@ -30,11 +30,11 @@ const TARGETS = [
 
 const LATEST = {
   "@luminaryworks/auth-core": "^0.2.4",
-  "@luminaryworks/auth-react": "^0.4.2",
-  "@luminaryworks/auth-dev-proxy": "^0.2.1",
-  "@luminaryworks/pal": "^0.3.0",
-  "@luminaryworks/notification": "^0.2.0",
-  "@luminaryworks/entitlement-client": "^0.2.0",
+  "@luminaryworks/auth-react": "^0.5.0",
+  "@luminaryworks/auth-dev-proxy": "^0.2.2",
+  "@luminaryworks/pal": "^0.3.1",
+  "@luminaryworks/notification": "^0.3.0",
+  "@luminaryworks/entitlement-client": "^0.2.6",
 };
 
 function writeUtf8(file, text) {

@@ -16,7 +16,7 @@
 | D-CD-4 | 统一身份键 `(issuer, sub)`；org / tenant / resource **显式绑定**，映射留在负责该关系的产品适配器 | §4 |
 | D-CD-5 | 跨产品事件统一 CloudEvents `id`/`source`/`type` + `traceparent` + source correlation | §5 |
 | D-CD-6 | 静态 **Control Manifest** 描述 profile / 服务 URL / required / 契约版本 / 能力 / 降级；**不含 secret**、不含业务资源、不做动态服务注册 | §6 |
-| D-CD-7 | 能力模式统一：`identity=central\|external_oidc\|local`、`entitlement=off\|shadow_read\|enforce\|offline_license`、`ai=off\|central\|local_byok`、`notification=none\|smtp` | §6.2 |
+| D-CD-7 | 能力模式统一：`identity=central\|external_oidc\|local`、`entitlement=off\|shadow_read\|enforce\|offline_license`、`ai=off\|central\|local_byok`、`notification=none\|smtp\|platform` | §6.2 |
 | D-CD-8 | **AuthN 永不降级为匿名**：`degradation.identity` 固定 `fail_closed` | §7 |
 | D-CD-9 | 中央服务统一 `/health`（进程）、`/ready`（关键依赖非 2xx）、`/version`（API/schema/git） | §8 |
 | D-CD-10 | 文档必须区分 `production` / `pilot` / `lab` / `stub`，`ai=central` 当前为 lab，**禁止**进入 pilot/production | §9 |
@@ -210,7 +210,9 @@ binding = (issuer, sub) × orgId? × productTenantId × resourceId
 | `ai` | `off` | 关闭 AI 能力 | production |
 | | `central` | 中央 AI Platform | **lab**：pilot/production 拒绝，见 §9.2 |
 | | `local_byok` | 产品本地 BYOK | pilot |
-| `notification` | `none` / `smtp` | SMTP 凭据来自 env / secret store，**不进 manifest** | production / pilot |
+| `notification` | `none` | 不启用认证邮件（内网私有化） | production |
+| | `smtp` | 客户自带 SMTP；凭据来自 env / secret store，**不进 manifest** | pilot |
+| | `platform` | SaaS 平台链（Resend / Brevo / SMTP 槽位）；凭据同样不进 manifest | pilot |
 
 ### 6.3 契约版本
 

@@ -1,0 +1,27 @@
+{
+  "name": "@luminaryworks/cf-monitor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare cost circuit-breaker (cf-monitor) for LuminaryWorks — Free plan hard stop",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=11"
+  },
+  "scripts": {
+    "init": "cf-monitor init",
+    "fix-paths": "node scripts/fix-wrangler-paths.mjs",
+    "deploy": "node scripts/fix-wrangler-paths.mjs && cf-monitor deploy",
+    "finish-deploy": "bash scripts/finish-deploy.sh",
+    "wire": "cf-monitor wire",
+    "status": "cf-monitor status",
+    "usage": "cf-monitor usage",
+    "config:sync": "cf-monitor config sync",
+    "config:validate": "cf-monitor config validate",
+    "secret": "cf-monitor secret"
+  },
+  "dependencies": {
+    "@littlebearapps/cf-monitor": "0.3.11",
+    "wrangler": "4.141.0"
+  }
+}

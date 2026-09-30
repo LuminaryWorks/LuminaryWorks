@@ -1,0 +1,51 @@
+# cf-monitor configuration — LuminaryWorks 初创零付费熔断
+# Docs: https://github.com/littlebearapps/cf-monitor
+#
+# 原则：保持 Workers Free；预算刻意低于 CF 免费额度，触顶后 CB 返回 503。
+# 勿开通 Workers Paid。plan 检测若为 unknown，以此 YAML 为准（勿依赖 Paid 默认预算）。
+
+account:
+  name: LuminaryWorks
+  cloudflare_account_id: "af0e854078b49637d63673c75566906b"
+
+# github:
+#   repo: "LuminaryWorks/LuminaryWorks"
+#   token: $GITHUB_TOKEN
+
+alerts:
+  slack_webhook: $SLACK_WEBHOOK_URL
+
+# Free 计划保守预算（低于 CF 免费额度；触 100% 熔断）
+budgets:
+  daily:
+    d1_writes: 10000
+    d1_reads: 100000
+    kv_writes: 500
+    kv_reads: 10000
+    ai_neurons: 5000
+    ai_requests: 100
+    r2_class_a: 3000
+    r2_class_b: 30000
+    queue_messages: 1000
+    vectorize_queries: 1000
+  monthly:
+    d1_writes: 200000
+    d1_reads: 2000000
+    kv_writes: 10000
+    kv_reads: 200000
+    ai_neurons: 100000
+    ai_requests: 2000
+    r2_class_a: 50000
+    r2_class_b: 500000
+    queue_messages: 20000
+    vectorize_queries: 20000
+
+# AI 可选功能尚未实现，保持关闭以免误开 Workers AI 计费路径
+ai:
+  enabled: false
+  pattern_discovery: false
+  health_reports: false
+
+# exclude:
+#   - "test-*"
+#   - "dev-*"

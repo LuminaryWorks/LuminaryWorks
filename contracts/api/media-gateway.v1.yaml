@@ -1,0 +1,225 @@
+openapi: 3.1.0
+info:
+  title: LuminaryWorks Media Gateway
+  version: 1.0.0
+  description: >
+    点播会话、加密 HLS 清单与 AES-128 密钥。分片由边缘从私有桶读取。
+    浏览器不接收对象存储 URL。规格 spec/media-gateway.md。
+servers:
+  - url: /
+paths:
+  /health:
+    get:
+      security: []
+      operationId: health
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, service]
+                properties:
+                  status: { type: string, enum: [ok] }
+                  service: { type: string }
+  /v1/assets:
+    post:
+      operationId: registerAsset
+      security: [{ serviceKey: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssetRegister" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AssetSummary" }
+        "400":
+          description: 许可不可再分发或字段无效
+  /v1/sessions:
+    post:
+      operationId: createSession
+      security: [{ serviceKey: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SessionCreate" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SessionGrant" }
+        "429":
+          description: 签发过频
+  /v1/sessions/{sessionId}/renew:
+    post:
+      operationId: renewSession
+      security: [{ serviceKey: [] }]
+      parameters:
+        - $ref: "#/components/parameters/sessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subjectId]
+              properties:
+                subjectId: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SessionGrant" }
+  /v1/playback/{sessionId}/index.m3u8:
+    get:
+      security: []
+      operationId: masterPlaylist
+      parameters:
+        - $ref: "#/components/parameters/sessionId"
+        - $ref: "#/components/parameters/exp"
+        - $ref: "#/components/parameters/sid"
+        - $ref: "#/components/parameters/sig"
+      responses:
+        "200":
+          description: 短时主清单，不可缓存
+          content:
+            application/vnd.apple.mpegurl:
+              schema: { type: string }
+        "401":
+          description: 令牌无效或过期
+  /v1/playback/{sessionId}/{variant}/index.m3u8:
+    get:
+      security: []
+      operationId: mediaPlaylist
+      parameters:
+        - $ref: "#/components/parameters/sessionId"
+        - name: variant
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: "#/components/parameters/exp"
+        - $ref: "#/components/parameters/sid"
+        - $ref: "#/components/parameters/sig"
+      responses:
+        "200":
+          description: 媒体清单。分片 URL 在边缘，密钥 URL 在网关。
+          content:
+            application/vnd.apple.mpegurl:
+              schema: { type: string }
+  /v1/keys/{keyId}:
+    get:
+      security: []
+      operationId: aesKey
+      parameters:
+        - name: keyId
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: "#/components/parameters/exp"
+        - $ref: "#/components/parameters/sid"
+        - $ref: "#/components/parameters/sig"
+      responses:
+        "200":
+          description: 16 字节 AES 密钥。Cache-Control private, no-store。
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+components:
+  securitySchemes:
+    serviceKey:
+      type: http
+      scheme: bearer
+  parameters:
+    sessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema: { type: string }
+    exp:
+      name: exp
+      in: query
+      required: true
+      schema: { type: integer }
+    sid:
+      name: sid
+      in: query
+      required: true
+      schema: { type: string }
+    sig:
+      name: sig
+      in: query
+      required: true
+      schema: { type: string }
+  schemas:
+    AssetRegister:
+      type: object
+      required: [tenant, assetId, title, licenseCode, licenseUri, attribution, sourceUrl, keyHex, variants]
+      properties:
+        tenant:
+          type: string
+          enum: [blockyedu, entfunhub, vistaremote, vistacast]
+        assetId: { type: string }
+        title: { type: string }
+        licenseCode:
+          type: string
+          enum: [CC0, PD, CC-BY, CC-BY-SA, MIT, PRIVATE]
+          description: >
+            PRIVATE = tenant-owned asset (BlockyEdu teacher upload). Not for OER redistribution.
+        licenseUri: { type: string, format: uri }
+        attribution: { type: string }
+        sourceUrl: { type: string, format: uri }
+        publicSuffix:
+          type: string
+          enum: [".m4s", ".seg", ".webp", ".bin"]
+        keyHex:
+          type: string
+          description: 32 个十六进制字符。只写入网关存储，响应不回显。
+        variants:
+          type: array
+          items: { $ref: "#/components/schemas/Variant" }
+    Variant:
+      type: object
+      required: [name, targetDuration, segments]
+      properties:
+        name: { type: string }
+        bandwidth: { type: integer }
+        targetDuration: { type: number }
+        segments:
+          type: array
+          items:
+            type: object
+            required: [name, duration]
+            properties:
+              name: { type: string }
+              duration: { type: number }
+              iv: { type: string }
+    AssetSummary:
+      type: object
+      required: [tenant, assetId, publicSuffix, segmentCount]
+      properties:
+        tenant: { type: string }
+        assetId: { type: string }
+        publicSuffix: { type: string }
+        segmentCount: { type: integer }
+    SessionCreate:
+      type: object
+      required: [tenant, assetId, subjectId]
+      properties:
+        tenant: { type: string }
+        assetId: { type: string }
+        subjectId: { type: string }
+    SessionGrant:
+      type: object
+      required: [sessionId, playlistUrl, expiresAt]
+      properties:
+        sessionId: { type: string }
+        playlistUrl: { type: string, format: uri }
+        expiresAt: { type: string, format: date-time }

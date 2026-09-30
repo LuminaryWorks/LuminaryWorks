@@ -9,10 +9,13 @@
 |---|------|------|
 | D-N1 | Notification 是**平台级**能力，不属于任一产品后台 | `@luminaryworks/notification` |
 | D-N2 | **一期**：共享 NestJS 代码包，随产品进程部署 | `LuminaryWorks/shared/packages/notification` |
-| D-N3 | **后期**：独立 `notification-service`（K8s / HTTP / 事件） | 保持契约不变，换实现 |
+| D-N3 | **认证邮件**提前做成独立 HTTP 服务；产品报表 SMTP 仍走共享包 | `services/notification`；Logto 只配一个 HTTP Email connector |
 | D-N4 | 一期 Email + 群机器人 **WeCom / Feishu / DingTalk**（`sendImWebhook`，无 Nest）；Slack / Teams / 通用 Webhook / SMS 仍仅枚举 | 扩展点不写死实现 |
-| D-N5 | **不引入** BullMQ、独立 DB、独立 HTTP 服务 | 用户量上来后再加队列 |
-| D-N6 | SMTP 凭据只进环境变量 / Secret，**禁止**写入源码或示例真实值 | 见 §5 |
+| D-N5 | 认证邮件服务自有 Postgres（profile / 幂等 / 额度）。**不引入** BullMQ。产品报表路径仍无独立 DB | `services/notification` |
+| D-N6 | SMTP / API 凭据只进环境变量、Secret 或加密列，**禁止**写入源码或示例真实值 | 见 §5 |
+| D-N7 | **Logto 拥有验证码状态机**；Notification 只负责投递 | 六个产品不自建 OTP |
+| D-N8 | 认证信 Provider 链：Resend → Brevo → Mailgun → SMTP（SES 槽位）。平台发件人与显示名只读 `MAIL_FROM` / `MAIL_FROM_NAME`；Mailgun 域名只读 `MAILGUN_DOMAIN`。用到日/月额度 **95%** 换下一家。超时不 failover，幂等键禁止双发 | `@luminaryworks/notification` auth-mail |
+| D-N9 | `EMAIL_AUTH_ENABLED=false` 关闭认证邮件（内网私有化）。SaaS 企业可存自带 Brevo / Resend / Mailgun / SMTP，未配置走平台链，发件人取 `MAIL_FROM` | `mail_profiles` |
 
 ## 1. 目标架构
 
@@ -63,7 +66,8 @@ DataTalk ReportModule
 
 | 能力 | 归属 |
 |------|------|
-| 注册 / 找回 / MFA 邮件 | Logto Experience |
+| 注册 / 找回 / MFA **验证码状态机** | Logto Experience（不自建第二套 OTP） |
+| 上述邮件的 **投递** | `services/notification` ← Logto HTTP Email connector |
 | 仪表盘订阅策略与 Puppeteer 渲染 | DataLuminary DataTalk |
 | 告警规则与 IoT 事件语义 | 各产品（如 VistaCast） |
 
@@ -135,11 +139,51 @@ AWS 侧前置：verified identity、退出 sandbox（或仅用允许收件人）
 
 | 阶段 | 形态 | 说明 |
 |------|------|------|
-| 一期（当前） | `modules/notification` 共享包 | 逻辑独立、部署合并 |
-| 二期 | + BullMQ / 重试 / 限流 | 用户量上升后 |
-| 三期 | 独立 `notification-service` | 产品改依赖为 HTTP/事件客户端，契约尽量不变 |
+| 一期 | 共享包 SMTP | 产品报表仍走 `NotificationService.sendEmail()` |
+| 认证邮件（当前） | `services/notification` HTTP + Provider 链 | 只承接 Logto 认证信与企业发信 profile。报表不迁入，避免和验证码抢免费额度 |
+| 后期 | 队列 / 产品信也进同一服务 | 契约保持 `EmailProvider`，再加 BullMQ |
 
-## 7. 验收（一期）
+## 7. 认证邮件
+
+```text
+Product SPA → Auth Gateway → Logto
+                              │  HTTP Email connector（全租户只有这一个）
+                              ▼
+                    services/notification
+                     POST /internal/logto/email
+                              │
+              ┌───────────────┼────────────────┐
+              ▼               ▼                ▼
+         组织 profile    部署 profile      平台链
+         （已验证）      （私有化默认）   Resend → Brevo → Mailgun → SMTP
+```
+
+选路：
+
+1. payload 里的 `organization.id` 命中已验证、已启用的组织 profile
+2. 否则收件域名命中 profile 的 `matchDomains`（拒绝 gmail.com 等公共域）
+3. 否则使用已验证的 `deployment` profile（私有化客户默认发信）
+4. 否则走平台链。发件人与显示名取环境变量 `MAIL_FROM`、`MAIL_FROM_NAME`。Mailgun 使用 `MAILGUN_DOMAIN`，未设置则不加入链。
+
+平台链按 `usage=auth|product` 分开计数。认证信默认 Resend 日 100 / 月 3000、Brevo 日 300。达到 **95%** 的新邮件走下一家，不等供应商把额度打满。OVH 上走供应商 HTTPS API（443），不用 25 端口。SMTP 槽位留给以后的 SES Mail Manager（587 + STARTTLS）和企业自带 SMTP。
+
+幂等键 `sha256(to + type + code + link)`。已成功直接返回；`pending` / 超时 `unknown` **不再打第二家**。只有明确拒绝（4xx，不含超时）或额度用尽才 failover。Logto 只有在供应商接受后才收到 HTTP 200。
+
+`EMAIL_AUTH_ENABLED=false`：服务对 webhook 返回 503；Identity bootstrap 卸下 `http-email` connector，注册不验证，Adaptive MFA 关闭。
+
+企业凭据 AES-GCM 后入库，管理 API 只接受服务间 `Authorization: Bearer`，不进浏览器、不进六个产品。`verified` 本期由操作员置位。
+
+部署 manifest `capabilities.notification`：
+
+| 取值 | 含义 |
+|------|------|
+| `none` | 不启用认证邮件（内网） |
+| `smtp` | 客户自带 SMTP（`deployment` profile） |
+| `platform` | SaaS 平台链（Resend / Brevo / SMTP 槽位） |
+
+凭据仍然不进 manifest。
+
+## 8. 验收（一期）
 
 - [x] `@luminaryworks/notification` 可 build / check / test
 - [x] DataTalk 报表邮件经 `NotificationService` 发送，无直接 nodemailer 引用

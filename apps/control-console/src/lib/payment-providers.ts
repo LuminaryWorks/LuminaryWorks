@@ -25,6 +25,8 @@ export const CRYPTO_PROVIDER_IDS = [
 
 export const CN_HOSTED_ALLOWLIST: readonly ProviderId[] = [
   "alipay_f2f",
+  "wechat_pay_v3",
+  "unionpay_quickpass",
   "manual",
   "mock",
 ];
@@ -203,6 +205,67 @@ export const STRUCTURED_CREDENTIAL_FIELDS: Partial<
       optional: true,
     },
   ],
+  alipay_f2f: [
+    { key: "appId", labelKey: "providers.fields.appId" },
+    {
+      key: "merchantPrivateKey",
+      labelKey: "providers.fields.merchantPrivateKey",
+      secret: true,
+    },
+    { key: "alipayPublicKey", labelKey: "providers.fields.alipayPublicKey" },
+    { key: "notifyUrl", labelKey: "providers.fields.notifyUrl" },
+    { key: "sellerId", labelKey: "providers.fields.sellerId", optional: true },
+  ],
+  paypal: [
+    { key: "clientId", labelKey: "providers.fields.clientId" },
+    { key: "clientSecret", labelKey: "providers.fields.clientSecret", secret: true },
+    { key: "webhookId", labelKey: "providers.fields.webhookId" },
+    { key: "returnUrl", labelKey: "providers.fields.returnUrl", optional: true },
+    { key: "cancelUrl", labelKey: "providers.fields.cancelUrl", optional: true },
+  ],
+  wechat_pay_v3: [
+    { key: "mchid", labelKey: "providers.fields.mchid" },
+    { key: "appid", labelKey: "providers.fields.appid" },
+    { key: "merchantSerial", labelKey: "providers.fields.merchantSerial" },
+    {
+      key: "merchantPrivateKey",
+      labelKey: "providers.fields.merchantPrivateKey",
+      secret: true,
+    },
+    { key: "apiV3Key", labelKey: "providers.fields.apiV3Key", secret: true },
+    { key: "platformCertPem", labelKey: "providers.fields.platformCertPem" },
+    { key: "platformCertSerial", labelKey: "providers.fields.platformCertSerial" },
+  ],
+  unionpay_quickpass: [
+    { key: "merId", labelKey: "providers.fields.merId" },
+    { key: "certId", labelKey: "providers.fields.certId" },
+    {
+      key: "merchantPrivateKey",
+      labelKey: "providers.fields.merchantPrivateKey",
+      secret: true,
+    },
+    { key: "unionpayPublicKey", labelKey: "providers.fields.unionpayPublicKey" },
+    { key: "frontUrl", labelKey: "providers.fields.frontUrl" },
+    { key: "backUrl", labelKey: "providers.fields.backUrl" },
+    { key: "checkoutMode", labelKey: "providers.fields.checkoutMode" },
+  ],
+  stripe_checkout: [
+    { key: "secretKey", labelKey: "providers.fields.secretKey", secret: true },
+    {
+      key: "webhookSecret",
+      labelKey: "providers.fields.webhookSecret",
+      secret: true,
+    },
+    { key: "successUrl", labelKey: "providers.fields.successUrl", optional: true },
+    { key: "cancelUrl", labelKey: "providers.fields.cancelUrl", optional: true },
+  ],
+  mock: [
+    {
+      key: "webhookSecret",
+      labelKey: "providers.fields.webhookSecret",
+      secret: true,
+    },
+  ],
   doerflow_credit: [
     { key: "baseUrl", labelKey: "providers.fields.baseUrl" },
     {
@@ -238,10 +301,33 @@ export function isCryptoProvider(provider: string): boolean {
 }
 
 export function defaultMarketScopes(providerId: ProviderId): string[] {
-  if (providerId === "creem" || providerId === "doerflow_credit") {
+  if (
+    providerId === "alipay_f2f" ||
+    providerId === "wechat_pay_v3" ||
+    providerId === "unionpay_quickpass"
+  ) {
+    return ["CN"];
+  }
+  if (
+    providerId === "paypal" ||
+    providerId === "stripe_checkout" ||
+    providerId === "creem" ||
+    providerId === "doerflow_credit" ||
+    providerId === "coinbase_commerce" ||
+    providerId === "okx_onchain" ||
+    providerId === "bitpay"
+  ) {
     return ["GLOBAL"];
   }
   return [];
+}
+
+export function defaultCurrencies(providerId: ProviderId): string[] {
+  if (defaultMarketScopes(providerId).includes("CN")) return ["CNY"];
+  if (providerId === "mock" || providerId === "manual" || providerId === "contract") {
+    return ["CNY", "USD"];
+  }
+  return ["USD"];
 }
 
 export function providerCnRestriction(

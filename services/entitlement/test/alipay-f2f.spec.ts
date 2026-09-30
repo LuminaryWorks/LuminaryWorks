@@ -237,6 +237,7 @@ describe("alipay_f2f adapter", () => {
         create: jest.fn((row: unknown) => row),
         save: jest.fn().mockRejectedValue(duplicate),
         update: jest.fn(),
+        findOne: jest.fn().mockResolvedValue({ status: "processed" }),
       } as never,
       { findOne: jest.fn() } as never,
       { findOne: jest.fn() } as never,
