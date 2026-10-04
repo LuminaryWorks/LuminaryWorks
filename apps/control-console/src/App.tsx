@@ -1,4 +1,5 @@
 import type { LuminaryAuthSession } from "@luminaryworks/auth-react";
+import { LoginLanguageSwitcher } from "@luminaryworks/auth-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -8,12 +9,13 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
-import { setLanguage } from "./i18n";
+import { type ConsoleLocale, readConsoleLocale, setLanguage } from "./i18n";
 import { createApiClient } from "./lib/api-client";
 import { isCallbackPath, signOut } from "./lib/auth";
 import type { RuntimeConfig } from "./lib/runtime-config";
 import { CallbackPage } from "./pages/CallbackPage";
 import { LoginPage } from "./pages/LoginPage";
+import { LegalPrivacyPage, LegalTermsPage } from "./pages/LegalPages";
 import {
   CapacityPage,
   CleanupPage,
@@ -27,7 +29,8 @@ import {
 } from "./pages/OverviewCatalogProviders";
 
 export function App({ runtime }: { runtime: RuntimeConfig }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const [locale, setLocale] = useState(readConsoleLocale);
   const location = useLocation();
   const origin = window.location.origin;
   const [session, setSession] = useState<LuminaryAuthSession | null>(null);
@@ -54,7 +57,17 @@ export function App({ runtime }: { runtime: RuntimeConfig }) {
     if (session) setNeedLogin(false);
   }, [session]);
 
+  if (window.location.pathname === "/legal/terms") {
+    return <LegalTermsPage product="LuminaryWorks Control Console" />;
+  }
+  if (window.location.pathname === "/legal/privacy") {
+    return <LegalPrivacyPage product="LuminaryWorks Control Console" />;
+  }
+
   if (isCallbackPath(window.location.pathname)) {
+    if (session) {
+      return <Navigate to="/" replace />;
+    }
     return (
       <CallbackPage runtime={runtime} origin={origin} onSession={onSession} />
     );
@@ -92,16 +105,16 @@ export function App({ runtime }: { runtime: RuntimeConfig }) {
           ))}
         </nav>
         <div className="aside-foot">
-          <label>
-            {t("nav.language")}
-            <select
-              value={i18n.language.startsWith("zh") ? "zh" : "en"}
-              onChange={(e) => setLanguage(e.target.value as "en" | "zh")}
-            >
-              <option value="en">English</option>
-              <option value="zh">中文</option>
-            </select>
-          </label>
+          <LoginLanguageSwitcher
+            variant="onDark"
+            locale={locale}
+            label={t("nav.language")}
+            onChange={(next) => {
+              const value = next as ConsoleLocale;
+              setLanguage(value);
+              setLocale(value);
+            }}
+          />
           <button type="button" onClick={() => void signOut(runtime, origin)}>
             {t("nav.logout")}
           </button>

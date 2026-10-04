@@ -10,6 +10,12 @@ import { bindRedirects } from "./runtime-config";
 
 export const CALLBACK_PATH = "/auth/callback";
 
+/** Dedupes StrictMode double-mount; oidc-client PKCE state is single-use. */
+let callbackInflight: Promise<{
+  session: LuminaryAuthSession;
+  returnUrl?: string;
+}> | null = null;
+
 export function toIdpConfig(
   runtime: RuntimeConfig,
   origin: string,
@@ -40,7 +46,11 @@ export async function completeCallback(
 ): Promise<{ session: LuminaryAuthSession; returnUrl?: string }> {
   const config = toIdpConfig(runtime, origin);
   if (!config) throw new Error("Identity is not configured");
-  return handleSignInCallback(config);
+  if (callbackInflight) return callbackInflight;
+  callbackInflight = handleSignInCallback(config).finally(() => {
+    callbackInflight = null;
+  });
+  return callbackInflight;
 }
 
 export async function signOut(

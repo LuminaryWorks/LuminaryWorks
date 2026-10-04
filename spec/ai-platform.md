@@ -15,6 +15,7 @@
 | D-AI-6 | **LLM 禁止**：原始 SQL、HTML、自行计算关键数字、持有数据源密码。 |
 | D-AI-7 | **产品通过 `@luminaryworks/ai-client` 调用**；未部署中央服务时，产品可用本地 BYOK 适配器（同一契约）。 |
 | D-AI-8 | **`ai=central` 当前为 lab**：pilot/production Manifest 必须被 preflight 拒绝，直到 `AI_CENTRAL_HARDENING_GATES` 全部翻转 | [composable-deployment.md](./composable-deployment.md) §9.2 |
+| D-AI-9 | **初创期推理默认走云 API / BYOK**（DeepSeek、OpenAI 等）；**禁止**各产品服务端默认部署自托管大模型（Ollama / vLLM / 自建 GPU 池）。端侧 / 客户主机 **4B–21B** 允许。仅当生态（含 EntFunHub、OmniSellerAI 等）有可量化的庞大需求，并经运营授权后，才在 **LuminaryWorks 统一层**自托管 LLM，避免各产品重复烧 GPU/运维。Agent 门禁见 `.cursor/rules/ai-hosting-policy.mdc`。 |
 
 ## 1. 定位
 
@@ -49,8 +50,8 @@ User → Product UI (unified dialog / copilot)
 |------|------------|--------------|
 | **DataLuminary** | DataInsight（DataTalk `src/modules/ai/`）、Semantic Layer、Analysis Engine、Chart/Dashboard tools、space ACL | LLM / embed / BYOK / stream / credits |
 | **BlockyEdu** | 教辅 prompt、Blockly/Monaco、artifact 校验、sandbox；`ai-bridge` 作 BFF | 替换直连 Gemini/Doubao/DeepSeek；不新建平行 `ai-engine` |
-| **VistaRemote** | Edge AI、录制、BullMQ worker、产品 RAG、Python ML、Casbin | 仅 LLM；`@vistaremote/ai` 作适配器；默认不出网 |
-| **VistaCast** | ONVIF/RTSP、ONNX/CV、告警（产品仓 Edge Runtime） | 可选告警叙事；**不做**实时 CV 经网关 |
+| **VistaRemote** | Edge AI（端侧 4B–21B / ONNX）、录制、BullMQ worker、产品 RAG、Python ML、Casbin | LLM 经适配器走云 API / BYOK（`LUMINARY_AI_*` → DeepSeek / OpenAI…）；**不**在产品服务端默认挂 Ollama/vLLM |
+| **VistaCast** | ONVIF/RTSP、ONNX/CV、客户主机端侧推理（含 4B–21B）、告警（产品仓 Edge Runtime） | 可选告警叙事走云 API；**不做**实时 CV 经网关；**禁**自建云 GPU |
 | **SyncroBrain** | 设备、MQTT、规则、遥测 hook | LLM/RAG/quota；不自建 IoT LLM 栈 |
 | **DoerFlow** | AgentNFT、SkillRegistry、Escrow/Merkle、SIWE | 可选推理 + 预留 `ai.strategy.run`。ChainSkill ≠ AiTool |
 
@@ -96,3 +97,14 @@ DataLuminary MVP **不得** 在 DataTalk 另造一套日后必须拆除的 Provi
 | `readiness` | false | 须实现 `/ready`，反映 provider / vault / 存储依赖 |
 
 参考场景使用 `ai=off` 或 `ai=local_byok`。翻转某一 gate **必须**与该能力落地同一改动，禁止提前把 Manifest 标成 production。详见 [composable-deployment.md §9.2](./composable-deployment.md)。
+
+## 8. 推理托管分层（D-AI-9）
+
+| 层 | 何时 | 做什么 |
+|---|---|---|
+| **产品 `ai` Worker / BFF** | 早期默认 | 业务编排 + 调用云 API（DeepSeek / OpenAI / 中央网关 BYOK）；**不**捆绑 Ollama/vLLM 进生产 Compose/K8s |
+| **端侧 / 客户主机** | 始终允许 | 4B / 7B / 21B 等本地模型（VistaRemote desktop edge-ai、VistaCast client-infer 等）；隐私敏感默认不上云 |
+| **Lab Compose profile** | 本机离线实验 | 可选 `ollama` sidecar；**禁止**写成服务端默认依赖或生产 runbook |
+| **LuminaryWorks 统一自托管** | 需求门禁通过后 | 单一 GPU/推理池服务全生态（含 EntFunHub、OmniSellerAI）；产品只改 baseUrl，不各自起集群 |
+
+解除「不部署大模型」规定前，须收集：日 token / 并发、延迟与可用性、数据驻留、预估 GPU 月成本、是否跨产品复用；并获明确授权。

@@ -1,12 +1,12 @@
 # 隐私政策（工程模板）
 
-**非法律意见（NOT LEGAL ADVICE）。** LuminaryWorks Hosted SaaS 工程模板（`lw-legal-v2026-09-07`）。上线前须由合格律师审阅。英文：[Privacy Policy](../en/privacy.md)。
+**非法律意见（NOT LEGAL ADVICE）。** LuminaryWorks 托管于 OVH 的上线文本（`lw-legal-v2026-10-03`）。建议由法国执业律师复核。英文：[Privacy Policy](../en/privacy.md)。
 
 相关：[服务条款](./terms.md) · [Trial 与数据删除政策](./trial-data-deletion.md) · [权益规范](../../subscription-and-entitlement.md)
 
 ## 1. 运营方
 
-LuminaryWorks Hosted SaaS 的运营方为提供身份、权益、支付与产品功能而处理账户、账单与产品数据。法律主体、联系方式与个人信息保护联系人：**〔运营方填写〕**。
+运营方对外名称为 LuminaryWorks（启明工坊），为本服务处理身份、权益、支付与产品数据。个人信息保护联系人为 admin@luminaryworks.dev。登记地址与登记号以 https://luminaryworks.dev/legal 页眉公示为准。
 
 ## 2. 处理的数据
 
@@ -47,7 +47,7 @@ LuminaryWorks Hosted SaaS 的运营方为提供身份、权益、支付与产品
 
 账户存续期间您可查看账户与账单。您必须在 `endsAt` **之前** 导出 Trial 数据。不可恢复清理完成后，即使日后付费也无法还原产品内容。
 
-超出本政策的身份删除请求：**〔运营方填写流程〕**。法律要求时，账单与审计记录仍可保留。
+如需删除身份，请使用账户邮箱向 admin@luminaryworks.dev 发送请求。我们会先核验您控制该账户，再删除或匿名化身份资料。法律要求保留的账单、支付与审计记录可以继续保存。
 
 ## 7. 安全
 
@@ -55,10 +55,10 @@ LuminaryWorks Hosted SaaS 的运营方为提供身份、权益、支付与产品
 
 ## 8. 跨境与未成年人
 
-托管路由可能使用可信代理提供的国家码。若您低于所在法域要求的最低年龄，请勿使用本服务。**〔运营方填写〕**。
+托管路由可能使用可信代理提供的国家码。服务托管在 OVH。自行创建账户须年满 15 周岁。未满 15 周岁的人不得自行注册；BlockyEdu 等教学功能仅可在父母或其他法定监护人同意并管理账户时使用。
 
 ## 9. 变更
 
 新产品 `policyVersion` 将在产品内公布。激活 Trial 须接受当前 Trial 删除政策版本。
 
-生效日：2026-09-07。版本：`lw-legal-v2026-09-07`。
+生效日：2026-10-03。版本：`lw-legal-v2026-10-03`。

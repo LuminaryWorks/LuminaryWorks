@@ -1,0 +1,54 @@
+---
+description: Cloud LLM APIs + edge models early; no product-server self-hosted large models without demand authorization
+alwaysApply: true
+---
+
+# AI hosting policy (LuminaryWorks ecosystem)
+
+Normative specs: `LuminaryWorks/spec/ai-platform.md` (D-AI-9) · `ai-product-integration.md` · `ai-provider-and-vault.md`.
+
+## Early stage (default)
+
+For VistaRemote, VistaCast, DataLuminary, BlockyEdu, DoerFlow, SyncroBrain, and sibling projects (EntFunHub, OmniSellerAI, etc.):
+
+1. **Cloud / BYOK first** — DeepSeek, OpenAI, Anthropic, Gemini, or Luminary AI Platform / product BYOK (`LUMINARY_AI_*`, provider vault). Product `ai` Workers and BFFs are **adapters + domain orchestration**, not GPU hosts.
+2. **No product-server self-hosted large models** — Do **not** add Ollama, vLLM, or a self-built GPU inference pool to product production Compose/K8s/runbooks as a default dependency. Lab Compose may keep an **opt-in** `profiles: ["ai"]` (or equivalent) Ollama for offline experiments only.
+3. **Edge / customer-host models are allowed** — On-device or customer-machine inference (≈ **4B / 7B / 21B**, ONNX/CV, client-infer) is encouraged where privacy or latency requires it (e.g. VistaRemote desktop edge-ai, VistaCast client-infer).
+
+## Unified self-host (later, LuminaryWorks layer only)
+
+Stand up a **single** shared LLM stack at the LuminaryWorks control / platform layer only when demand across products (and non-eco consumers such as EntFunHub / OmniSellerAI) justifies GPU/ops cost. Products then point at that base URL; they must **not** each ship their own production Ollama/vLLM.
+
+## Agent hard gate (before deploying large models)
+
+If the user asks to **deploy a large model**, **add Ollama/vLLM to a server**, **bake GPU inference into product deploy**, or **make self-hosted LLM the production default**:
+
+1. **Stop.** Do not edit production deploy or flip defaults yet.
+2. **Ask for authorization inputs** (record answers):
+   - Daily tokens / concurrent requests (QPS)
+   - Latency and availability targets
+   - Data residency / must-not-egress constraints
+   - Estimated monthly GPU + ops cost
+   - Whether multiple products/projects will share the pool (VistaRemote, VistaCast, EntFunHub, OmniSellerAI, …)
+3. Wait for an explicit unlock such as「解除不部署大模型的规定」/「授权部署自托管大模型」, with scope (lab-only vs LuminaryWorks unified).
+4. Only then implement — prefer **LuminaryWorks unified** hosting; never silently add per-product production Ollama.
+
+## Allowed without unlock
+
+- Wiring `LUMINARY_AI_*` / DeepSeek / OpenAI / other cloud providers
+- Product AI Worker calling those APIs
+- Edge / customer-host 4B–21B packaging and docs
+- Keeping or documenting lab-only `--profile ai` Ollama (must say **lab-only, not production**)
+
+## Forbidden without unlock
+
+- Making Ollama/vLLM a default `docker compose up` / bootstrap / production dependency for a product server
+- Shipping product install packs that require a server-side self-hosted LLM
+- Claiming「私有化 Ollama 默认」as the early-stage product architecture
+- Building a separate cloud GPU cluster inside a single product repo when a LuminaryWorks-shared pool is the intended end state
+
+## Scope
+
+Applies to LuminaryWorks MetaRepo and all ecosystem products: DataLuminary, BlockyEdu, DoerFlow, VistaRemote, VistaCast, SyncroBrain (and nested deploy trees). Also guides agents working on EntFunHub / OmniSellerAI when those trees are in the workspace.
+
+Re-sync from LuminaryWorks: `pnpm sync:cursor-ai-hosting`

@@ -77,7 +77,7 @@ DataLuminary 旧 compose **保留至 LW-S2**，标注 deprecated，避免破坏�
 |------|------|
 | DataTalk 本地 BYOK 适配器 | 同一 `@luminaryworks/ai-client` 契约；设 `LUMINARY_AI_BASE_URL` 后切中央网关 |
 | BlockyEdu 直连 Gemini / Doubao / DeepSeek | `ai-bridge` → ai-client；不新建平行 `ai-engine` |
-| VistaRemote `@vistaremote/ai` 直持 SaaS key | 适配器 + 默认私有 Ollama/vLLM；组织显式开启才出网 |
+| VistaRemote `@vistaremote/ai` 直持 SaaS key | 适配器 + 早期默认云 API / BYOK（`LUMINARY_AI_*` → DeepSeek / OpenAI…）；产品服务端不默认挂 Ollama/vLLM；端侧 4B–21B 保留在产品仓；统一自托管仅 LW 层且需需求授权 |
 | 各产品自建 token 计费 | [ai-metering.md](./ai-metering.md) 用量事件；托管额度后置 |
 
 权威边界：[ai-platform.md](./ai-platform.md)。**禁止** 在产品仓另造语义不同的 Provider/Vault。

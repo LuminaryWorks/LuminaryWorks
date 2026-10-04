@@ -1,5 +1,5 @@
 import type { LuminaryAuthSession } from "@luminaryworks/auth-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { completeCallback } from "../lib/auth";
 import type { RuntimeConfig } from "../lib/runtime-config";
@@ -15,10 +15,18 @@ export function CallbackPage({
 }) {
   const { t } = useTranslation();
   const [error, setError] = useState("");
+  const started = useRef(false);
 
   useEffect(() => {
+    // Dev StrictMode remounts effects; oidc-client state is single-use.
+    if (started.current) return;
+    started.current = true;
     void completeCallback(runtime, origin)
-      .then(({ session }) => onSession(session))
+      .then(({ session, returnUrl }) => {
+        const next = returnUrl?.startsWith("/") ? returnUrl : "/";
+        window.history.replaceState(null, "", next);
+        onSession(session);
+      })
       .catch((err: unknown) =>
         setError(err instanceof Error ? err.message : String(err)),
       );

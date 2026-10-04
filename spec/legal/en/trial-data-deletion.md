@@ -1,6 +1,6 @@
 # Trial and Data Deletion Policy (engineering template)
 
-**NOT LEGAL ADVICE.** Engineering template (`lw-legal-v2026-09-07`) describing how LuminaryWorks Hosted SaaS runs Trials. Chinese: [Trial 与数据删除政策](../zh/trial-data-deletion.md).
+**NOT LEGAL ADVICE.** Engineering template (`lw-legal-v2026-10-03`) describing how LuminaryWorks Hosted SaaS runs Trials. Chinese: [Trial 与数据删除政策](../zh/trial-data-deletion.md).
 
 Related: [Terms](./terms.md) · [Privacy](./privacy.md) · [subscription-and-entitlement.md](../../subscription-and-entitlement.md)
 
@@ -71,4 +71,4 @@ Trial media and files sit on **single-node** object storage **without SLA**. Sha
 
 ## 9. Version
 
-Effective date: 2026-09-07. Version: `lw-legal-v2026-09-07`.
+Effective date: 2026-10-03. Version: `lw-legal-v2026-10-03`.

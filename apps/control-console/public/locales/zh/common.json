@@ -23,7 +23,12 @@
     "callback": "正在完成登录…",
     "callbackError": "登录回调失败",
     "required": "需要登录",
-    "reauth": "会话已过期，请重新登录。"
+    "reauth": "会话已过期，请重新登录。",
+    "termsLead": "我已阅读并同意",
+    "termsAnd": "和",
+    "platformTerms": "《LuminaryWorks 用户协议》",
+    "productTerms": "《控制台用户协议》",
+    "privacy": "《隐私政策》"
   },
   "errors": {
     "code": "错误码",
@@ -168,7 +173,13 @@
       "hostedUrl": "托管 URL",
       "qr": "二维码",
       "requiresQueryBeforeFulfill": "履约前先查询"
-    }
+    },
+    "configured": "已配置渠道",
+    "empty": "还没有渠道。保存一条之后会出现在这里。",
+    "createTitle": "新增渠道",
+    "detailTitle": "渠道详情",
+    "enabled": "已启用",
+    "disabled": "未启用"
   },
   "orders": {
     "title": "订单与支付",

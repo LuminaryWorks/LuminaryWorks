@@ -1,12 +1,12 @@
 # Privacy Policy (engineering template)
 
-**NOT LEGAL ADVICE.** Engineering template for LuminaryWorks Hosted SaaS (`lw-legal-v2026-09-07`). Have qualified counsel review before production. Chinese: [隐私政策](../zh/privacy.md).
+**NOT LEGAL ADVICE.** OVH-hosted production text for LuminaryWorks (`lw-legal-v2026-10-03`). Have a lawyer admitted in France review it. Chinese: [隐私政策](../zh/privacy.md).
 
 Related: [Terms](./terms.md) · [Trial and Data Deletion](./trial-data-deletion.md) · [Entitlement spec](../../subscription-and-entitlement.md)
 
 ## 1. Who we are
 
-The operator of LuminaryWorks Hosted SaaS processes account, billing, and product data to provide identity, entitlement, payments, and product features. Legal entity, contact, and DPO/representative: **\[operator to insert\]**.
+The operator's public name is LuminaryWorks (启明工坊). It processes identity, entitlement, payment, and product data for this service. Privacy contact: admin@luminaryworks.dev. Registered address and registration number are those published in the header of https://luminaryworks.dev/legal.
 
 ## 2. Data we process
 
@@ -47,7 +47,7 @@ We share data with: identity hosting, payment providers you checkout with, email
 
 You may access account and billing views while the account exists. You must **export Trial data before `endsAt`**. After irreversible purge, product content cannot be restored even if you later pay.
 
-To request identity deletion beyond these policies: **\[operator to insert process\]**. Billing and audit records may still be retained where law requires.
+To delete an identity, email admin@luminaryworks.dev from the account address. We verify that you control the account, then delete or anonymize identity data. Billing, payment, and audit records may be kept where the law requires.
 
 ## 7. Security
 
@@ -55,10 +55,10 @@ Secrets for payment providers are encrypted and are not shown in plaintext to co
 
 ## 8. International and children
 
-Hosted routing may use country codes from a trusted proxy. Do not use the service if you are below the minimum age required in your jurisdiction. **\[operator to insert\]**.
+Hosted routing may use country codes from a trusted proxy. The service runs on OVH. You must be at least 15 to create an account yourself. Anyone younger may use teaching features such as BlockyEdu only when a parent or other legal guardian consents and manages the account.
 
 ## 9. Changes
 
 A new `policyVersion` will be published in-product. Trial activation requires accepting the current Trial deletion policy version.
 
-Effective date: 2026-09-07. Version: `lw-legal-v2026-09-07`.
+Effective date: 2026-10-03. Version: `lw-legal-v2026-10-03`.

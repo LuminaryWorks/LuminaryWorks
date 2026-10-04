@@ -1,0 +1,53 @@
+---
+description: Dual login ToS — LuminaryWorks platform + per-product, env-configurable clickwrap
+alwaysApply: true
+---
+
+# 登录用户协议：集团通用 + 产品专用（LuminaryWorks 生态）
+
+每个面向终端用户的登录页必须同时出示：
+
+1. **LuminaryWorks 通用协议**（身份、账号、集团免责、隐私骨架）
+2. **该产品自己的协议**（远控、钱包、数据洞察等产品风险）
+
+禁止用一份「万能协议」覆盖所有产品。禁止「登录即视为同意」且无显著链接。
+
+## Required
+
+- **Clickwrap**：未默认勾选的「我已阅读并同意」；未勾选不得账密登录、注册、Google/GitHub。
+- **可配置 URL**（登录 UI 禁止写死）。用 `@luminaryworks/auth-react` 的 `readLoginLegalConfigFromEnv` / `buildLoginLegalDocuments`，或等价静态 `import.meta.env` 读取：
+
+```bash
+# 集团（默认 https://luminaryworks.dev/legal/terms|privacy）
+PUBLIC_LEGAL_PLATFORM_TERMS_URL=
+PUBLIC_LEGAL_PLATFORM_PRIVACY_URL=
+# 本产品（默认 /legal/terms 与 /legal/privacy）
+PUBLIC_LEGAL_PRODUCT_TERMS_URL=
+PUBLIC_LEGAL_PRODUCT_PRIVACY_URL=
+```
+
+Rsbuild/Vite 用 `PUBLIC_*` 或 `VITE_*`；Next 用 `NEXT_PUBLIC_*`。打包时按环境烤入，lab/prod 可以指向不同主机。
+
+- **HeadlessLoginPanel**：`consentOk={false}` 直到勾选；`consent` 插槽放勾选框，或只传 `consentDocuments`。
+- **Google/GitHub**：OAuth 授权页 ≠ 产品/集团协议同意。必须在**跳转前**勾选。
+- **记住账号**：只存标识符；禁止把密码写入 localStorage。
+- 正文来源：集团模板 `LuminaryWorks/spec/legal/`；产品附录在各自仓（VistaRemote 远控免责、DoerFlow 钱包风险只写在 DoerFlow）。
+- Agent / 安装包：无登录的被控端走安装许可，不替代主控 clickwrap。
+
+## Forbidden
+
+- 默认勾选协议
+- 只链集团协议、不链产品协议（或反过来）
+- 把 DoerFlow 钱包免责写进 VistaRemote（或把远控免责写进 DataLuminary）
+- 在 `t()` 里用 `defaultValue` 当协议标题
+
+## Reference
+
+- Spec：`LuminaryWorks/spec/legal/README.md` · `spec/identity-and-permissions.md`
+- UI：`shared/packages/auth-react`（`login-legal.ts`）
+- Skill：`.cursor/skills/product-auth-implementation/SKILL.md`
+- 同步：在 LuminaryWorks 根目录 `pnpm sync:cursor-login-terms-rule`
+
+## Scope
+
+Applies to LuminaryWorks MetaRepo and all ecosystem products: DataLuminary, BlockyEdu, DoerFlow, VistaRemote, VistaCast, SyncroBrain (end-user login surfaces).

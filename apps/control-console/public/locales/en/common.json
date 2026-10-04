@@ -23,7 +23,12 @@
     "callback": "Completing sign-in…",
     "callbackError": "Sign-in callback failed",
     "required": "Sign in required",
-    "reauth": "Session expired. Sign in again."
+    "reauth": "Session expired. Sign in again.",
+    "termsLead": "I have read and agree to the",
+    "termsAnd": "and",
+    "platformTerms": "LuminaryWorks Terms",
+    "productTerms": "Control Console Terms",
+    "privacy": "Privacy Policy"
   },
   "errors": {
     "code": "Error code",
@@ -168,7 +173,13 @@
       "hostedUrl": "Hosted URL",
       "qr": "QR",
       "requiresQueryBeforeFulfill": "Query before fulfil"
-    }
+    },
+    "configured": "Configured channels",
+    "empty": "No channels yet. Saved channels show up here.",
+    "createTitle": "Add a channel",
+    "detailTitle": "Channel details",
+    "enabled": "Enabled",
+    "disabled": "Not enabled"
   },
   "orders": {
     "title": "Orders & payments",

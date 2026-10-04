@@ -1,0 +1,96 @@
+{
+  "folders": [
+    {
+      "name": "LuminaryWorks",
+      "path": "."
+    },
+    {
+      "name": "control-console",
+      "path": "apps/control-console"
+    },
+    {
+      "name": "entitlement",
+      "path": "services/entitlement"
+    },
+    {
+      "name": "ai-platform",
+      "path": "services/ai-platform"
+    },
+    {
+      "name": "notification",
+      "path": "services/notification"
+    },
+    {
+      "name": "media-gateway",
+      "path": "services/media-gateway"
+    },
+    {
+      "name": "shared",
+      "path": "shared"
+    }
+  ],
+  "settings": {
+    "files.watcherExclude": {
+      "**/node_modules/**": true,
+      "**/dist/**": true,
+      "**/build/**": true,
+      "**/out/**": true,
+      "**/.next/**": true,
+      "**/coverage/**": true,
+      "**/.cache/**": true,
+      "**/doc_build/**": true,
+      "**/.rspress/**": true,
+      "**/*.tsbuildinfo": true,
+      "**/target/**": true,
+      "**/.cxx/**": true,
+      "**/app/build/**": true,
+      "**/.worktrees/**": true,
+      "**/dist-electron/**": true,
+      "**/dist-viewer/**": true,
+      "**/.wrangler/**": true,
+      "website/**": true,
+      "share-demo/**": true
+    },
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/build": true,
+      "**/out": true,
+      "**/.next": true,
+      "**/coverage": true,
+      "**/.cache": true,
+      "**/doc_build": true,
+      "**/.rspress": true,
+      "**/*.tsbuildinfo": true,
+      "**/target": true,
+      "**/.cxx": true,
+      "**/app/build": true,
+      "**/.worktrees": true,
+      "**/dist-electron": true,
+      "**/dist-viewer": true,
+      "**/.wrangler": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/dist": true,
+      "**/build": true,
+      "**/out": true,
+      "**/.next": true,
+      "**/coverage": true,
+      "**/.cache": true,
+      "**/doc_build": true,
+      "**/.rspress": true,
+      "**/*.tsbuildinfo": true,
+      "**/target": true,
+      "**/.cxx": true,
+      "**/app/build": true,
+      "**/.worktrees": true,
+      "**/dist-electron": true,
+      "**/dist-viewer": true,
+      "**/.wrangler": true,
+      "website/**": true,
+      "share-demo/**": true
+    },
+    "search.useIgnoreFiles": true
+  }
+}

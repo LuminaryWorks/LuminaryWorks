@@ -51,10 +51,12 @@ export function bindRedirects(
   origin: string,
 ): RuntimeConfig {
   const trimmed = origin.replace(/\/$/, "");
+  // Always bind to the live browser origin so localhost vs 127.0.0.1 stay same-origin
+  // for Experience cookies and OIDC redirects (config.json may list either host).
   return {
     ...config,
-    redirectUri: config.redirectUri || `${trimmed}/auth/callback`,
-    postLogoutRedirectUri: config.postLogoutRedirectUri || `${trimmed}/`,
-    experienceApiBase: config.experienceApiBase || trimmed,
+    redirectUri: `${trimmed}/auth/callback`,
+    postLogoutRedirectUri: `${trimmed}/`,
+    experienceApiBase: trimmed,
   };
 }

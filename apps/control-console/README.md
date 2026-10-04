@@ -12,7 +12,7 @@ This is **not** the Logto Admin Console (`IDENTITY_ADMIN_PORT`, typically `:3002
 - Local callbacks: `http://localhost:3050/auth/callback` and `http://127.0.0.1:3050/auth/callback`. Production: add the public HTTPS origin in Logto (do not commit secrets). Social connectors are disabled in the login panel.
 - 401 → re-auth. 402 (commercial entitlement) is shown separately from 403 (missing admin scope / forbidden).
 
-Runtime config is served from **`GET /config.json`** (Vite middleware in dev, Fastify in production). Rebuild is not required to change issuer, client id, or Entitlement URL.
+Runtime config is served from **`GET /config.json`** (Rsbuild middleware in dev, Fastify in production). Rebuild is not required to change issuer, client id, or Entitlement URL. The SPA always rebinds redirects / Experience API to `window.location.origin` so `localhost` and `127.0.0.1` both work.
 
 ## Dev
 
@@ -22,8 +22,11 @@ pnpm install
 pnpm dev               # 127.0.0.1:3050
 ```
 
-Same-origin IdP proxy (`@luminaryworks/auth-dev-proxy`) is enabled for Headless login. Entitlement CORS must allow the console origin, or use the Vite `/v1` proxy.
+Toolchain: **Rsbuild** + **RsTest** + Biome（与生态前端一致；非 Vite）。
 
+Login: platform `superadmin` from `identity/ACCOUNTS.dev.env` (not Logto Admin `:3002`). Use the language switcher on the login page (en / zh).
+
+Same-origin IdP proxy (`@luminaryworks/auth-dev-proxy`, `spaOriginFromRequest`) is enabled for Headless login. Entitlement CORS must allow the console origin, or use the Rsbuild `/v1` proxy. Start Entitlement (`pnpm ent:dev`) for catalog / providers APIs.
 ## Production
 
 `pnpm build && node server/main.mjs` (or the Docker image). Endpoints: `/health`, `/ready`, `/version`, `/config.json`.

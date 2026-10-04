@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, rstest } from "@rstest/core";
 import {
   assertNoSecretPersistence,
   createApiClient,
@@ -47,8 +47,8 @@ describe("API client redaction and storage", () => {
   });
 
   it("calls reauth on 401 and surfaces 402 vs 403 codes", async () => {
-    const unauthorized = vi.fn();
-    const fetchImpl = vi.fn(async (url: string) => {
+    const unauthorized = rstest.fn();
+    const fetchImpl = rstest.fn(async (url: string) => {
       if (String(url).includes("orders")) {
         return new Response(
           JSON.stringify({ error: { code: "UNAUTHORIZED", message: "no" } }),

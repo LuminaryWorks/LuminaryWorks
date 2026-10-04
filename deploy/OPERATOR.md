@@ -238,6 +238,19 @@ node scripts/remote-deploy.mjs \
 
 你本机若已有 `identity/ACCOUNTS.dev.env`，以该文件为准（可能域名是 `luminaryworks.dev` 而不是 `.local`）。UTM 验证 seed 用的是 `.dev` 邮箱。
 
+### 6.3 实验室重置会员窗口（user01–user10）
+
+试用过期后 VistaRemote 会显示「已达会话上限（0 台）」（`free` + 无试用 → 并发会话配额 0）。本机可重复执行：
+
+```bash
+# LuminaryWorks MetaRepo 根目录
+pnpm lab:reset-membership
+# 可选：pnpm lab:reset-membership -- --users user03 --days 7 --plan pro
+# 预览：pnpm lab:reset-membership -- --dry-run
+```
+
+脚本会：清 Entitlement `trial_redemptions`、为各产品写入 **7 天 `pro`** subscription/grant，并同步 VistaRemote `users.plan` / `trialEndsAt` / `planExpiresAt`。改完后 **重新登录** Client。
+
 ## 7. 控制面端口与探针
 
 | 服务 | 宿主机端口 | 探针 |

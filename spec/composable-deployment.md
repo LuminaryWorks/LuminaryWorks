@@ -209,7 +209,7 @@ binding = (issuer, sub) × orgId? × productTenantId × resourceId
 | | `offline_license` | 离线签名 License（公钥验签；**不得**硬依赖中央服务） | pilot |
 | `ai` | `off` | 关闭 AI 能力 | production |
 | | `central` | 中央 AI Platform | **lab**：pilot/production 拒绝，见 §9.2 |
-| | `local_byok` | 产品本地 BYOK | pilot |
+| | `local_byok` | 产品本地 BYOK（客户云厂商 API key / 指定 OpenAI-compatible endpoint；**不是**捆绑 Ollama 进产品生产栈） | pilot |
 | `notification` | `none` | 不启用认证邮件（内网私有化） | production |
 | | `smtp` | 客户自带 SMTP；凭据来自 env / secret store，**不进 manifest** | pilot |
 | | `platform` | SaaS 平台链（Resend / Brevo / SMTP 槽位）；凭据同样不进 manifest | pilot |

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@rstest/core";
 import { CALLBACK_PATH, isCallbackPath, toIdpConfig } from "./auth";
 import type { RuntimeConfig } from "./runtime-config";
 

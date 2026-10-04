@@ -3,7 +3,9 @@
     "target": "ES2022",
     "module": "CommonJS",
     "moduleResolution": "bundler",
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "outDir": "dist",
     "rootDir": "src",
     "strict": true,
@@ -12,5 +14,11 @@
     "emitDecoratorMetadata": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

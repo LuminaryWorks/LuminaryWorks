@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "@rstest/core";
 import {
   assertPublicRuntimeConfig,
   bindRedirects,
@@ -25,6 +25,14 @@ describe("runtime config", () => {
     const bound = bindRedirects(base, "http://localhost:3050");
     expect(bound.redirectUri).toBe("http://localhost:3050/auth/callback");
     expect(bound.postLogoutRedirectUri).toBe("http://localhost:3050/");
+    expect(bound.experienceApiBase).toBe("http://localhost:3050");
+  });
+
+  it("overrides config.json hosts with the live 127.0.0.1 origin", () => {
+    const bound = bindRedirects(base, "http://127.0.0.1:3050");
+    expect(bound.redirectUri).toBe("http://127.0.0.1:3050/auth/callback");
+    expect(bound.postLogoutRedirectUri).toBe("http://127.0.0.1:3050/");
+    expect(bound.experienceApiBase).toBe("http://127.0.0.1:3050");
   });
 
   it("rejects clientSecret on the public config object", () => {

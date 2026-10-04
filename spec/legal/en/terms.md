@@ -1,6 +1,6 @@
 # Terms of Service (engineering template)
 
-**NOT LEGAL ADVICE.** This is an engineering contract template for LuminaryWorks Hosted SaaS (`lw-legal-v2026-09-07`). It is not a substitute for counsel. Replace operator legal names, addresses, and governing-law clauses before production publication.
+**NOT LEGAL ADVICE.** This is the OVH-hosted production text for LuminaryWorks (`lw-legal-v2026-10-03`). Have a lawyer admitted in France review it. The operator's public name is LuminaryWorks (启明工坊). Registered address and registration number are those published in the header of [luminaryworks.dev/legal](https://luminaryworks.dev/legal).
 
 Related: [Privacy](./privacy.md) · [Trial and Data Deletion](./trial-data-deletion.md) · [中文条款](../zh/terms.md) · [Entitlement spec](../../subscription-and-entitlement.md)
 
@@ -54,6 +54,8 @@ The operator may publish a new `policyVersion`. Continued account use after noti
 
 THE SERVICE IS PROVIDED WITHOUT WARRANTY OF AVAILABILITY, DURABILITY, OR FITNESS. SINGLE-NODE STORAGE AND PILOT DORIS ARE PROVIDED AS-IS. TO THE MAXIMUM EXTENT PERMITTED BY LAW, LIABILITY IS LIMITED TO FEES PAID FOR THE THEN-CURRENT TERM.
 
-Governing law, venue, and consumer-rights carve-outs: **\[operator to insert\]**.
+These Terms are governed by French law. Mandatory consumer-protection rules of the European Union and of your country of residence, and the GDPR, are not waived. Disputes are heard by the French courts that have jurisdiction at the operator's registered seat. If you are a consumer, you may still sue in the courts allowed by the law of your residence.
 
-Effective date: 2026-09-07. Version: `lw-legal-v2026-09-07`.
+You must be at least 15 years old to create an account yourself. Privacy and deletion requests: admin@luminaryworks.dev.
+
+Effective date: 2026-10-03. Version: `lw-legal-v2026-10-03`.

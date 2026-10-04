@@ -14,7 +14,7 @@
 | `mimo` | 小米 MiMo | API key + model；可多区域 Base URL |
 | `doubao` | 火山方舟 Ark（`/api/v3/chat/completions`） | API key + model（模型名或接入点 ID） |
 | `openai` | OpenAI | API key + model |
-| `openai-compatible` | 自建 / 代理 / vLLM / Ollama | baseUrl + API key + model |
+| `openai-compatible` | 自建 / 代理 / 未来统一层 vLLM；Ollama **仅 lab** 或客户主机端侧 | baseUrl + API key + model |
 | `anthropic` | Anthropic Messages | API key + model |
 | `gemini` | Google AI Studio | API key + model |
 | `vertex` | Vertex AI | service account / ADC（后期） |
@@ -22,7 +22,9 @@
 | `bedrock` | AWS Bedrock | IAM / keys（后期） |
 | `luminary-managed` | 平台托管额度 | 平台签发的 connection id；BlockyEdu ToC 口语默认 |
 
-MVP 必须实现：`deepseek`、`qwen`、`kimi`、`mimo`、`doubao`、`openai`、`openai-compatible`、`anthropic`、`gemini`。`vertex` / `azure-openai` / `bedrock` 保留枚举，未实现时返回明确错误。Ollama 走 `openai-compatible` + 本地 baseUrl。
+MVP 必须实现：`deepseek`、`qwen`、`kimi`、`mimo`、`doubao`、`openai`、`openai-compatible`、`anthropic`、`gemini`。`vertex` / `azure-openai` / `bedrock` 保留枚举，未实现时返回明确错误。
+
+**托管默认**：产品早期连接 DeepSeek / OpenAI 等云厂商（或中央网关 BYOK）。`openai-compatible` 保留给代理、客户指定 endpoint、以及未来 **LuminaryWorks 统一自托管** baseUrl——**不是**各产品生产 Compose 默认捆绑 Ollama/vLLM。本机离线实验可用 Ollama（`openai-compatible` + 本地 baseUrl）；不得写入生产默认路径。见 [ai-platform.md](./ai-platform.md) D-AI-9。
 
 权威目录、建议模型、区域 Base URL、表单默认值与「拉官方模型列表」协议在 **`@luminaryworks/ai-client`**（`./catalog` 子路径可被浏览器引用，不含 Vault）。产品不得再维护一份会分叉的 Provider 枚举或 suggestedModels。
 

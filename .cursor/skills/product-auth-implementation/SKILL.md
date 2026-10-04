@@ -70,6 +70,7 @@ IAM_PROVIDER=logto
 8. Drive UI from resource `permissions` fields — do not hardcode role names for buttons.
 9. Brand the login page per product (logo, copy). Use ecosystem primary `#1677ff`. Auth logic stays SDK/API.
 10. Optional return-path helpers: `createPostLoginPathHelpers({ storageKey, defaultPath })` from `@luminaryworks/auth-react`.
+11. **Login terms (clickwrap, configurable):** end-user login must show **LuminaryWorks platform ToS** and **this product’s ToS** (plus privacy). Do not use one umbrella document for product-specific risk (remote control, wallets, analytics). Gate password / register / Google / GitHub with `consentOk` until an unchecked checkbox is ticked. URLs come from env via `readLoginLegalConfigFromEnv` / `buildLoginLegalDocuments` (`PUBLIC_LEGAL_PLATFORM_*` + `PUBLIC_LEGAL_PRODUCT_*`, or `VITE_` / `NEXT_PUBLIC_`). OAuth provider screens are not product consent. Remember-account stores identifier only — never the password. Agent installers use their own license, not this login wrap. See `spec/legal/README.md` and `.cursor/rules/product-login-terms.mdc`.
 
 Env:
 
@@ -85,6 +86,11 @@ VITE_ALLOW_LOCAL_LOGIN=false
 # Optional private deploy: disable end-user self-register
 # VITE_ALLOW_SELF_REGISTER=false
 # Optional: VITE_AUTH_REGISTER_EMAIL_MODE=allowlist
+# Login ToS URLs (platform + product). Override per env; do not hardcode in JSX.
+# VITE_LEGAL_PLATFORM_TERMS_URL=https://luminaryworks.dev/legal/terms
+# VITE_LEGAL_PLATFORM_PRIVACY_URL=https://luminaryworks.dev/legal/privacy
+# VITE_LEGAL_PRODUCT_TERMS_URL=/legal/terms
+# VITE_LEGAL_PRODUCT_PRIVACY_URL=/legal/privacy
 ```
 
 Private / enterprise: set `IAM_PROVIDER=oidc` (or `zitadel` for hosted OIDC against a ZITADEL issuer) and point Gateway `UPSTREAM_ISSUER` (or product issuer) at the customer IdP / self-hosted Logto. Connectors (SAML/LDAP/OIDC) stay at the IdP. Do not add empty adapters for unintegrated providers. See `spec/iam-provider-selection.md`.
@@ -156,6 +162,7 @@ Match existing product contracts when present:
 - [ ] Login + callback works through the configured Login Experience Adapter
 - [ ] README / product `spec` mentions Luminary IAM Adapter + Casbin and links MetaRepo IAM spec
 - [ ] `.env.example` documents `IDP_*` / `VITE_IDP_*`
+- [ ] End-user login shows configurable LuminaryWorks + product ToS clickwrap (`LEGAL_PLATFORM_*` / `LEGAL_PRODUCT_*`)
 
 ## References
 
@@ -163,3 +170,4 @@ Match existing product contracts when present:
 - Docs: `docs/docs/develop/unified-login.md`
 - Identity: `identity/README.md`, `identity/apps.json`
 - Shared: `shared/packages/auth-core`, `auth-react`, `pal`
+- Login ToS: `spec/legal/README.md`, `.cursor/rules/product-login-terms.mdc`

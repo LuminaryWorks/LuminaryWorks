@@ -57,14 +57,15 @@ DataLuminary MCP 属于产品协议面，不升级为中央 AI Platform 的通�
 
 ## 4. VistaRemote
 
-- 默认不出网；私有 Ollama/vLLM 优先。
-- `@vistaremote/ai` 降为适配器，不再直持第三方 SaaS key（除非组织显式开启）。
-- 端侧检测与 Python ML 仍在产品仓。
+- **早期默认**：云 API / BYOK（`LUMINARY_AI_*` → DeepSeek / OpenAI…）；`@vistaremote/ai` 作适配器与业务编排。
+- **禁止**产品服务端默认部署 Ollama / vLLM / 自建 GPU；Compose `ollama` 仅 lab profile。
+- 端侧检测、客户主机本地 4B–21B、Python ML 仍在产品仓。
+- Enterprise 客户要求数据不出网时：走组织 BYOK 或未来 LuminaryWorks 统一自托管（见 [ai-platform.md](./ai-platform.md) D-AI-9），不是各产品各自起 Ollama。
 
 ## 5. VistaCast
 
-- 实时 CV / ONNX 不走 LLM 网关（产品仓 `ai` Edge Runtime）。
-- 告警叙事、周报等可选远程推理仍属后期；**不得**写成已上线 LLM 视觉。
+- 实时 CV / ONNX / 客户主机端侧 4B–21B 不走 LLM 网关（产品仓 Edge Runtime / client-infer）。
+- 告警叙事、周报等可选远程推理走云 API；**不得**写成已上线 LLM 视觉；**禁**自建云 GPU。
 
 ## 6. SyncroBrain
 

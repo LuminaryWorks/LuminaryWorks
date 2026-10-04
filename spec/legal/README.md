@@ -1,16 +1,17 @@
 # 法律政策工程模板（Legal policy templates）
 
-> **状态**：工程草案 · **版本**：`lw-legal-v2026-09-07` · **不是法律意见**  
+> **状态**：OVH 上线文本 · **版本**：`lw-legal-v2026-10-03` · **不是法律意见**  
 > **关联**：[subscription-and-entitlement.md](../subscription-and-entitlement.md) · [payment-platform.md](../payment-platform.md) · [decisions/2026-09-storage-doris-payment.md](../decisions/2026-09-storage-doris-payment.md)
 
 本目录是 Hosted SaaS **工程契约模板**，供注册与 Trial 激活勾选、Entitlement 持久化 `policyVersion` 使用。  
+登录 UI 还须同时展示 **本产品协议**（URL 可配置，见 identity-and-permissions §3.6）。  
 **NOT LEGAL ADVICE / 非法律意见。** 上线前必须由合格律师按适用法域审阅、本地化并替换占位运营主体。
 
 | 政策 | 中文 | English | 当前版本 |
 |------|------|---------|----------|
-| 服务条款 | [zh/terms.md](./zh/terms.md) | [en/terms.md](./en/terms.md) | `lw-legal-v2026-09-07` |
-| 隐私政策 | [zh/privacy.md](./zh/privacy.md) | [en/privacy.md](./en/privacy.md) | `lw-legal-v2026-09-07` |
-| Trial 与数据删除 | [zh/trial-data-deletion.md](./zh/trial-data-deletion.md) | [en/trial-data-deletion.md](./en/trial-data-deletion.md) | `lw-legal-v2026-09-07` |
+| 服务条款 | [zh/terms.md](./zh/terms.md) | [en/terms.md](./en/terms.md) | `lw-legal-v2026-10-03` |
+| 隐私政策 | [zh/privacy.md](./zh/privacy.md) | [en/privacy.md](./en/privacy.md) | `lw-legal-v2026-10-03` |
+| Trial 与数据删除 | [zh/trial-data-deletion.md](./zh/trial-data-deletion.md) | [en/trial-data-deletion.md](./en/trial-data-deletion.md) | `lw-legal-v2026-10-03` |
 
 ## 接受与版本
 

@@ -216,6 +216,17 @@ Product SPA  →  Luminary Auth SDK (@luminaryworks/auth-react)
 
 进入路径：自助注册、邀请、管理员导入（中心 Management）、企业 SSO。详见 [unified-login §自助注册](https://github.com/LuminaryWorks/docs/blob/main/docs/develop/unified-login.md)。
 
+### 3.6 登录用户协议（集团 + 产品，可配置）
+
+终端用户登录必须同时链接：
+
+| 文书 | 内容 | 默认 URL（可被环境变量覆盖） |
+| --- | --- | --- |
+| LuminaryWorks 通用服务条款 / 隐私 | 身份、账号、集团免责；模板见 [legal/](./legal/README.md) | `https://luminaryworks.dev/legal/terms` · `…/privacy` |
+| **本产品**用户协议 / 隐私 | 产品风险（远控、钱包、数据等），不得与他产品混写 | `/legal/terms` · `/legal/privacy` |
+
+环境变量（`PUBLIC_` / `VITE_` / `NEXT_PUBLIC_`）：`LEGAL_PLATFORM_TERMS_URL`、`LEGAL_PLATFORM_PRIVACY_URL`、`LEGAL_PRODUCT_TERMS_URL`、`LEGAL_PRODUCT_PRIVACY_URL`。登录 JSX **禁止写死**链接。实现：`@luminaryworks/auth-react` `readLoginLegalConfigFromEnv` + `consentOk` clickwrap。Google/GitHub 授权页不等于同意。被控安装许可是另一条路径。
+
 ## 4. Casbin 产品权限
 
 企业级资源 ACL（Dashboard / Dataset / 课程 / 设备…）自研成本接近权限引擎产品。选型：

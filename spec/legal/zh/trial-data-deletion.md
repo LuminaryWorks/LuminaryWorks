@@ -1,6 +1,6 @@
 # Trial 与数据删除政策（工程模板）
 
-**非法律意见（NOT LEGAL ADVICE）。** 工程模板（`lw-legal-v2026-09-07`），说明 LuminaryWorks Hosted SaaS 如何运行 Trial。英文：[Trial and Data Deletion](../en/trial-data-deletion.md)。
+**非法律意见（NOT LEGAL ADVICE）。** 工程模板（`lw-legal-v2026-10-03`），说明 LuminaryWorks Hosted SaaS 如何运行 Trial。英文：[Trial and Data Deletion](../en/trial-data-deletion.md)。
 
 相关：[服务条款](./terms.md) · [隐私政策](./privacy.md) · [subscription-and-entitlement.md](../../subscription-and-entitlement.md)
 
@@ -71,4 +71,4 @@ Trial 媒体与文件位于 **无 SLA 的单节点** 对象存储。共享 Doris
 
 ## 9. 版本
 
-生效日：2026-09-07。版本：`lw-legal-v2026-09-07`。
+生效日：2026-10-03。版本：`lw-legal-v2026-10-03`。

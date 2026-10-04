@@ -1,6 +1,6 @@
 # 服务条款（工程模板）
 
-**非法律意见（NOT LEGAL ADVICE）。** 本文是 LuminaryWorks Hosted SaaS 的工程契约模板（`lw-legal-v2026-09-07`），不能替代律师审阅。上线前须替换运营主体名称、地址与准据法条款。
+**非法律意见（NOT LEGAL ADVICE）。** 本文是 LuminaryWorks 托管于 OVH 的上线文本（`lw-legal-v2026-10-03`）。建议由法国执业律师复核。运营方对外名称为 LuminaryWorks（启明工坊）。登记地址与登记号以 [luminaryworks.dev/legal](https://luminaryworks.dev/legal) 页眉公示为准。
 
 相关：[隐私政策](./privacy.md) · [Trial 与数据删除政策](./trial-data-deletion.md) · [English Terms](../en/terms.md) · [权益规范](../../subscription-and-entitlement.md)
 
@@ -54,6 +54,8 @@ Trial 或付费期限结束后，**付费产品功能立即阻断**。Trial 产�
 
 服务不保证可用性、持久性或特定用途适用性。单节点存储与 Pilot Doris 按现状提供。在法律允许的最大范围内，责任以当期已付费用为上限。
 
-准据法、管辖与消费者保护例外：**〔运营方填写〕**。
+本条款受法国法管辖。欧盟及您居住地的强制性消费者保护规则，以及《通用数据保护条例》（GDPR），不因本条款而减损。争议由运营方登记地有管辖权的法国法院审理。若您是消费者，您仍可向居住地法律允许的法院提起诉讼。
 
-生效日：2026-09-07。版本：`lw-legal-v2026-09-07`。
+您须年满 15 周岁方可自行创建账户。隐私与删除请求请发送至 admin@luminaryworks.dev。
+
+生效日：2026-10-03。版本：`lw-legal-v2026-10-03`。

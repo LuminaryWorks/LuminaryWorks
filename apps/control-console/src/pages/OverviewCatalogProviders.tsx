@@ -228,7 +228,7 @@ function Field({
   children: ReactNode;
 }) {
   return (
-    <div className="stack">
+    <div className="field">
       <label htmlFor={htmlFor}>{label}</label>
       {children}
     </div>
@@ -248,6 +248,10 @@ function parseCsvList(raw: string): string[] {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function isEnabled(value: unknown): boolean {
+  return value === true || value === "true";
 }
 
 function ProviderCnBadge({ providerId }: { providerId: string }) {
@@ -414,251 +418,286 @@ export function ProvidersPage({ api }: { api: Api }) {
       <p className="muted">{t("providers.lead")}</p>
       <p className="muted">{t("providers.enabledFromApi")}</p>
       <ErrorBanner error={error} />
-      <form
-        className="stack"
-        onSubmit={(ev) => {
-          ev.preventDefault();
-          void (async () => {
-            const credentials = resolveCredentials();
-            const body = {
-              providerId,
-              environment,
-              merchantId: merchantId.trim() || undefined,
-              marketScopes: parseCsvList(marketScopes),
-              currencies: parseCsvList(currencies),
-              priority: Number(priority) || undefined,
-              metadata: parseJsonObject(metadata),
-              credentials,
-              enabled: false,
-            };
-            if (credentials) rememberWriteOnlySecret(credentials);
-            await api.post("/v1/admin/payments/providers", body);
-            setCredentialsJson("");
-            setCredentialValues({});
-            await load();
-          })().catch(setError);
-        }}
-      >
-        <Field label={t("providers.providerId")} htmlFor="provider-id">
-          <select
-            id="provider-id"
-            value={providerId}
-            onChange={(event) =>
-              setProviderId(event.target.value as ProviderId)
-            }
-          >
-            {PAYMENT_PROVIDER_IDS.map((id) => (
-              <option key={id} value={id}>
-                {t(`providers.names.${id}`)}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field
-          label={t("providers.environment")}
-          htmlFor="provider-environment"
+      <div className="providers-layout">
+        <section className="panel-card" aria-labelledby="configured-channels">
+          <h2 id="configured-channels">{t("providers.configured")}</h2>
+          {items.length === 0 ? (
+            <p className="muted empty-note">{t("providers.empty")}</p>
+          ) : (
+            <div className="provider-grid">
+              {items.map((row) => {
+                const id = String(row.id);
+                const enabled = isEnabled(row.enabled);
+                const scopes = Array.isArray(row.marketScopes)
+                  ? (row.marketScopes as string[]).join(", ")
+                  : "";
+                return (
+                  <article
+                    key={id}
+                    className={
+                      selected === id
+                        ? "provider-card is-selected"
+                        : "provider-card"
+                    }
+                  >
+                    <header>
+                      <h3>{t(`providers.names.${String(row.providerId)}`)}</h3>
+                      <span className="env">
+                        {String(row.environment ?? "")}
+                      </span>
+                    </header>
+                    <div className="provider-meta">
+                      <span className={enabled ? "badge badge-on" : "badge"}>
+                        {enabled
+                          ? t("providers.enabled")
+                          : t("providers.disabled")}
+                      </span>
+                      <span className="badge">{String(row.status ?? "")}</span>
+                      <ProviderCnBadge providerId={String(row.providerId)} />
+                    </div>
+                    <p className="provider-facts">
+                      <span>
+                        {t("providers.marketScopes")} <b>{scopes || "—"}</b>
+                      </span>
+                      <span>
+                        {t("providers.lastFour")}{" "}
+                        <b>{String(row.credentialLastFour ?? "—")}</b>
+                      </span>
+                    </p>
+                    <div className="row-actions">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelected(id);
+                          setCredentialValues({});
+                          setCredentialsJson("");
+                        }}
+                      >
+                        {t("common.details")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void api
+                            .post(`/v1/admin/payments/providers/${row.id}/test`)
+                            .then(load)
+                            .catch(setError)
+                        }
+                      >
+                        {t("common.test")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          import("../lib/confirm")
+                            .then(({ confirmDestructive }) =>
+                              confirmDestructive(t("confirm.enable"), {
+                                typed: t("confirm.typeEnable"),
+                              }).then((ok) => {
+                                if (!ok) return;
+                                return api.post(
+                                  `/v1/admin/payments/providers/${row.id}/enable`,
+                                );
+                              }),
+                            )
+                            .then(load)
+                            .catch(setError)
+                        }
+                      >
+                        {t("common.enable")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          import("../lib/confirm")
+                            .then(({ confirmDestructive }) =>
+                              confirmDestructive(t("confirm.disable")).then(
+                                (ok) => {
+                                  if (!ok) return;
+                                  return api.post(
+                                    `/v1/admin/payments/providers/${row.id}/disable`,
+                                  );
+                                },
+                              ),
+                            )
+                            .then(load)
+                            .catch(setError)
+                        }
+                      >
+                        {t("common.disable")}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+        <form
+          className="panel-card create-grid"
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            void (async () => {
+              const credentials = resolveCredentials();
+              const body = {
+                providerId,
+                environment,
+                merchantId: merchantId.trim() || undefined,
+                marketScopes: parseCsvList(marketScopes),
+                currencies: parseCsvList(currencies),
+                priority: Number(priority) || undefined,
+                metadata: parseJsonObject(metadata),
+                credentials,
+                enabled: false,
+              };
+              if (credentials) rememberWriteOnlySecret(credentials);
+              await api.post("/v1/admin/payments/providers", body);
+              setCredentialsJson("");
+              setCredentialValues({});
+              await load();
+            })().catch(setError);
+          }}
         >
-          <select
-            id="provider-environment"
-            value={environment}
-            onChange={(event) =>
-              setEnvironment(
-                event.target.value as (typeof PAYMENT_ENVIRONMENTS)[number],
-              )
-            }
-          >
-            {PAYMENT_ENVIRONMENTS.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label={t("providers.merchantId")} htmlFor="provider-merchant-id">
-          <input
-            id="provider-merchant-id"
-            value={merchantId}
-            onChange={(event) => setMerchantId(event.target.value)}
-            placeholder={
-              providerId === "creem"
-                ? t("providers.merchantIdCreemHint")
-                : undefined
-            }
-          />
-        </Field>
-        <Field
-          label={t("providers.marketScopes")}
-          htmlFor="provider-market-scopes"
-        >
-          <input
-            id="provider-market-scopes"
-            value={marketScopes}
-            onChange={(event) => setMarketScopes(event.target.value)}
-          />
-        </Field>
-        <p className="muted">
-          <ProviderCnBadge providerId={providerId} />
-        </p>
-        <Field label={t("providers.currencies")} htmlFor="provider-currencies">
-          <input
-            id="provider-currencies"
-            value={currencies}
-            onChange={(event) => setCurrencies(event.target.value)}
-          />
-        </Field>
-        <Field label={t("providers.priority")} htmlFor="provider-priority">
-          <input
-            id="provider-priority"
-            type="number"
-            min={0}
-            value={priority}
-            onChange={(event) => setPriority(event.target.value)}
-          />
-        </Field>
-        <div>
-          <p>{t("providers.capabilitiesTitle")}</p>
-          <ProviderCapabilitiesList
-            capabilities={DEFAULT_PROVIDER_CAPABILITIES[providerId]}
-          />
-        </div>
-        <Field label={t("providers.metadata")} htmlFor="provider-metadata">
-          <textarea
-            id="provider-metadata"
-            value={metadata}
-            onChange={(event) => setMetadata(event.target.value)}
-            rows={4}
-          />
-        </Field>
-        {structuredFields ? (
-          <>
-            <p className="muted">{t("providers.structuredCredentialsHint")}</p>
-            <StructuredCredentialFields
-              providerId={providerId}
-              values={credentialValues}
-              onChange={setCredentialValues}
-              idPrefix="create"
-            />
-          </>
-        ) : (
+          <h2 className="span-2">{t("providers.createTitle")}</h2>
+          <Field label={t("providers.providerId")} htmlFor="provider-id">
+            <select
+              id="provider-id"
+              value={providerId}
+              onChange={(event) =>
+                setProviderId(event.target.value as ProviderId)
+              }
+            >
+              {PAYMENT_PROVIDER_IDS.map((id) => (
+                <option key={id} value={id}>
+                  {t(`providers.names.${id}`)}
+                </option>
+              ))}
+            </select>
+          </Field>
           <Field
-            label={t("providers.credentials")}
-            htmlFor="provider-credentials"
+            label={t("providers.environment")}
+            htmlFor="provider-environment"
           >
-            <textarea
-              id="provider-credentials"
-              value={credentialsJson}
-              onChange={(event) => setCredentialsJson(event.target.value)}
-              rows={6}
-              autoComplete="off"
+            <select
+              id="provider-environment"
+              value={environment}
+              onChange={(event) =>
+                setEnvironment(
+                  event.target.value as (typeof PAYMENT_ENVIRONMENTS)[number],
+                )
+              }
+            >
+              {PAYMENT_ENVIRONMENTS.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field
+            label={t("providers.merchantId")}
+            htmlFor="provider-merchant-id"
+          >
+            <input
+              id="provider-merchant-id"
+              value={merchantId}
+              onChange={(event) => setMerchantId(event.target.value)}
+              placeholder={
+                providerId === "creem"
+                  ? t("providers.merchantIdCreemHint")
+                  : undefined
+              }
             />
           </Field>
-        )}
-        <p className="muted">{t("providers.credentialsHint")}</p>
-        <button type="submit">{t("providers.create")}</button>
-      </form>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>id</th>
-              <th>{t("providers.providerId")}</th>
-              <th>{t("providers.environment")}</th>
-              <th>{t("common.enable")}</th>
-              <th>{t("common.status")}</th>
-              <th>{t("providers.marketScopes")}</th>
-              <th>{t("providers.cnMarket")}</th>
-              <th>{t("providers.lastFour")}</th>
-              <th>{t("common.actions")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((row) => (
-              <tr key={String(row.id)}>
-                <td>{String(row.id)}</td>
-                <td>{t(`providers.names.${String(row.providerId)}`)}</td>
-                <td>{String(row.environment ?? "")}</td>
-                <td>{String(row.enabled)}</td>
-                <td>{String(row.status)}</td>
-                <td>
-                  {Array.isArray(row.marketScopes)
-                    ? (row.marketScopes as string[]).join(", ")
-                    : ""}
-                </td>
-                <td>
-                  <ProviderCnBadge providerId={String(row.providerId)} />
-                </td>
-                <td>{String(row.credentialLastFour ?? "")}</td>
-                <td className="row-actions">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelected(String(row.id));
-                      setCredentialValues({});
-                      setCredentialsJson("");
-                    }}
-                  >
-                    {t("common.details")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      void api
-                        .post(`/v1/admin/payments/providers/${row.id}/test`)
-                        .then(load)
-                        .catch(setError)
-                    }
-                  >
-                    {t("common.test")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      import("../lib/confirm")
-                        .then(({ confirmDestructive }) =>
-                          confirmDestructive(t("confirm.enable"), {
-                            typed: t("confirm.typeEnable"),
-                          }).then((ok) => {
-                            if (!ok) return;
-                            return api.post(
-                              `/v1/admin/payments/providers/${row.id}/enable`,
-                            );
-                          }),
-                        )
-                        .then(load)
-                        .catch(setError)
-                    }
-                  >
-                    {t("common.enable")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      import("../lib/confirm")
-                        .then(({ confirmDestructive }) =>
-                          confirmDestructive(t("confirm.disable")).then(
-                            (ok) => {
-                              if (!ok) return;
-                              return api.post(
-                                `/v1/admin/payments/providers/${row.id}/disable`,
-                              );
-                            },
-                          ),
-                        )
-                        .then(load)
-                        .catch(setError)
-                    }
-                  >
-                    {t("common.disable")}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          <Field
+            label={t("providers.marketScopes")}
+            htmlFor="provider-market-scopes"
+          >
+            <input
+              id="provider-market-scopes"
+              value={marketScopes}
+              onChange={(event) => setMarketScopes(event.target.value)}
+            />
+          </Field>
+          <Field
+            label={t("providers.currencies")}
+            htmlFor="provider-currencies"
+          >
+            <input
+              id="provider-currencies"
+              value={currencies}
+              onChange={(event) => setCurrencies(event.target.value)}
+            />
+          </Field>
+          <Field label={t("providers.priority")} htmlFor="provider-priority">
+            <input
+              id="provider-priority"
+              type="number"
+              min={0}
+              value={priority}
+              onChange={(event) => setPriority(event.target.value)}
+            />
+          </Field>
+          <div className="span-2">
+            {providerCnRestriction(providerId) ? (
+              <p className="muted">
+                <ProviderCnBadge providerId={providerId} />
+              </p>
+            ) : null}
+            <p>{t("providers.capabilitiesTitle")}</p>
+            <ProviderCapabilitiesList
+              capabilities={DEFAULT_PROVIDER_CAPABILITIES[providerId]}
+            />
+          </div>
+          <div className="span-2">
+            <Field label={t("providers.metadata")} htmlFor="provider-metadata">
+              <textarea
+                id="provider-metadata"
+                value={metadata}
+                onChange={(event) => setMetadata(event.target.value)}
+                rows={4}
+              />
+            </Field>
+          </div>
+          <div className="span-2 credentials-block">
+            {structuredFields ? (
+              <>
+                <p className="muted">
+                  {t("providers.structuredCredentialsHint")}
+                </p>
+                <div className="create-grid">
+                  <StructuredCredentialFields
+                    providerId={providerId}
+                    values={credentialValues}
+                    onChange={setCredentialValues}
+                    idPrefix="create"
+                  />
+                </div>
+              </>
+            ) : (
+              <Field
+                label={t("providers.credentials")}
+                htmlFor="provider-credentials"
+              >
+                <textarea
+                  id="provider-credentials"
+                  value={credentialsJson}
+                  onChange={(event) => setCredentialsJson(event.target.value)}
+                  rows={4}
+                  autoComplete="off"
+                />
+              </Field>
+            )}
+            <p className="muted">{t("providers.credentialsHint")}</p>
+          </div>
+          <button className="span-2" type="submit">
+            {t("providers.create")}
+          </button>
+        </form>
       </div>
       {selected && selectedDetail ? (
         <form
-          className="stack"
+          className="panel-card providers-detail"
           onSubmit={(ev) => {
             ev.preventDefault();
             void (async () => {
@@ -688,10 +727,9 @@ export function ProvidersPage({ api }: { api: Api }) {
             })().catch(setError);
           }}
         >
-          <p>
-            {t("common.details")}: {selected}
-          </p>
-          <dl className="inline">
+          <h2>{t("providers.detailTitle")}</h2>
+          <p className="muted">{selected}</p>
+          <dl className="detail-grid">
             <div>
               <dt>{t("providers.providerId")}</dt>
               <dd>{String(selectedDetail.providerId)}</dd>
@@ -737,12 +775,14 @@ export function ProvidersPage({ api }: { api: Api }) {
           ] ? (
             <>
               <p className="muted">{t("providers.rotateStructuredHint")}</p>
-              <StructuredCredentialFields
-                providerId={String(selectedDetail.providerId) as ProviderId}
-                values={credentialValues}
-                onChange={setCredentialValues}
-                idPrefix="rotate"
-              />
+              <div className="create-grid">
+                <StructuredCredentialFields
+                  providerId={String(selectedDetail.providerId) as ProviderId}
+                  values={credentialValues}
+                  onChange={setCredentialValues}
+                  idPrefix="rotate"
+                />
+              </div>
             </>
           ) : (
             <Field

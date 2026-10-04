@@ -11,12 +11,8 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "strict": true,
-    "types": ["vite/client"],
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    }
+    "strict": true
   },
-    "include": ["src", "public/locales/**/*.json"]
+  "include": ["src", "public/locales/**/*.json"],
+  "exclude": ["node_modules", "dist"]
 }
