@@ -6,13 +6,13 @@
   "description": "LuminaryWorks central superadmin control console (not Logto Admin)",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "dev": "rsbuild dev",
+    "build": "tsc -p tsconfig.json --noEmit && rsbuild build",
     "check": "tsc -p tsconfig.json --noEmit",
-    "lint": "biome check src server vite.config.ts",
-    "test": "vitest run && node --test server/*.test.mjs",
+    "lint": "biome check src server rsbuild.config.ts rstest.config.ts",
+    "test": "rstest && node --test server/*.test.mjs",
     "start": "node server/main.mjs",
-    "preview": "vite preview"
+    "preview": "rsbuild preview"
   },
   "engines": {
     "node": ">=24.0.0",
@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@fastify/static": "^10.1.2",
-    "@luminaryworks/auth-react": "^0.5.0",
+    "@luminaryworks/auth-react": "^0.7.1",
     "fastify": "^5.12.5",
     "i18next": "^24.2.3",
     "react": "^19.2.0",
@@ -30,18 +30,14 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.0",
-    "@luminaryworks/auth-dev-proxy": "^0.2.2",
+    "@luminaryworks/auth-dev-proxy": "file:../../shared/packages/auth-dev-proxy",
+    "@rsbuild/core": "^2.2.11",
+    "@rsbuild/plugin-react": "^2.1.1",
+    "@rstest/adapter-rsbuild": "^0.10.2",
+    "@rstest/core": "^0.10.2",
     "@types/node": "^24.0.0",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
-    "@vitejs/plugin-react": "^5.0.2",
-    "typescript": "6.0.3",
-    "vite": "^7.1.5",
-    "vitest": "^3.2.4"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
+    "typescript": "6.0.3"
   }
 }
