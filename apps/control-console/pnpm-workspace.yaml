@@ -1,4 +1,4 @@
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
-  - '@luminaryworks/auth-react@0.6.0 || 0.7.1'
+  - '@luminaryworks/auth-react@0.6.0 || 0.7.1 || 0.7.2'

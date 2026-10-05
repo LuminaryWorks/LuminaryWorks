@@ -1,40 +1,57 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import en from "../public/locales/en/common.json";
+import es from "../public/locales/es/common.json";
+import fr from "../public/locales/fr/common.json";
+import it from "../public/locales/it/common.json";
+import ja from "../public/locales/ja/common.json";
+import ko from "../public/locales/ko/common.json";
+import nl from "../public/locales/nl/common.json";
+import pt from "../public/locales/pt/common.json";
 import zh from "../public/locales/zh/common.json";
+import zhTW from "../public/locales/zh-TW/common.json";
+import {
+  detectClientPreferredLocale,
+  type PreferredLocale,
+} from "./preferred-locale";
 
-export type ConsoleLocale = "en" | "zh-CN" | "zh-TW" | "es";
+export type ConsoleLocale = PreferredLocale;
 
-/** Shell JSON only has en/zh. Traditional Chinese uses zh; Spanish uses en. */
-export function shellLanguage(locale: string): "en" | "zh" {
-  return locale === "zh-CN" || locale === "zh" || locale === "zh-TW"
-    ? "zh"
-    : "en";
-}
+const STORAGE_KEY = "lw-cc-lang";
 
 export function readConsoleLocale(): ConsoleLocale {
-  if (typeof localStorage === "undefined") return "en";
-  const raw = localStorage.getItem("lw-cc-lang") || "en";
-  if (raw === "zh" || raw === "zh-CN") return "zh-CN";
-  if (raw === "zh-TW" || raw === "es" || raw === "en") return raw;
-  return "en";
+  const stored = typeof localStorage === "undefined" ? null : localStorage.getItem(STORAGE_KEY);
+  return detectClientPreferredLocale(stored);
 }
 
 void i18n.use(initReactI18next).init({
-  lng: shellLanguage(readConsoleLocale()),
-  fallbackLng: "en",
+  lng: readConsoleLocale(),
+  fallbackLng: {
+    "zh-TW": ["zh-CN", "en"],
+    zh: ["zh-CN", "en"],
+    default: ["en"],
+  },
   ns: ["common"],
   defaultNS: "common",
   interpolation: { escapeValue: false },
   resources: {
     en: { common: en },
     zh: { common: zh },
+    "zh-CN": { common: zh },
+    "zh-TW": { common: zhTW },
+    ja: { common: ja },
+    ko: { common: ko },
+    pt: { common: pt },
+    nl: { common: nl },
+    it: { common: it },
+    es: { common: es },
+    fr: { common: fr },
   },
 });
 
 export function setLanguage(locale: ConsoleLocale) {
-  localStorage.setItem("lw-cc-lang", locale);
-  void i18n.changeLanguage(shellLanguage(locale));
+  localStorage.setItem(STORAGE_KEY, locale);
+  void i18n.changeLanguage(locale);
 }
 
 export default i18n;

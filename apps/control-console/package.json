@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@fastify/static": "^10.1.2",
-    "@luminaryworks/auth-react": "^0.7.1",
+    "@luminaryworks/auth-react": "^0.7.2",
     "fastify": "^5.12.5",
     "i18next": "^24.2.3",
     "react": "^19.2.0",

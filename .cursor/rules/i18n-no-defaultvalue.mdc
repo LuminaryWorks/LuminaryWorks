@@ -22,7 +22,7 @@ t("ai.model", { defaultValue: "Model" });
 t(item.labelKey, { defaultValue: item.defaultLabel });
 ```
 
-- 新增 key 时 **同时** 补 `en` + `zh`；缺失 key 应修 locale 文件，而不是在代码里兜底。
+- 新增 key 时 **同时** 补登录页 10 语（`en`、`zh-CN` 或现有 `zh`、`zh-TW`、`ja`、`ko`、`pt`、`nl`、`it`、`es`、`fr`）。缺失 key 应修 locale 文件，而不是在代码里兜底。运行时最终回落英文。
 - 非 React 模块用 `import i18n from "@/i18n"`（或各产品等价入口）后 `i18n.t("key")`。
 
 ## Forbidden

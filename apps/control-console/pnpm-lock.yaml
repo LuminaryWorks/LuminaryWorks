@@ -12,8 +12,8 @@ importers:
         specifier: ^10.1.2
         version: 10.1.3
       '@luminaryworks/auth-react':
-        specifier: ^0.7.1
-        version: 0.7.1(react@19.2.8)
+        specifier: ^0.7.2
+        version: 0.7.2(react@19.2.8)
       fastify:
         specifier: ^5.12.5
         version: 5.12.5
@@ -180,8 +180,8 @@ packages:
     resolution: {directory: ../../shared/packages/auth-dev-proxy, type: directory}
     engines: {node: '>=24.0.0', pnpm: '>=11'}
 
-  '@luminaryworks/auth-react@0.7.1':
-    resolution: {integrity: sha512-+a3DCkRFX4ofZM/uk19MCESAssXK5/Omw44hBFlpB5mHVmXgOeHot06FFZup7HQWIPQRxMB5OUVpeqGKPBOP7w==}
+  '@luminaryworks/auth-react@0.7.2':
+    resolution: {integrity: sha512-5HwMq/GlrKiEX8vyy3/ONHQQqLswxGVbaFpmVl82TYkkkHKb+Go2rbGv4iUG8kl66+iko9II7z2CHGBNXqC3jw==}
     engines: {node: '>=24.0.0', pnpm: '>=11'}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
@@ -862,7 +862,7 @@ snapshots:
 
   '@luminaryworks/auth-dev-proxy@file:../../shared/packages/auth-dev-proxy': {}
 
-  '@luminaryworks/auth-react@0.7.1(react@19.2.8)':
+  '@luminaryworks/auth-react@0.7.2(react@19.2.8)':
     dependencies:
       oidc-client-ts: 3.5.0
       react: 19.2.8

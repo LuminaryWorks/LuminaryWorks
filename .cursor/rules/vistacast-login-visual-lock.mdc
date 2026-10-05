@@ -1,0 +1,45 @@
+---
+description: Protect VistaCast Admin login v0 visual shell from cross-product login sweeps
+globs: web/src/pages/login*.tsx,web/src/pages/login*.scss,web/src/pages/login-*/**
+alwaysApply: true
+---
+
+# VistaCast 登录页视觉保护（防串改）
+
+## 问题
+
+跨产品「统一登录 / HeadlessLoginPanel / auth-react bump」扫荡时，Agent 常把 **VistaRemote / DataLuminary / LuminaryWorks** 的登录壳抄进 `VistaCast/web`，或 `git pull` 到重定向错误的 remote，导致已调好的 **v0.app 登录视觉**被覆盖。
+
+## 权威来源
+
+| 层 | 权威 | 路径 |
+| :--- | :--- | :--- |
+| **视觉壳**（背景、aside、capabilities、footer、移动端） | v0 营销登录稿 | `Documents/vista-cast-marketing-website/app/login` + 其 `globals.css` 中 `.vc-login-*` / `.vc-vision-*` |
+| **登录框本体** | LuminaryWorks Headless | `@luminaryworks/auth-react` 的 `HeadlessLoginPanel`（协议勾选可留） |
+| **实现落点** | VistaCast Admin | `web/src/pages/login.tsx` · `login-vision.tsx` · `login-vision.scss` |
+
+CSS 文件头须保留：`SOURCE OF TRUTH visual: Documents/vista-cast-marketing-website`。
+
+## Required
+
+1. **只许换卡**：改登录时默认只动 `HeadlessLoginPanel` 的 props / IdP / 协议勾选；**禁止**重写 `.vc-login-page` / `.vc-login-vision` / `.vc-login-aside` / `.vc-login-capabilities` 布局去「对齐」其他产品。
+2. **禁止跨产品拷贝**：不得把 `VistaRemote/web/apps/admin/src/pages/Login*`、其他产品的 `LoginVision`、或「简化大气背景」替换本页视觉壳。
+3. **禁止用串仓 tip 覆盖**：`web/` 的 `origin` 必须是 `VistaCast/web`（见 `.meta/REMOTE-GOVERNANCE.md`）；发现 `@vistaremote/web` 或 GitHub 重定向到 VistaRemote 时先停，再审计，勿 `reset --hard`。
+4. **其他仓窗口**：在 LuminaryWorks / VistaRemote / 生态「统一登录」任务中，**不要**编辑 `VistaCast/web/src/pages/login*`，除非用户**明确写出**「改 VistaCast 登录页」。
+5. 若必须改视觉：先对照营销站登录页截图 / `page.tsx`，再改；改完后宽屏应仍能看到左侧 eye/nodes 与「让 AI 看见 / 真实世界」aside，登录窗下居中 capabilities。
+
+## Forbidden
+
+- 把 VistaCast 登录壳改成 VistaRemote 或其它产品的简化壳
+- 删除 aside / capabilities / vision 节点「只留中间表单」
+- 在未授权下为「统一体验」批量改各产品登录视觉
+- 用 `defaultValue` 在 `t()` 里兜登录文案（文案进 `public/locales/*/login.json`）
+
+## 自检
+
+```bash
+# 包与远程必须是 VistaCast
+node -e "console.log(require('./web/package.json').name)"   # @vistacast/web
+cd web && gh repo view --json nameWithOwner -q .nameWithOwner  # VistaCast/web
+rg -n "vista-cast-marketing-website|vc-login-aside|LoginVisionField" src/pages/login.tsx src/pages/login-vision.*
+```

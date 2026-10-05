@@ -78,7 +78,7 @@
     "media:dev": "pnpm --dir services/media-gateway start:dev",
     "lock:node24": "node scripts/lock-node24-ecosystem.mjs",
     "lock:pnpm11": "node scripts/lock-pnpm11-ecosystem.mjs",
-    "sync:cursor-i18n-rule": "node scripts/write-i18n-no-defaultvalue.mjs",
+    "sync:cursor-i18n-rule": "node scripts/write-i18n-no-defaultvalue.mjs && node scripts/write-i18n-locale-detect.mjs",
     "sync:cursor-model-policy": "node scripts/write-model-usage-policy.mjs",
     "sync:cursor-ai-hosting": "node scripts/write-ai-hosting-policy.mjs",
     "sync:cursor-local-docker-rule": "node scripts/write-local-docker-sidecars-rule.mjs",
