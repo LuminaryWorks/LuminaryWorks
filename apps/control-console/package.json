@@ -24,7 +24,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@fastify/static": "^10.1.2",
-    "@luminaryworks/auth-react": "^0.7.4",
+    "@luminaryworks/auth-react": "^0.7.5",
     "antd": "^6.6.5",
     "fastify": "^5.12.5",
     "i18next": "^24.2.3",
@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.0",
-    "@luminaryworks/auth-dev-proxy": "file:../../shared/packages/auth-dev-proxy",
+    "@luminaryworks/auth-dev-proxy": "^0.2.2",
     "@rsbuild/core": "^2.2.11",
     "@rsbuild/plugin-react": "^2.1.1",
     "@rstest/adapter-rsbuild": "^0.10.2",
