@@ -2,13 +2,14 @@ import { Body, Controller, Get, Param, Post, Put, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type { AuthPrincipal } from "../../auth/auth.types";
 import { REQUEST_ID_KEY } from "../../auth/auth.types";
-import { CurrentPrincipal, RequireAdmin } from "../../auth/decorators";
+import { catalogScopeFromScopes } from "../../common/catalog-scope";
+import { CurrentPrincipal, RequireCatalogAccess } from "../../auth/decorators";
 import { CatalogRevisionDraftDto, ReplaceCatalogOfferingsDto } from "../../common/dto";
 import { CatalogAdminService } from "./catalog-admin.service";
 
 @ApiTags("admin-catalog")
 @ApiBearerAuth()
-@RequireAdmin()
+@RequireCatalogAccess()
 @Controller("v1/admin/catalog")
 export class CatalogAdminController {
   constructor(private readonly catalogAdmin: CatalogAdminService) {}
@@ -19,8 +20,8 @@ export class CatalogAdminController {
   }
 
   @Get("revisions/:id")
-  getRevision(@Param("id") id: string) {
-    return this.catalogAdmin.getRevision(id);
+  getRevision(@CurrentPrincipal() principal: AuthPrincipal, @Param("id") id: string) {
+    return this.catalogAdmin.getRevision(id, catalogScopeFromScopes(principal));
   }
 
   @Post("revisions")
@@ -35,6 +36,7 @@ export class CatalogAdminController {
       offerings: body.offerings,
       actor: principal.subjectId,
       requestId: req[REQUEST_ID_KEY],
+      scope: catalogScopeFromScopes(principal),
     });
   }
 
@@ -48,6 +50,7 @@ export class CatalogAdminController {
     return this.catalogAdmin.replaceDraftOfferings(id, body.offerings, {
       actor: principal.subjectId,
       requestId: req[REQUEST_ID_KEY],
+      scope: catalogScopeFromScopes(principal),
     });
   }
 
@@ -60,6 +63,7 @@ export class CatalogAdminController {
     return this.catalogAdmin.publish(id, {
       actor: principal.subjectId,
       requestId: req[REQUEST_ID_KEY],
+      scope: catalogScopeFromScopes(principal),
     });
   }
 
@@ -72,6 +76,7 @@ export class CatalogAdminController {
     return this.catalogAdmin.rollback(id, {
       actor: principal.subjectId,
       requestId: req[REQUEST_ID_KEY],
+      scope: catalogScopeFromScopes(principal),
     });
   }
 }

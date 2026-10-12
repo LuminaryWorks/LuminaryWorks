@@ -92,17 +92,34 @@ export function buildRuntimeConfig(env = process.env) {
       "CONTROL_CONSOLE_POST_LOGOUT_URI",
     ) || (publicOrigin ? `${publicOrigin}/` : "");
 
+  const consoleRole =
+    env.CONTROL_CONSOLE_ROLE === "tenant" ? "tenant" : "platform";
+  const requestedMode = String(
+    env.CONTROL_CONSOLE_PAYMENTS_MODE || "platform",
+  ).trim();
+  const paymentsMode = [
+    "platform",
+    "customer_managed",
+    "external_adapter",
+    "disabled",
+  ].includes(requestedMode)
+    ? requestedMode
+    : "platform";
   const config = {
     issuer,
     clientId,
     audience,
+    consoleRole,
+    paymentsMode,
     entitlementBaseUrl,
     experienceApiBase,
     redirectUri,
     postLogoutRedirectUri,
     scopes: String(
       env.CONTROL_CONSOLE_IDP_SCOPES ||
-        "openid profile email offline_access entitlement:admin",
+        (consoleRole === "tenant"
+          ? "openid profile email offline_access entitlement:tenant-commerce"
+          : "openid profile email offline_access entitlement:admin"),
     ).trim(),
     iamProvider: String(
       env.CONTROL_CONSOLE_IAM_PROVIDER || env.IAM_PROVIDER || "logto",

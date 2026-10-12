@@ -134,6 +134,28 @@ export class AuthMailService {
     rows: MailProfileEntity[],
   ): Promise<ChainProvider[]> {
     const providers: ChainProvider[] = [];
+    // Self-hosted SMTP (Maddy) is first when configured. API providers stay as fallback.
+    // Private deploys that leave SMTP_HOST empty keep the Resend → Brevo → Mailgun order.
+    if (settings.smtp) {
+      providers.push(
+        await this.envProvider(
+          createSmtpProvider({
+            id: "platform:smtp",
+            host: settings.smtp.host,
+            port: settings.smtp.port,
+            user: settings.smtp.user,
+            pass: settings.smtp.pass,
+            secure: settings.smtp.secure,
+            requireTLS: settings.smtp.requireTLS,
+            rejectUnauthorized: settings.smtp.rejectUnauthorized,
+            tlsServername: settings.smtp.tlsServername,
+          }),
+          0,
+          settings.smtp.dailyQuota,
+          settings.smtp.monthlyQuota,
+        ),
+      );
+    }
     if (settings.resendApiKey) {
       providers.push(
         await this.envProvider(
@@ -165,24 +187,6 @@ export class AuthMailService {
           3,
           settings.mailgunDailyQuota,
           settings.mailgunMonthlyQuota,
-        ),
-      );
-    }
-    if (settings.smtp) {
-      providers.push(
-        await this.envProvider(
-          createSmtpProvider({
-            id: "platform:smtp",
-            host: settings.smtp.host,
-            port: settings.smtp.port,
-            user: settings.smtp.user,
-            pass: settings.smtp.pass,
-            secure: settings.smtp.secure,
-            requireTLS: settings.smtp.requireTLS,
-          }),
-          4,
-          settings.smtp.dailyQuota,
-          settings.smtp.monthlyQuota,
         ),
       );
     }

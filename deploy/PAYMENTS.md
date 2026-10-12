@@ -555,6 +555,17 @@ DoerFlow `environment=sandbox` 时 `baseUrl` 可为 HTTP。配对一套独立的
 
 ---
 
+## 四种交付路径
+
+| 模式 | Manifest `capabilities.payments` | 谁配置渠道 | 购买入口 |
+|------|----------------------------------|------------|----------|
+| LuminaryWorks SaaS | `platform` | 平台运营控制台（3050），只管理平台商户 | 各产品品牌购买页 |
+| 专属云 / 客户商户 | `customer_managed` | 独立 Tenant Commerce Console，租户密钥与平台隔离 | 各产品品牌购买页 |
+| 客户自接聚合支付 | `external_adapter` | 客户实现 `PaymentAdapter`，不得另建订单状态机 | 各产品品牌购买页 |
+| 企业内网 | `disabled` | 不配置支付渠道 | 隐藏购买、充值与订单入口；用 License / Grant / Casbin |
+
+`disabled` 必须同时让进程视为 `PAYMENTS_ENABLED=false`。平台控制台不能编辑租户凭证，租户也不能复用 `PAYMENT_PLATFORM_MERCHANT_IDS` 中的平台商户号。
+
 ## 私有交付（无支付面）
 
 私有化 / on-prem 交付若 **完全不需要收款**：

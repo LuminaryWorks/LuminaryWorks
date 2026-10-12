@@ -23,9 +23,12 @@ export function CallbackPage({
     started.current = true;
     void completeCallback(runtime, origin)
       .then(({ session, returnUrl }) => {
-        const next = returnUrl?.startsWith("/") ? returnUrl : "/";
-        window.history.replaceState(null, "", next);
         onSession(session);
+        const next = returnUrl?.startsWith("/") ? returnUrl : "/";
+        // Prefer React-router Navigate via session; also sync URL for accept probes.
+        if (window.location.pathname.startsWith("/auth/callback")) {
+          window.history.replaceState(null, "", next);
+        }
       })
       .catch((err: unknown) =>
         setError(err instanceof Error ? err.message : String(err)),

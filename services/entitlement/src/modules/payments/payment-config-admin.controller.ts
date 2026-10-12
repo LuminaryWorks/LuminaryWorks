@@ -6,6 +6,7 @@ import { CurrentPrincipal, RequireAdmin } from "../../auth/decorators";
 import type { ProviderCapabilities } from "../../common/payment-providers";
 import {
   CreatePaymentProviderConfigDto,
+  ReorderPaymentProvidersDto,
   RotatePaymentProviderConfigDto,
   UpdatePaymentProviderConfigDto,
 } from "./payment.dto";
@@ -28,6 +29,23 @@ export class PaymentConfigAdminController {
       providerId,
       enabled: enabled == null ? undefined : enabled === "true",
       environment,
+    });
+  }
+
+  @Get("tenant-summaries")
+  tenantSummaries() {
+    return this.configs.listTenantSummaries();
+  }
+
+  @Post("reorder")
+  reorder(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Body() body: ReorderPaymentProvidersDto,
+    @Req() req: { [REQUEST_ID_KEY]?: string },
+  ) {
+    return this.configs.reorder(body.providerIds, {
+      actor: principal.subjectId,
+      requestId: req[REQUEST_ID_KEY],
     });
   }
 

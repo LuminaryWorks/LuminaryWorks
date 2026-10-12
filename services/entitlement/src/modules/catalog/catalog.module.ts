@@ -10,6 +10,7 @@ import { AuditModule } from "../audit/audit.module";
 import { CatalogAdminController } from "./catalog-admin.controller";
 import { CatalogAdminService } from "./catalog-admin.service";
 import { CatalogController } from "./catalog.controller";
+import { CatalogBootstrapService } from "./catalog-bootstrap.service";
 import { CatalogService } from "./catalog.service";
 
 @Module({
@@ -25,7 +26,7 @@ import { CatalogService } from "./catalog.service";
     ]),
   ],
   controllers: [CatalogController, CatalogAdminController],
-  providers: [CatalogService, CatalogAdminService],
+  providers: [CatalogService, CatalogAdminService, CatalogBootstrapService],
   exports: [CatalogService, CatalogAdminService],
 })
 export class CatalogModule {}

@@ -4,6 +4,25 @@ import { parseLogtoEmail } from "./logto-email";
 import { renderAuthMail } from "./templates";
 
 describe("auth mail request shaping", () => {
+  it("renders register codes for the local login inboxes", () => {
+    for (const [to, code] of [
+      ["634117608@qq.com", "628431"],
+      ["hi.andyzhou@gmail.com", "739152"],
+      ["hi.andyzhou@Outlook.com", "840263"],
+    ] as const) {
+      const rendered = renderAuthMail({
+        type: "Register",
+        code,
+        locale: "zh-CN",
+        applicationName: "DataLuminary",
+      });
+      expect(rendered.subject).toBe("验证你的 LuminaryWorks 邮箱");
+      expect(rendered.text).toContain(code);
+      expect(rendered.html).toContain(code);
+      expect(to.split("@")[1]?.toLowerCase()).toMatch(/^(qq|gmail|outlook)\.com$/);
+    }
+  });
+
   it("renders a Chinese register code without putting it in the subject", () => {
     const rendered = renderAuthMail({
       type: "Register",

@@ -6,7 +6,8 @@
     "identity": "external_oidc",
     "entitlement": "offline_license",
     "ai": "local_byok",
-    "notification": "smtp"
+    "notification": "smtp",
+    "payments": "disabled"
   },
   "services": {
     "identity": {

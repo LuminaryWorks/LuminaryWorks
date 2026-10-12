@@ -213,6 +213,10 @@ binding = (issuer, sub) × orgId? × productTenantId × resourceId
 | `notification` | `none` | 不启用认证邮件（内网私有化） | production |
 | | `smtp` | 客户自带 SMTP；凭据来自 env / secret store，**不进 manifest** | pilot |
 | | `platform` | SaaS 平台链（Resend / Brevo / SMTP 槽位）；凭据同样不进 manifest | pilot |
+| `payments` | `platform` | 使用 LuminaryWorks 商户渠道与中央订单 | pilot |
+| | `customer_managed` | 同一编排层，凭证属于客户租户，不得复用平台商户号 | pilot |
+| | `external_adapter` | 客户实现 `PaymentAdapter`，仍走中央订单、验签与履约 | pilot |
+| | `disabled` | 关闭支付。`air-gapped` 必须使用此模式，只保留身份、License 与权限 | production |
 
 ### 6.3 契约版本
 

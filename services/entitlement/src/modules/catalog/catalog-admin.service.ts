@@ -15,6 +15,12 @@ import { OfferingEntity } from "../../database/entities/offering.entity";
 import { PlanEntity } from "../../database/entities/plan.entity";
 import { PlanFeatureEntity } from "../../database/entities/plan-feature.entity";
 import { ProductEntity } from "../../database/entities/product.entity";
+import {
+  type CatalogOfferingSnapshot,
+  type CatalogScope,
+  offeringVisible,
+  publishScopeViolation,
+} from "../../common/catalog-scope";
 import { AuditService } from "../audit/audit.service";
 import { toPublicOffering } from "./catalog.service";
 
@@ -62,7 +68,7 @@ export class CatalogAdminService {
     };
   }
 
-  async getRevision(id: string) {
+  async getRevision(id: string, scope: CatalogScope = { kind: "all" }) {
     const revision = await this.revisions.findOne({ where: { id } });
     if (!revision) {
       throw new EntitlementException("NOT_FOUND", `Unknown catalog revision ${id}`);
@@ -79,7 +85,9 @@ export class CatalogAdminService {
       publishedAt: revision.publishedAt,
       supersededAt: revision.supersededAt,
       createdAt: revision.createdAt,
-      offerings: offerings.map(toPublicOffering),
+      offerings: offerings
+        .filter((row) => offeringVisible(scope, row.productCode))
+        .map(toPublicOffering),
     };
   }
 
@@ -89,6 +97,7 @@ export class CatalogAdminService {
     offerings?: OfferingDraftInput[];
     actor: string;
     requestId?: string;
+    scope?: CatalogScope;
   }) {
     const existing = await this.revisions.find();
     const nextVersion =
@@ -145,17 +154,36 @@ export class CatalogAdminService {
       requestId: input.requestId,
       payload: { version: revision.version, copyFromPublished },
     });
-    return this.getRevision(revision.id);
+    return this.getRevision(revision.id, input.scope ?? { kind: "all" });
   }
 
   async replaceDraftOfferings(
     revisionId: string,
     offerings: OfferingDraftInput[],
-    opts: { actor: string; requestId?: string },
+    opts: { actor: string; requestId?: string; scope?: CatalogScope },
   ) {
+    const scope = opts.scope ?? { kind: "all" };
     const revision = await this.requireDraft(revisionId);
-    const rows = await this.validatedOfferingRows(offerings);
     const existing = await this.offerings.find({ where: { revisionId: revision.id } });
+    if (scope.kind === "products") {
+      const outside = offerings.filter((row) => !scope.productCodes.includes(row.productCode));
+      if (outside.length > 0) {
+        throw new EntitlementException(
+          "FORBIDDEN",
+          "Catalog changes are limited to your products",
+          {
+            details: { productCodes: outside.map((row) => row.productCode) },
+          },
+        );
+      }
+    }
+    const kept =
+      scope.kind === "all"
+        ? []
+        : existing
+            .filter((row) => !scope.productCodes.includes(row.productCode))
+            .map((row) => this.snapshotOf(row));
+    const rows = await this.validatedOfferingRows([...kept, ...offerings]);
     if (existing.length > 0) await this.offerings.remove(existing);
     for (const row of rows) {
       await this.offerings.save(this.offerings.create({ ...row, revisionId: revision.id }));
@@ -168,10 +196,13 @@ export class CatalogAdminService {
       requestId: opts.requestId,
       payload: { count: rows.length },
     });
-    return this.getRevision(revision.id);
+    return this.getRevision(revision.id, scope);
   }
 
-  async publish(revisionId: string, opts: { actor: string; requestId?: string }) {
+  async publish(
+    revisionId: string,
+    opts: { actor: string; requestId?: string; scope?: CatalogScope },
+  ) {
     const revision = await this.requireDraft(revisionId);
     const offerings = await this.offerings.find({ where: { revisionId: revision.id } });
     await this.validatedOfferingRows(
@@ -185,6 +216,10 @@ export class CatalogAdminService {
         market: row.market,
         active: row.active,
       })),
+    );
+    await this.assertPublishAllowed(
+      offerings.map((row) => this.snapshotOf(row)),
+      opts.scope,
     );
     await this.assertCurrentUltraSuperset();
 
@@ -211,10 +246,13 @@ export class CatalogAdminService {
       requestId: opts.requestId,
       payload: { version: revision.version },
     });
-    return this.getRevision(revision.id);
+    return this.getRevision(revision.id, opts.scope ?? { kind: "all" });
   }
 
-  async rollback(revisionId: string, opts: { actor: string; requestId?: string }) {
+  async rollback(
+    revisionId: string,
+    opts: { actor: string; requestId?: string; scope?: CatalogScope },
+  ) {
     const revision = await this.revisions.findOne({ where: { id: revisionId } });
     if (!revision) {
       throw new EntitlementException("NOT_FOUND", `Unknown catalog revision ${revisionId}`);
@@ -223,8 +261,13 @@ export class CatalogAdminService {
       throw new EntitlementException("VALIDATION_ERROR", "Cannot rollback to a draft revision");
     }
     if (revision.status === "published") {
-      return this.getRevision(revision.id);
+      return this.getRevision(revision.id, opts.scope ?? { kind: "all" });
     }
+    const targetOfferings = await this.offerings.find({ where: { revisionId: revision.id } });
+    await this.assertPublishAllowed(
+      targetOfferings.map((row) => this.snapshotOf(row)),
+      opts.scope,
+    );
 
     await this.dataSource.transaction(async (manager) => {
       const current = await manager.findOne(CatalogRevisionEntity, {
@@ -249,7 +292,55 @@ export class CatalogAdminService {
       requestId: opts.requestId,
       payload: { version: revision.version },
     });
-    return this.getRevision(revision.id);
+    return this.getRevision(revision.id, opts.scope ?? { kind: "all" });
+  }
+
+  private snapshotOf(row: {
+    sku: string;
+    productCode: string;
+    planCode: string;
+    interval: string;
+    currency: string;
+    amountMinor: number;
+    market: string;
+    active: boolean;
+  }): CatalogOfferingSnapshot {
+    return {
+      sku: row.sku,
+      productCode: row.productCode,
+      planCode: row.planCode,
+      interval: row.interval,
+      currency: row.currency,
+      amountMinor: row.amountMinor,
+      market: row.market,
+      active: row.active,
+    };
+  }
+
+  private async assertPublishAllowed(
+    draft: CatalogOfferingSnapshot[],
+    scope: CatalogScope | undefined,
+  ) {
+    const activeScope = scope ?? { kind: "all" };
+    if (activeScope.kind === "all") return;
+    const published = await this.revisions.findOne({ where: { status: "published" } });
+    const publishedRows = published
+      ? await this.offerings.find({ where: { revisionId: published.id } })
+      : [];
+    const violation = publishScopeViolation(
+      draft,
+      publishedRows.map((row) => this.snapshotOf(row)),
+      activeScope,
+    );
+    if (violation === "outside_product") {
+      throw new EntitlementException("FORBIDDEN", "Catalog publish includes another product");
+    }
+    if (violation === "cross_product_bundle") {
+      throw new EntitlementException(
+        "FORBIDDEN",
+        "Cross-product catalog bundles can only be published by a platform admin",
+      );
+    }
   }
 
   private async requireDraft(revisionId: string): Promise<CatalogRevisionEntity> {

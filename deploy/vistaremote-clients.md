@@ -1,19 +1,36 @@
 # VistaRemote 客户端发布（Electron / RN）
 
-GitHub 公开仓 [VistaRemote/downloads](https://github.com/VistaRemote/downloads) 里的 **Agent / Viewer / Android APK** 必须烤入 **vistacast.dev 下的 VistaRemote 主机名**，不要烤 `localhost`。
+GitHub 公开仓 [VistaRemote/downloads](https://github.com/VistaRemote/downloads) 里的 **Agent / Viewer / Android APK** 必须烤入 **vistacast.dev 下的一层主机名**，不要烤 `localhost`。
 
-品牌官网是 **`https://remote.vistacast.dev`**。没有独立 apex，也 **没有** `vistaremote.vistacast.com`（未做 DNS）。旧主机名 `*.vistaremote.vistacast.dev` 301 到下表。
+品牌官网是 **`https://remote.vistacast.dev`**。没有独立 apex，也 **没有** `vistaremote.vistacast.com`（未做 DNS）。
+
+## 域名变更声明（2026-04）
+
+为使用 Cloudflare **免费 Universal SSL + 橙云 CDN**（证书只盖一层 `*.vistacast.dev`），产品主机名从三级改为一层：
+
+| 用途 | 旧 | 新（现行） |
+|------|----|------------|
+| Client SPA | `app.remote.vistacast.dev` | `remote-app.vistacast.dev` |
+| Admin SPA | `admin.remote.vistacast.dev` | `remote-admin.vistacast.dev` |
+| API + 信令 | `api.remote.vistacast.dev` | `remote-api.vistacast.dev` |
+| 官网 / 下载 | `remote.vistacast.dev` | 不变 |
+
+**运维规则：**
+
+1. **新服务器 / 重装**：`site.json` / `hosts.*.yaml` 只写新名。
+2. **Web 镜像与桌面 / RN `latest`**：只烤新名；旧三级名不要再 bake。
+3. **兼容**：旧 `*.vistaremote.vistacast.dev`、`*.remote.vistacast.dev` 可 301 到新名（Caddy `tls_apply`）。
+4. **IdP**：Logto redirect / logout 改为 `https://remote-app.vistacast.dev/...` 与 `https://remote-admin.vistacast.dev/...`。
 
 ## 域名矩阵（安装包 Bake）
 
 | 用途 | 主机名 |
 |------|--------|
 | 官网 / 下载页 | `https://remote.vistacast.dev` |
-| Client SPA | `https://app.remote.vistacast.dev` |
-| Admin SPA | `https://admin.remote.vistacast.dev` |
-| API + 信令 | `https://api.remote.vistacast.dev`（`wss://…/signaling`） |
+| Client SPA | `https://remote-app.vistacast.dev` |
+| Admin SPA | `https://remote-admin.vistacast.dev` |
+| API + 信令 | `https://remote-api.vistacast.dev`（`wss://…/signaling`） |
 | 统一登录 | `https://login.luminaryworks.dev/oidc` |
-| 安装向导兼容名 | `vistaremote.vistacast.dev`（以实际 DNS 为准） |
 
 环境真源：VistaRemote Meta-Repo `config/environments/prod.env`。
 

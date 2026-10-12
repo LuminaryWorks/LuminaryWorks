@@ -9,6 +9,8 @@ const base: RuntimeConfig = {
   issuer: "http://localhost:3001/oidc",
   clientId: "spa",
   audience: "https://entitlement.luminaryworks.dev",
+  consoleRole: "platform",
+  paymentsMode: "platform",
   entitlementBaseUrl: "http://localhost:3040",
   experienceApiBase: "http://localhost:3050",
   redirectUri: "",
@@ -28,11 +30,20 @@ describe("runtime config", () => {
     expect(bound.experienceApiBase).toBe("http://localhost:3050");
   });
 
-  it("overrides config.json hosts with the live 127.0.0.1 origin", () => {
+  it("rebinds loopback experience aliases to the live page origin", () => {
     const bound = bindRedirects(base, "http://127.0.0.1:3050");
     expect(bound.redirectUri).toBe("http://127.0.0.1:3050/auth/callback");
     expect(bound.postLogoutRedirectUri).toBe("http://127.0.0.1:3050/");
     expect(bound.experienceApiBase).toBe("http://127.0.0.1:3050");
+  });
+
+  it("keeps a real Auth Gateway experience origin on another port", () => {
+    const bound = bindRedirects(
+      { ...base, experienceApiBase: "http://localhost:3010" },
+      "http://127.0.0.1:3050",
+    );
+    expect(bound.experienceApiBase).toBe("http://localhost:3010");
+    expect(bound.redirectUri).toBe("http://127.0.0.1:3050/auth/callback");
   });
 
   it("rejects clientSecret on the public config object", () => {

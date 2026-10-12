@@ -1,4 +1,5 @@
 import { EntitlementException } from "./errors";
+import { parsePaymentDeploymentMode } from "./payment-deployment-mode";
 
 /**
  * `PAYMENTS_ENABLED` hard switch (FR-PAY-023 / D-PAY-P11).
@@ -13,6 +14,9 @@ export function parsePaymentsEnabled(raw: string | undefined | null): boolean {
 }
 
 export function isPaymentsEnabled(): boolean {
+  if (parsePaymentDeploymentMode(process.env.PAYMENT_DEPLOYMENT_MODE) === "disabled") {
+    return false;
+  }
   return parsePaymentsEnabled(process.env.PAYMENTS_ENABLED);
 }
 

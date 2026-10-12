@@ -6,6 +6,8 @@ const runtime: RuntimeConfig = {
   issuer: "http://localhost:3001/oidc",
   clientId: "control-console",
   audience: "https://entitlement.luminaryworks.dev",
+  consoleRole: "platform",
+  paymentsMode: "platform",
   entitlementBaseUrl: "http://localhost:3040",
   experienceApiBase: "http://localhost:3050",
   redirectUri: "",

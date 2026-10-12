@@ -42,6 +42,16 @@ describe("PAYMENTS_ENABLED hard switch", () => {
     expect(paymentsModuleImports()).toEqual([PaymentsModule]);
   });
 
+  it("treats PAYMENT_DEPLOYMENT_MODE=disabled as payments off even if the flag is true", () => {
+    process.env.PAYMENTS_ENABLED = "true";
+    process.env.PAYMENT_DEPLOYMENT_MODE = "disabled";
+    try {
+      expect(paymentsModuleImports()).toEqual([]);
+    } finally {
+      delete process.env.PAYMENT_DEPLOYMENT_MODE;
+    }
+  });
+
   it("maps POST /v1/orders disablement to PAYMENT_PROVIDER_UNAVAILABLE", async () => {
     process.env.PAYMENTS_ENABLED = "false";
     await expect(Promise.resolve().then(() => assertPaymentsEnabled())).rejects.toMatchObject({

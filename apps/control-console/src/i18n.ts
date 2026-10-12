@@ -20,7 +20,10 @@ export type ConsoleLocale = PreferredLocale;
 const STORAGE_KEY = "lw-cc-lang";
 
 export function readConsoleLocale(): ConsoleLocale {
-  const stored = typeof localStorage === "undefined" ? null : localStorage.getItem(STORAGE_KEY);
+  const stored =
+    typeof localStorage === "undefined"
+      ? null
+      : localStorage.getItem(STORAGE_KEY);
   return detectClientPreferredLocale(stored);
 }
 

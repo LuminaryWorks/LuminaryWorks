@@ -350,6 +350,17 @@ export class PaymentsService {
         })
       : await adapter.queryPayment(attempt.providerRef, config);
     if (query.status !== "succeeded") {
+      // Persist facilitator tx / settlement refs even while confirmation is pending
+      // so a later complete/query can poll getSettleStatus instead of re-challenging.
+      if (query.providerRef && query.providerRef !== attempt.providerRef) {
+        attempt.providerRef = query.providerRef;
+        if (query.settlementProof) {
+          attempt.metadata = { ...attempt.metadata, settlementProof: query.settlementProof };
+        }
+        await this.attempts.save(attempt);
+        order.providerRef = query.providerRef;
+        await this.orders.save(order);
+      }
       return { order, alreadyPaid: false, attempt, query, fulfilled: false };
     }
     this.assertSnapshotMatch(order, attempt, {

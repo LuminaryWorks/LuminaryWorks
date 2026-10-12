@@ -1,19 +1,24 @@
 {
   "app": {
     "title": "LuminaryWorks Bedieningsconsole",
-    "subtitle": "Klantbeheerders beheren hier het afrekenproces, de catalogus en bestellingen. Dit is niet de Logto-beheerconsole.",
-    "notLogtoAdmin": "Logto Admin Console blijft op de Identity-beheerderspoort. Deze app roept alleen Entitlement admin-API's aan."
+    "subtitle": "Klantbeheerders beheren hier het afrekenproces, de catalogus en bestellingen. Dit is niet de Logto-beheerconsole."
   },
   "nav": {
     "overview": "Overzicht",
     "catalog": "Catalogus",
-    "providers": "Afrekenen",
+    "providers": "Betaalkanalen",
     "orders": "Bestellingen",
     "cleanup": "Proef opruimen",
     "legal": "Juridisch & audit",
     "capacity": "Capaciteit",
     "logout": "Meld u af",
-    "language": "Taal"
+    "language": "Taal",
+    "groupCommerce": "Commerce",
+    "groupTrust": "Vertrouwen",
+    "groupPlatform": "Platform",
+    "skip": "Ga naar inhoud",
+    "collapse": "Invouwen",
+    "expand": "Uitvouwen"
   },
   "auth": {
     "title": "Aanmelden operator",
@@ -26,8 +31,7 @@
     "reauth": "Sessie verlopen. Meld u opnieuw aan.",
     "termsLead": "Ik heb de gelezen en ga ermee akkoord",
     "termsAnd": "En",
-    "platformTerms": "LuminaryWorks Voorwaarden",
-    "productTerms": "Voorwaarden voor controleconsole",
+    "terms": "Gebruikersovereenkomst",
     "privacy": "Privacybeleid"
   },
   "errors": {
@@ -63,7 +67,11 @@
     "ticket": "Ticket",
     "amount": "Bedrag (kleine eenheden)",
     "status": "Status",
-    "actions": "Acties"
+    "actions": "Acties",
+    "id": "ID",
+    "version": "Versie",
+    "previous": "Vorige",
+    "next": "Volgende"
   },
   "confirm": {
     "title": "Bevestig destructieve actie",
@@ -81,7 +89,14 @@
   "overview": {
     "title": "Overzicht",
     "entitlement": "Rechtenservice",
-    "identityBoundary": "Verificatiegrens: OIDC PKCE (geen browserclientgeheim). Toegangstokens moeten resource https://entitlement.luminaryworks.dev en scope entitlement:admin bevatten. Logto Admin op :3002 is een andere applicatie."
+    "identityBoundary": "Verificatiegrens: OIDC PKCE (geen browserclientgeheim). Toegangstokens moeten resource https://entitlement.luminaryworks.dev en scope entitlement:admin bevatten. Logto Admin op :3002 is een andere applicatie.",
+    "service": "Entitlement",
+    "ready": "Gereed",
+    "shortcuts": "Snelkoppelingen",
+    "addChannel": "Betaalkanalen",
+    "openCatalog": "Catalogus openen",
+    "openOrders": "Bestellingen openen",
+    "paymentsDisabled": "Betalingen zijn uitgeschakeld voor deze uitrol. Gebruik licenties, grants en rechten."
   },
   "catalog": {
     "title": "Catalogusrevisies",
@@ -89,11 +104,19 @@
     "invalidJson": "Aanbiedingen JSON zijn ongeldig",
     "notes": "Opmerkingen",
     "createDraft": "Ontwerp maken",
-    "copyPublished": "Kopieer gepubliceerde aanbiedingen"
+    "copyPublished": "Kopieer gepubliceerde aanbiedingen",
+    "sku": "SKU",
+    "product": "Product",
+    "plan": "Plan",
+    "interval": "Interval",
+    "currency": "Valuta",
+    "amount": "Bedrag",
+    "market": "Markt",
+    "publishPreview": "Aanbiedingen in dit concept",
+    "advancedJson": "Geavanceerde JSON"
   },
   "providers": {
-    "title": "Afrekenen",
-    "lead": "De klantbeheerder van de implementatie houdt hier het afrekenen bij: welke betalingskanalen open zijn en de verkopersconfiguratie van elk kanaal. Opgeslagen inloggegevens worden niet opnieuw weergegeven. Testen en vervolgens inschakelen. Op productlidmaatschapspagina's worden alleen ingeschakelde kanalen vermeld.",
+    "title": "Betaalkanalen",
     "providerId": "Aanbieder",
     "environment": "Omgeving",
     "merchantId": "Verkoper/winkel-ID",
@@ -128,7 +151,9 @@
       "doerflow_credit": "DoerFlow stabiele munt",
       "manual": "Handmatige bevestiging",
       "mock": "Zandbak-mock",
-      "contract": "Enterprise-contract"
+      "contract": "Enterprise-contract",
+      "polar": "Polar",
+      "paddle": "Paddle"
     },
     "fields": {
       "apiKey": "API-toets",
@@ -162,7 +187,22 @@
       "serviceKey": "Servicesleutel",
       "merchantAccount": "Verkopersaccount",
       "asset": "Stablecoin-activum (optioneel)",
-      "chainId": "Keten-id"
+      "chainId": "Keten-id",
+      "apiKeyId": "CDP API-key-id",
+      "apiKeySecret": "CDP API-keygeheim",
+      "successRedirectUrl": "Succes-URL (optioneel)",
+      "failRedirectUrl": "Fout-URL (optioneel)",
+      "okxSecretKey": "API-geheim",
+      "passphrase": "API-passphrase",
+      "payTo": "Ontvangstadres",
+      "network": "Netwerk (eip155:…)",
+      "resourceBaseUrl": "Openbare URL van de betaaldienst",
+      "posToken": "POS-token",
+      "notificationUrl": "Meldings-URL (HTTPS)",
+      "merchantToken": "Handelaarstoken (optioneel, voor terugbetaling)",
+      "privateKey": "Ondertekeningssleutel (optioneel, voor terugbetaling)",
+      "polarProductId": "Product-UUID",
+      "priceId": "Prijs-id (pri_…)"
     },
     "capabilities": {
       "checkout": "Afrekenen",
@@ -179,7 +219,92 @@
     "createTitle": "Voeg een kanaal toe",
     "detailTitle": "Kanaaldetails",
     "enabled": "Ingeschakeld",
-    "disabled": "Niet ingeschakeld"
+    "disabled": "Niet ingeschakeld",
+    "testOk": "Test geslaagd",
+    "testFailed": "Test mislukt",
+    "testResult": "Laatste test",
+    "retiringUntil": "Vorige gegevens vervallen op",
+    "saveMetadata": "Metadata opslaan",
+    "rotateAction": "Gegevens roteren",
+    "saved": "Metadata opgeslagen",
+    "rotated": "Gegevens geroteerd. Test opnieuw voordat u inschakelt.",
+    "tested": "Test afgerond",
+    "view": "Bekijken",
+    "statusActive": "Actief",
+    "statusDisabled": "Uitgeschakeld",
+    "statusRetiring": "Roterend",
+    "envSandbox": "Sandbox",
+    "envLive": "Live",
+    "wizardTitle": "Betaalkanaal toevoegen",
+    "stepProvider": "Provider",
+    "stepRoute": "Routering",
+    "stepCredentials": "Gegevens",
+    "stepReview": "Controleren",
+    "back": "Terug",
+    "next": "Volgende",
+    "retestRequired": "Inschakelen blijft geblokkeerd tot een geslaagde test bij de huidige gegevens en omgeving hoort.",
+    "liveConfirm": "Ik bevestig dat het live-merchantcontract actief is.",
+    "facts": "Kanaalgegevens",
+    "catalogLede": "Dit is de kassa van LuminaryWorks. Aankopen zoals BlockyEdu-lidmaatschappen en cursussen lopen via de kanalen die je hier inschakelt, in deze volgorde. Een kanaal blijft uit tot het is ingesteld en de test slaagt. Een private installatie gebruikt dezelfde lijst.",
+    "configure": "Instellen",
+    "moveUp": "Omhoog",
+    "moveDown": "Omlaag",
+    "statusUnconfigured": "Niet ingesteld",
+    "statusNeedsTest": "Test nodig",
+    "statusTestFailed": "Test mislukt",
+    "statusReady": "Test geslaagd",
+    "statusEnabledRetest": "Aan, opnieuw testen",
+    "extensionTitle": "Een kanaal dat niet in deze lijst staat",
+    "extensionBody": "Je plakt geen nieuwe gateway in deze console. Een kanaal verschijnt hier pas nadat een adapter checkout, handtekeningcontrole, opvraag en terugbetaling implementeert. Creem, Polar en Paddle zitten er al zo in en blijven uit tot je ze instelt en test.",
+    "setupLede": "Vul alleen de belangrijkste handelaarsgegevens in. Markt en valuta staan al klaar. Bewaar, test, en schakel pas in als de test slaagt.",
+    "saveConfig": "Configuratie opslaan",
+    "configSaved": "Configuratie opgeslagen. Test voordat je inschakelt.",
+    "testLocked": "Sla de configuratie op voordat je test.",
+    "enableNeedsSetup": "Inschakelen blijft uit tot de test slaagt voor deze gegevens en deze omgeving.",
+    "missingFields": "Vul de verplichte velden in: {{fields}}",
+    "routingRequired": "Markt en valuta zijn verplicht.",
+    "instructions": "Instructies voor de koper",
+    "instructionsHint": "Getoond bij offline betalen of betalen op contract.",
+    "advancedRouting": "Markt en valuta",
+    "routingEncapsulated": "Deze waarden horen bij het kanaal. Wijzig ze alleen als deze installatie in een andere markt verkoopt.",
+    "orderSaved": "Kassavolgorde opgeslagen",
+    "showMore": "Meer ingebouwde kanalen ({{count}})",
+    "hideMore": "Extra kanalen verbergen",
+    "envHint": "Gebruik sandbox tot de test slaagt. Schakel pas naar live als het productiecontract actief is.",
+    "credentialKept": "Laat geheime velden leeg om de opgeslagen gegevens te houden.",
+    "columns": {
+      "order": "Volgorde",
+      "channel": "Kanaal",
+      "status": "Status",
+      "enable": "Inschakelen",
+      "configure": "Instellen",
+      "environment": "Omgeving"
+    },
+    "tags": {
+      "cn": "Vasteland China",
+      "global": "Globaal",
+      "crypto": "Crypto",
+      "mor": "Merchant of record",
+      "offline": "Offline"
+    },
+    "hints": {
+      "alipay_f2f": "Alipay-QR. App-id, privésleutel van de handelaar en de publieke sleutel van Alipay.",
+      "paypal": "PayPal Checkout. REST client-id, geheim en webhook-id.",
+      "wechat_pay_v3": "WeChat Pay API v3. Handelaarsnummer, APIv3-sleutel, privésleutel en platformcertificaat.",
+      "unionpay_quickpass": "UnionPay QuickPass. Handelaarsnummer, ondertekeningssleutel en de retour-URL's uit het contract.",
+      "stripe_checkout": "Stripe-hosted Checkout. Secret key en webhook-ondertekeningsgeheim. Kaartnummers blijven bij Stripe.",
+      "coinbase_commerce": "Coinbase Business. CDP API-key-id, geheim en webhookgeheim. Verborgen voor kopers in vasteland China.",
+      "okx_onchain": "OKX on-chain checkout. API-key, geheim, passphrase, ontvangstadres, netwerk en de openbare HTTPS-URL van deze dienst.",
+      "bitpay": "BitPay-factuur. POS-token en HTTPS-meldings-URL. Terugbetalingen vragen ook het handelaarstoken en de ondertekeningssleutel.",
+      "doerflow_credit": "DoerFlow-stablecoinboek. Service key, webhookgeheim, handelaarsrekening en chain-id. Verborgen in vasteland China.",
+      "creem": "Creem int als merchant of record, inclusief belasting. API-key, webhookgeheim en product-id.",
+      "polar": "Polar merchant of record. Organisatietoken, webhookgeheim en product-UUID.",
+      "paddle": "Paddle Billing merchant of record. API-key, webhookgeheim en prijs-id (pri_).",
+      "manual": "Geen betaalgeheim. Schrijf de offline instructies, test, en schakel daarna in. Een operator bevestigt elke betaling.",
+      "mock": "Laboratoriumsimulator. Staat niet in de kassalijst.",
+      "contract": "Geen betaalgeheim. Kopers betalen op contract of inkooporder. Een operator bevestigt elke betaling."
+    },
+    "dragHandle": "Slepen om te sorteren"
   },
   "orders": {
     "title": "Bestellingen & betalingen",
@@ -191,7 +316,14 @@
     "grossAmount": "Bruto (kleine eenheden)",
     "taxAmount": "Belasting (kleine eenheden)",
     "netAmount": "Netto (kleine eenheden)",
-    "doerflowCreditNote": "DoerFlow credit debiteert een stablecoin-grootboeksaldo in de keten. Er is geen gehoste betaalomleiding."
+    "doerflowCreditNote": "DoerFlow credit debiteert een stablecoin-grootboeksaldo in de keten. Er is geen gehoste betaalomleiding.",
+    "rawPayload": "Ruwe payload",
+    "event": {
+      "order": "Bestelling",
+      "attempt": "Poging",
+      "refund": "Terugbetaling"
+    },
+    "operator": "Operatoracties"
   },
   "cleanup": {
     "title": "Proefopruimopdrachten"
@@ -200,13 +332,42 @@
     "title": "Wettelijke acceptaties & audit",
     "acceptances": "Beleidsacceptaties",
     "audit": "Auditlogboek",
-    "docs": "Juridische documenten"
+    "docs": "Juridische documenten",
+    "raw": "Ruwe JSON"
   },
   "capacity": {
     "title": "Capaciteit",
     "entitlementReady": "Gereedheid voor rechten",
     "doris": "Doris Piloot",
     "storage": "Interne objectopslag",
-    "noHa": "Op deze pagina worden alleen geconfigureerde probes gerapporteerd. Er wordt geen hoge beschikbaarheid geclaimd."
+    "noHa": "Op deze pagina worden alleen geconfigureerde probes gerapporteerd. Er wordt geen hoge beschikbaarheid geclaimd.",
+    "reachable": "Bereikbaar",
+    "unreachable": "Onbereikbaar"
+  },
+  "lang": {
+    "short": {
+      "en": "EN",
+      "zhCN": "简中",
+      "zhTW": "繁中",
+      "ja": "日",
+      "ko": "한",
+      "pt": "PT",
+      "nl": "NL",
+      "it": "IT",
+      "es": "ES",
+      "fr": "FR"
+    },
+    "full": {
+      "en": "English",
+      "zhCN": "简体中文",
+      "zhTW": "繁體中文",
+      "ja": "日本語",
+      "ko": "한국어",
+      "pt": "Português",
+      "nl": "Nederlands",
+      "it": "Italiano",
+      "es": "Español",
+      "fr": "Français"
+    }
   }
 }

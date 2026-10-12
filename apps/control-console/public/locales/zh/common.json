@@ -1,19 +1,24 @@
 {
   "app": {
     "title": "LuminaryWorks 控制台",
-    "subtitle": "客户管理员在这里维护收银台、目录与订单。这不是 Logto Admin Console。",
-    "notLogtoAdmin": "Logto Admin Console 仍在 Identity 管理端口。本应用只调用 Entitlement 管理 API。"
+    "subtitle": "客户管理员在这里维护收银台、目录与订单。这不是 Logto Admin Console。"
   },
   "nav": {
     "overview": "总览",
     "catalog": "目录",
-    "providers": "收银台",
+    "providers": "支付渠道",
     "orders": "订单",
     "cleanup": "试用清理",
     "legal": "法律与审计",
     "capacity": "容量",
     "logout": "退出",
-    "language": "语言"
+    "language": "语言",
+    "groupCommerce": "商业运营",
+    "groupTrust": "信任治理",
+    "groupPlatform": "平台管理",
+    "skip": "跳到主要内容",
+    "collapse": "收起",
+    "expand": "展开"
   },
   "auth": {
     "title": "运营登录",
@@ -26,8 +31,7 @@
     "reauth": "会话已过期，请重新登录。",
     "termsLead": "我已阅读并同意",
     "termsAnd": "和",
-    "platformTerms": "《LuminaryWorks 用户协议》",
-    "productTerms": "《控制台用户协议》",
+    "terms": "《用户协议》",
     "privacy": "《隐私政策》"
   },
   "errors": {
@@ -63,7 +67,11 @@
     "ticket": "工单",
     "amount": "金额（最小货币单位）",
     "status": "状态",
-    "actions": "操作"
+    "actions": "操作",
+    "id": "编号",
+    "version": "版本",
+    "previous": "上一页",
+    "next": "下一页"
   },
   "confirm": {
     "title": "确认破坏性操作",
@@ -81,7 +89,14 @@
   "overview": {
     "title": "总览",
     "entitlement": "Entitlement 服务",
-    "identityBoundary": "认证边界：OIDC PKCE（浏览器无 client secret）。访问令牌须带资源 https://entitlement.luminaryworks.dev 与范围 entitlement:admin。:3002 上的 Logto Admin 是另一套应用。"
+    "identityBoundary": "认证边界：OIDC PKCE（浏览器无 client secret）。访问令牌须带资源 https://entitlement.luminaryworks.dev 与范围 entitlement:admin。:3002 上的 Logto Admin 是另一套应用。",
+    "service": "权益服务",
+    "ready": "就绪",
+    "shortcuts": "快捷入口",
+    "addChannel": "支付渠道",
+    "openCatalog": "打开目录",
+    "openOrders": "打开订单",
+    "paymentsDisabled": "此部署已关闭支付。请使用 License、授权和权限。"
   },
   "catalog": {
     "title": "目录版本",
@@ -89,11 +104,19 @@
     "invalidJson": "售卖项 JSON 无效",
     "notes": "备注",
     "createDraft": "创建草稿",
-    "copyPublished": "复制已发布售卖项"
+    "copyPublished": "复制已发布售卖项",
+    "sku": "SKU",
+    "product": "产品",
+    "plan": "套餐",
+    "interval": "周期",
+    "currency": "币种",
+    "amount": "金额",
+    "market": "市场",
+    "publishPreview": "此草稿中的可售项",
+    "advancedJson": "高级 JSON"
   },
   "providers": {
-    "title": "收银台",
-    "lead": "部署客户的管理员在这里维护收银台：开通哪些支付渠道，以及每个渠道的商户配置。凭证保存后不再显示。先测试，通过后再启用。VistaRemote、DataLuminary、BlockyEdu 的会员页只展示已启用的渠道。",
+    "title": "支付渠道",
     "providerId": "渠道",
     "environment": "环境",
     "merchantId": "商户 / 店铺 id",
@@ -116,7 +139,7 @@
     "enabledFromApi": "启用状态以 Entitlement 返回值为准。本控制台不猜测商户审核或高可用。",
     "create": "保存渠道",
     "names": {
-      "alipay_f2f": "支付宝当面付",
+      "alipay_f2f": "支付宝",
       "paypal": "PayPal",
       "wechat_pay_v3": "微信支付",
       "unionpay_quickpass": "云闪付",
@@ -128,7 +151,9 @@
       "doerflow_credit": "DoerFlow 稳定币",
       "manual": "人工确认",
       "mock": "沙箱模拟",
-      "contract": "企业合同"
+      "contract": "企业合同",
+      "polar": "Polar",
+      "paddle": "Paddle"
     },
     "fields": {
       "apiKey": "API 密钥",
@@ -162,7 +187,22 @@
       "serviceKey": "Service key",
       "merchantAccount": "商户账户",
       "asset": "稳定币资产（可选）",
-      "chainId": "链 id"
+      "chainId": "链 id",
+      "apiKeyId": "CDP API Key Id",
+      "apiKeySecret": "CDP API Key Secret",
+      "successRedirectUrl": "成功跳转 URL（可选）",
+      "failRedirectUrl": "失败跳转 URL（可选）",
+      "okxSecretKey": "API Secret",
+      "passphrase": "API Passphrase",
+      "payTo": "收款地址",
+      "network": "网络（eip155:…）",
+      "resourceBaseUrl": "支付服务公网 URL",
+      "posToken": "POS Token",
+      "notificationUrl": "通知 URL（HTTPS）",
+      "merchantToken": "商户 Token（可选，用于退款）",
+      "privateKey": "签名私钥（可选，用于退款）",
+      "polarProductId": "产品 UUID",
+      "priceId": "价格 id（pri_…）"
     },
     "capabilities": {
       "checkout": "结账",
@@ -179,7 +219,92 @@
     "createTitle": "新增渠道",
     "detailTitle": "渠道详情",
     "enabled": "已启用",
-    "disabled": "未启用"
+    "disabled": "未启用",
+    "testOk": "测试通过",
+    "testFailed": "测试失败",
+    "testResult": "最近一次测试",
+    "retiringUntil": "旧凭证退役时间",
+    "saveMetadata": "保存元数据",
+    "rotateAction": "轮换凭证",
+    "saved": "元数据已保存",
+    "rotated": "凭证已轮换。启用前需要重新测试。",
+    "tested": "测试已完成",
+    "view": "查看",
+    "statusActive": "运行中",
+    "statusDisabled": "已停用",
+    "statusRetiring": "轮换中",
+    "envSandbox": "沙箱",
+    "envLive": "生产",
+    "wizardTitle": "新增支付渠道",
+    "stepProvider": "服务商",
+    "stepRoute": "路由",
+    "stepCredentials": "凭证",
+    "stepReview": "确认",
+    "back": "上一步",
+    "next": "下一步",
+    "retestRequired": "只有最近一次成功测试与当前凭证、环境一致时，才能启用。",
+    "liveConfirm": "我确认生产商户合同已经生效。",
+    "facts": "渠道信息",
+    "catalogLede": "这是 LuminaryWorks 的收银台。BlockyEdu 购买会员、课程等，都走这里已启用的渠道，顺序与本列表一致。渠道默认未配置，填好关键信息并通过测试后，才能手动启用。私有化部署也在这里接入。",
+    "configure": "配置",
+    "moveUp": "上移",
+    "moveDown": "下移",
+    "statusUnconfigured": "未配置",
+    "statusNeedsTest": "待测试",
+    "statusTestFailed": "测试失败",
+    "statusReady": "测试通过",
+    "statusEnabledRetest": "已启用，需重新测试",
+    "extensionTitle": "列表里没有的渠道",
+    "extensionBody": "不能在控制台里手填一个新网关。新的支付方式要先做成适配器，实现收款、验签、查单和退款，然后才会出现在这个目录里。Creem、Polar、Paddle 已经按这个方式内置，默认关闭。",
+    "setupLede": "只填写这个渠道的关键商户信息。市场和币种已经按渠道填好。保存后先测试，测试通过才能启用。",
+    "saveConfig": "保存配置",
+    "configSaved": "配置已保存。启用前请先测试。",
+    "testLocked": "先保存配置，再运行测试。",
+    "enableNeedsSetup": "当前凭证和环境的测试通过之前，不能启用。",
+    "missingFields": "请填写必填项：{{fields}}",
+    "routingRequired": "市场和币种不能为空。",
+    "instructions": "买家看到的付款说明",
+    "instructionsHint": "线下付款或按合同付款时展示给买家。",
+    "advancedRouting": "市场与币种",
+    "routingEncapsulated": "这里已按渠道填好。只有这个部署要卖到别的市场时才需要改。",
+    "orderSaved": "收银台顺序已保存",
+    "showMore": "更多已内置渠道（{{count}}）",
+    "hideMore": "收起额外渠道",
+    "envHint": "测试通过前使用沙箱。只有生产商户合同生效后才切换到生产。",
+    "credentialKept": "密钥留空表示继续使用已保存的凭证。",
+    "columns": {
+      "order": "顺序",
+      "channel": "渠道",
+      "status": "状态",
+      "enable": "启用",
+      "configure": "配置",
+      "environment": "环境"
+    },
+    "tags": {
+      "cn": "中国大陆",
+      "global": "全球",
+      "crypto": "加密",
+      "mor": "记录商户",
+      "offline": "线下"
+    },
+    "hints": {
+      "alipay_f2f": "支付宝当面付。填写开放平台的 AppId、商户私钥和支付宝公钥。",
+      "paypal": "PayPal Checkout。填写 REST Client ID、Secret 和 Webhook ID。",
+      "wechat_pay_v3": "微信支付 API v3。填写商户号、APIv3 密钥、商户私钥和微信平台证书。",
+      "unionpay_quickpass": "云闪付。填写入网商户号、签名私钥，以及合同里的前台和后台地址。",
+      "stripe_checkout": "Stripe 托管收银台。填写 Secret Key 和 Webhook 签名密钥。卡号不会进入本控制台。",
+      "coinbase_commerce": "Coinbase Business。填写 CDP API Key Id、Secret 和 Webhook 密钥。中国大陆买家不可用。",
+      "okx_onchain": "OKX 链上收银台。填写 API Key、Secret、Passphrase、收款地址、网络，以及本支付服务的公网 HTTPS 地址。",
+      "bitpay": "BitPay 账单。填写 POS Token 和 HTTPS 通知地址。退款还需要商户 Token 和签名私钥。",
+      "doerflow_credit": "DoerFlow 稳定币账本。填写 Service Key、Webhook 密钥、商户账户和链 id。中国大陆买家不可用。",
+      "creem": "Creem 作为记录商户代收并计税。填写 API Key、Webhook 密钥和 Creem 产品 id。",
+      "polar": "Polar 记录商户。填写组织访问令牌、Webhook 密钥和 Polar 产品 UUID。",
+      "paddle": "Paddle Billing 记录商户。填写 API Key、Webhook 密钥和价格 id（pri_）。",
+      "manual": "不需要支付密钥。写下买家看到的线下付款说明，测试通过后再启用。每笔由运营确认。",
+      "mock": "实验室模拟渠道，不会出现在收银台目录里。",
+      "contract": "不需要支付密钥。企业买家按合同或采购单付款，每笔由运营确认。"
+    },
+    "dragHandle": "拖拽调整顺序"
   },
   "orders": {
     "title": "订单与支付",
@@ -191,7 +316,14 @@
     "grossAmount": "Gross（最小货币单位）",
     "taxAmount": "Tax（最小货币单位）",
     "netAmount": "Net（最小货币单位）",
-    "doerflowCreditNote": "DoerFlow credit 从链上稳定币账本余额扣款，无托管结账跳转。"
+    "doerflowCreditNote": "DoerFlow credit 从链上稳定币账本余额扣款，无托管结账跳转。",
+    "rawPayload": "原始载荷",
+    "event": {
+      "order": "订单",
+      "attempt": "支付尝试",
+      "refund": "退款"
+    },
+    "operator": "运营操作"
   },
   "cleanup": {
     "title": "试用清理任务"
@@ -200,13 +332,42 @@
     "title": "法律接受与审计",
     "acceptances": "政策接受记录",
     "audit": "审计日志",
-    "docs": "法律文档"
+    "docs": "法律文档",
+    "raw": "原始 JSON"
   },
   "capacity": {
     "title": "容量",
     "entitlementReady": "Entitlement 就绪",
     "doris": "Doris Pilot",
     "storage": "内部对象存储",
-    "noHa": "本页只报告已配置的探测。不会声称高可用。"
+    "noHa": "本页只报告已配置的探测。不会声称高可用。",
+    "reachable": "可达",
+    "unreachable": "不可达"
+  },
+  "lang": {
+    "short": {
+      "en": "EN",
+      "zhCN": "简中",
+      "zhTW": "繁中",
+      "ja": "日",
+      "ko": "한",
+      "pt": "PT",
+      "nl": "NL",
+      "it": "IT",
+      "es": "ES",
+      "fr": "FR"
+    },
+    "full": {
+      "en": "English",
+      "zhCN": "简体中文",
+      "zhTW": "繁體中文",
+      "ja": "日本語",
+      "ko": "한국어",
+      "pt": "Português",
+      "nl": "Nederlands",
+      "it": "Italiano",
+      "es": "Español",
+      "fr": "Français"
+    }
   }
 }

@@ -6,7 +6,8 @@
     "identity": "central",
     "entitlement": "shadow_read",
     "ai": "off",
-    "notification": "none"
+    "notification": "none",
+    "payments": "platform"
   },
   "services": {
     "identity": {

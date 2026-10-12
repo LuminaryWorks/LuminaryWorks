@@ -33,7 +33,11 @@ function factory(
     settleSuccess?: boolean;
     settleStatus?: string;
     transaction?: string;
-    seen?: { resourceUrl?: string; requirements?: Record<string, unknown> };
+    seen?: {
+      resourceUrl?: string;
+      requirements?: Record<string, unknown>;
+      accepted?: Record<string, unknown>;
+    };
   } = {},
 ): OkxX402Factory {
   return async () => ({
@@ -49,12 +53,18 @@ function factory(
         accepted: { ...storedAccept, amount: "1", payTo: "0xdead" },
       };
     },
-    async verifyPayment(_payload, requirements) {
-      if (opts.seen) opts.seen.requirements = requirements;
+    async verifyPayment(payload, requirements) {
+      if (opts.seen) {
+        opts.seen.requirements = requirements;
+        opts.seen.accepted = (payload as { accepted?: Record<string, unknown> }).accepted;
+      }
       return { isValid: opts.verifyValid !== false, invalidReason: "bad_sig" };
     },
-    async settlePayment(_payload, requirements) {
-      if (opts.seen) opts.seen.requirements = requirements;
+    async settlePayment(payload, requirements) {
+      if (opts.seen) {
+        opts.seen.requirements = requirements;
+        opts.seen.accepted = (payload as { accepted?: Record<string, unknown> }).accepted;
+      }
       return {
         success: opts.settleSuccess !== false,
         status: opts.settleStatus ?? "success",
@@ -174,7 +184,10 @@ describe("okx_onchain adapter", () => {
   });
 
   it("uses stored checkout requirements and ignores browser-replaced accepted terms", async () => {
-    const seen: { requirements?: Record<string, unknown> } = {};
+    const seen: {
+      requirements?: Record<string, unknown>;
+      accepted?: Record<string, unknown>;
+    } = {};
     const adapter = new OkxOnchainPaymentAdapter(factory({ seen }));
     const created = await adapter.createCheckout({
       orderId: "ord_1",
@@ -208,6 +221,7 @@ describe("okx_onchain adapter", () => {
       },
     });
     expect(seen.requirements).toEqual(storedAccept);
+    expect(seen.accepted).toEqual(storedAccept);
     expect(seen.requirements).not.toMatchObject({ amount: "1" });
   });
 

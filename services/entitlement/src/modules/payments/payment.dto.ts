@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsBoolean,
   IsIn,
@@ -110,6 +112,16 @@ export class UpdatePaymentProviderConfigDto {
   @IsString()
   @IsIn([...PAYMENT_ENVIRONMENTS])
   environment?: "sandbox" | "live";
+}
+
+export class ReorderPaymentProvidersDto {
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(32)
+  @IsString({ each: true })
+  @IsIn([...PAYMENT_PROVIDER_IDS], { each: true })
+  providerIds!: string[];
 }
 
 export class RotatePaymentProviderConfigDto {

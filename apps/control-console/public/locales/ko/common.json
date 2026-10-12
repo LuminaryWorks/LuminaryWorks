@@ -1,19 +1,24 @@
 {
   "app": {
     "title": "LuminaryWorks 제어 콘솔",
-    "subtitle": "고객 관리자는 여기에서 결제, 카탈로그 및 주문을 관리합니다. 이것은 Logto 관리 콘솔이 아닙니다.",
-    "notLogtoAdmin": "Logto 관리 콘솔은 ID 관리 포트에 유지됩니다. 이 앱은 자격 관리 API만 호출합니다."
+    "subtitle": "고객 관리자는 여기에서 결제, 카탈로그 및 주문을 관리합니다. 이것은 Logto 관리 콘솔이 아닙니다."
   },
   "nav": {
     "overview": "개요",
     "catalog": "목록",
-    "providers": "점검",
+    "providers": "결제 채널",
     "orders": "명령",
     "cleanup": "시험 정리",
     "legal": "법률 및 감사",
     "capacity": "용량",
     "logout": "로그아웃",
-    "language": "언어"
+    "language": "언어",
+    "groupCommerce": "커머스 운영",
+    "groupTrust": "신뢰",
+    "groupPlatform": "플랫폼",
+    "skip": "본문으로 건너뛰기",
+    "collapse": "접기",
+    "expand": "펼치기"
   },
   "auth": {
     "title": "운영자 로그인",
@@ -26,9 +31,8 @@
     "reauth": "세션이 만료되었습니다. 다시 로그인하세요.",
     "termsLead": "나는 다음 내용을 읽었으며 이에 동의합니다.",
     "termsAnd": "그리고",
-    "platformTerms": "LuminaryWorks 용어",
-    "productTerms": "제어 콘솔 용어",
-    "privacy": "개인 정보 보호 정책"
+    "terms": "이용약관",
+    "privacy": "개인정보 처리방침"
   },
   "errors": {
     "code": "오류 코드",
@@ -63,7 +67,11 @@
     "ticket": "표",
     "amount": "금액(소단위)",
     "status": "상태",
-    "actions": "행위"
+    "actions": "행위",
+    "id": "ID",
+    "version": "버전",
+    "previous": "이전",
+    "next": "다음"
   },
   "confirm": {
     "title": "파괴적인 행동 확인",
@@ -81,7 +89,14 @@
   "overview": {
     "title": "개요",
     "entitlement": "인타이틀먼트 서비스",
-    "identityBoundary": "인증 경계: OIDC PKCE(브라우저 클라이언트 비밀번호 없음). 액세스 토큰에는 리소스 https://entitlement.luminaryworks.dev 및 범위 권한:admin이 포함되어야 합니다. :3002의 Logto Admin은 다른 응용 프로그램입니다."
+    "identityBoundary": "인증 경계: OIDC PKCE(브라우저 클라이언트 비밀번호 없음). 액세스 토큰에는 리소스 https://entitlement.luminaryworks.dev 및 범위 권한:admin이 포함되어야 합니다. :3002의 Logto Admin은 다른 응용 프로그램입니다.",
+    "service": "권한 서비스",
+    "ready": "준비됨",
+    "shortcuts": "바로가기",
+    "addChannel": "결제 채널",
+    "openCatalog": "카탈로그 열기",
+    "openOrders": "주문 열기",
+    "paymentsDisabled": "이 배포에서는 결제가 꺼져 있습니다. 라이선스, 부여, 권한을 사용하세요."
   },
   "catalog": {
     "title": "카탈로그 개정",
@@ -89,11 +104,19 @@
     "invalidJson": "제공 항목 JSON이 잘못되었습니다.",
     "notes": "메모",
     "createDraft": "초안 만들기",
-    "copyPublished": "게시된 제품 복사"
+    "copyPublished": "게시된 제품 복사",
+    "sku": "SKU",
+    "product": "제품",
+    "plan": "플랜",
+    "interval": "주기",
+    "currency": "통화",
+    "amount": "금액",
+    "market": "시장",
+    "publishPreview": "이 초안의 판매 항목",
+    "advancedJson": "고급 JSON"
   },
   "providers": {
-    "title": "점검",
-    "lead": "배포 고객 관리자는 여기에서 체크아웃을 유지 관리합니다. 즉, 열려 있는 결제 채널과 각 채널의 판매자 구성을 관리합니다. 저장된 자격 증명은 다시 표시되지 않습니다. 테스트한 후 활성화하세요. 제품 멤버십 페이지에는 활성화된 채널만 나열됩니다.",
+    "title": "결제 채널",
     "providerId": "공급자",
     "environment": "환경",
     "merchantId": "판매자/매장 ID",
@@ -128,7 +151,9 @@
       "doerflow_credit": "DoerFlow 스테이블코인",
       "manual": "수동 확인",
       "mock": "샌드박스 모의",
-      "contract": "기업 계약"
+      "contract": "기업 계약",
+      "polar": "Polar",
+      "paddle": "Paddle"
     },
     "fields": {
       "apiKey": "API 키",
@@ -162,7 +187,22 @@
       "serviceKey": "서비스 키",
       "merchantAccount": "판매자 계정",
       "asset": "스테이블코인 자산(선택사항)",
-      "chainId": "체인 ID"
+      "chainId": "체인 ID",
+      "apiKeyId": "CDP API 키 id",
+      "apiKeySecret": "CDP API 키 비밀",
+      "successRedirectUrl": "성공 리다이렉트 URL (선택)",
+      "failRedirectUrl": "실패 리다이렉트 URL (선택)",
+      "okxSecretKey": "API 비밀",
+      "passphrase": "API 패스프레이즈",
+      "payTo": "수취 주소",
+      "network": "네트워크 (eip155:…)",
+      "resourceBaseUrl": "결제 서비스 공개 URL",
+      "posToken": "POS 토큰",
+      "notificationUrl": "알림 URL (HTTPS)",
+      "merchantToken": "가맹점 토큰 (선택, 환불용)",
+      "privateKey": "서명 키 (선택, 환불용)",
+      "polarProductId": "상품 UUID",
+      "priceId": "가격 id (pri_…)"
     },
     "capabilities": {
       "checkout": "점검",
@@ -179,7 +219,92 @@
     "createTitle": "채널 추가",
     "detailTitle": "채널 세부정보",
     "enabled": "활성화됨",
-    "disabled": "활성화되지 않음"
+    "disabled": "활성화되지 않음",
+    "testOk": "테스트 통과",
+    "testFailed": "테스트 실패",
+    "testResult": "최근 테스트",
+    "retiringUntil": "이전 자격 증명 만료 시각",
+    "saveMetadata": "메타데이터 저장",
+    "rotateAction": "자격 증명 교체",
+    "saved": "메타데이터를 저장했습니다",
+    "rotated": "자격 증명을 교체했습니다. 활성화 전에 다시 테스트하세요.",
+    "tested": "테스트를 마쳤습니다",
+    "view": "보기",
+    "statusActive": "활성",
+    "statusDisabled": "중지",
+    "statusRetiring": "교체 중",
+    "envSandbox": "샌드박스",
+    "envLive": "운영",
+    "wizardTitle": "결제 채널 추가",
+    "stepProvider": "공급자",
+    "stepRoute": "라우팅",
+    "stepCredentials": "자격 증명",
+    "stepReview": "검토",
+    "back": "이전",
+    "next": "다음",
+    "retestRequired": "현재 자격 증명과 환경에 맞는 성공 테스트가 있어야 활성화할 수 있습니다.",
+    "liveConfirm": "운영 가맹 계약이 유효함을 확인합니다.",
+    "facts": "채널 정보",
+    "catalogLede": "이것은 LuminaryWorks 결제창입니다. BlockyEdu 멤버십과 강좌 구매는 여기서 켠 채널을 이 순서로 사용합니다. 설정과 테스트를 통과하기 전에는 꺼져 있습니다. 프라이빗 배포도 같은 목록을 사용합니다.",
+    "configure": "설정",
+    "moveUp": "위로",
+    "moveDown": "아래로",
+    "statusUnconfigured": "미설정",
+    "statusNeedsTest": "테스트 필요",
+    "statusTestFailed": "테스트 실패",
+    "statusReady": "테스트 통과",
+    "statusEnabledRetest": "켜짐, 재테스트 필요",
+    "extensionTitle": "목록에 없는 채널",
+    "extensionBody": "이 콘솔에 새 게이트웨이를 붙여 넣어 추가할 수 없습니다. 결제, 서명 검증, 조회, 환불을 구현한 어댑터가 된 뒤에만 목록에 나타납니다. Creem, Polar, Paddle 은 이미 그렇게 내장되어 있으며, 설정과 테스트를 통과하기 전에는 꺼져 있습니다.",
+    "setupLede": "이 채널의 핵심 가맹점 정보만 입력합니다. 시장과 통화는 이미 채워져 있습니다. 저장하고 테스트한 뒤, 통과해야 켤 수 있습니다.",
+    "saveConfig": "설정 저장",
+    "configSaved": "설정을 저장했습니다. 켜기 전에 테스트하세요.",
+    "testLocked": "테스트 전에 설정을 저장하세요.",
+    "enableNeedsSetup": "현재 자격 증명과 환경의 테스트가 통과하기 전에는 켤 수 없습니다.",
+    "missingFields": "필수 항목을 입력하세요: {{fields}}",
+    "routingRequired": "시장과 통화는 비울 수 없습니다.",
+    "instructions": "구매자에게 보일 안내",
+    "instructionsHint": "오프라인 또는 계약 결제 때 구매자에게 보여 줍니다.",
+    "advancedRouting": "시장과 통화",
+    "routingEncapsulated": "채널에 맞게 채워져 있습니다. 다른 시장에 판매할 때만 바꾸세요.",
+    "orderSaved": "결제 순서를 저장했습니다",
+    "showMore": "다른 내장 채널 ({{count}})",
+    "hideMore": "추가 채널 숨기기",
+    "envHint": "테스트가 통과하기 전에는 샌드박스를 사용합니다. 운영 가맹 계약이 유효할 때만 라이브로 전환합니다.",
+    "credentialKept": "비밀 항목을 비우면 저장된 자격 증명을 유지합니다.",
+    "columns": {
+      "order": "순서",
+      "channel": "채널",
+      "status": "상태",
+      "enable": "사용",
+      "configure": "설정",
+      "environment": "환경"
+    },
+    "tags": {
+      "cn": "중국 본토",
+      "global": "글로벌",
+      "crypto": "암호화폐",
+      "mor": "기록상 판매자",
+      "offline": "오프라인"
+    },
+    "hints": {
+      "alipay_f2f": "Alipay QR 결제입니다. 오픈 플랫폼의 AppId, 가맹점 개인 키, Alipay 공개 키를 입력합니다.",
+      "paypal": "PayPal Checkout 입니다. REST Client ID, Secret, Webhook ID 를 입력합니다.",
+      "wechat_pay_v3": "WeChat Pay API v3 입니다. 가맹점 번호, APIv3 키, 가맹점 개인 키, 플랫폼 인증서를 입력합니다.",
+      "unionpay_quickpass": "UnionPay QuickPass 입니다. 가맹점 번호, 서명 키, 계약의 반환 URL 을 입력합니다.",
+      "stripe_checkout": "Stripe 호스팅 Checkout 입니다. Secret Key 와 Webhook 서명 비밀입니다. 카드 번호는 이 콘솔을 거치지 않습니다.",
+      "coinbase_commerce": "Coinbase Business 입니다. CDP API Key Id, Secret, Webhook 비밀을 입력합니다. 중국 본토 구매자에게는 숨깁니다.",
+      "okx_onchain": "OKX 온체인 결제입니다. API Key, Secret, Passphrase, 수취 주소, 네트워크, 이 서비스의 공개 HTTPS URL 을 입력합니다.",
+      "bitpay": "BitPay 청구서입니다. POS 토큰과 HTTPS 알림 URL 을 입력합니다. 환불에는 가맹점 토큰과 서명 키도 필요합니다.",
+      "doerflow_credit": "DoerFlow 스테이블코인 원장입니다. Service Key, Webhook 비밀, 가맹점 계정, 체인 id 를 입력합니다. 중국 본토 구매자에게는 숨깁니다.",
+      "creem": "Creem 은 기록상 판매자로 세금을 포함해 수납합니다. API Key, Webhook 비밀, 상품 id 를 입력합니다.",
+      "polar": "Polar 기록상 판매자입니다. 조직 액세스 토큰, Webhook 비밀, 상품 UUID 를 입력합니다.",
+      "paddle": "Paddle Billing 기록상 판매자입니다. API Key, Webhook 비밀, 가격 id(pri_)를 입력합니다.",
+      "manual": "결제 비밀이 필요 없습니다. 구매자에게 보일 오프라인 안내를 적고, 테스트를 통과한 뒤 켭니다. 입금은 운영자가 확인합니다.",
+      "mock": "실험용 시뮬레이터입니다. 결제 목록에는 나오지 않습니다.",
+      "contract": "결제 비밀이 필요 없습니다. 계약 또는 발주서로 결제합니다. 입금은 운영자가 확인합니다."
+    },
+    "dragHandle": "드래그하여 순서 변경"
   },
   "orders": {
     "title": "주문 및 결제",
@@ -191,7 +316,14 @@
     "grossAmount": "총(소단위)",
     "taxAmount": "세금(소단위)",
     "netAmount": "순(보조 단위)",
-    "doerflowCreditNote": "DoerFlow 신용은 온체인 스테이블코인 원장 잔액에서 차감됩니다. 호스팅된 결제 리디렉션이 없습니다."
+    "doerflowCreditNote": "DoerFlow 신용은 온체인 스테이블코인 원장 잔액에서 차감됩니다. 호스팅된 결제 리디렉션이 없습니다.",
+    "rawPayload": "원본 페이로드",
+    "event": {
+      "order": "주문",
+      "attempt": "시도",
+      "refund": "환불"
+    },
+    "operator": "운영 작업"
   },
   "cleanup": {
     "title": "평가판 정리 작업"
@@ -200,13 +332,42 @@
     "title": "법적 승인 및 감사",
     "acceptances": "정책 수락",
     "audit": "감사 로그",
-    "docs": "법률 문서"
+    "docs": "법률 문서",
+    "raw": "원본 JSON"
   },
   "capacity": {
     "title": "용량",
     "entitlementReady": "자격 준비",
     "doris": "도리스 파일럿",
     "storage": "내부 객체 스토리지",
-    "noHa": "이 페이지는 구성된 프로브만 보고합니다. 고가용성을 요구하지 않습니다."
+    "noHa": "이 페이지는 구성된 프로브만 보고합니다. 고가용성을 요구하지 않습니다.",
+    "reachable": "연결됨",
+    "unreachable": "연결 안 됨"
+  },
+  "lang": {
+    "short": {
+      "en": "EN",
+      "zhCN": "简中",
+      "zhTW": "繁中",
+      "ja": "日",
+      "ko": "한",
+      "pt": "PT",
+      "nl": "NL",
+      "it": "IT",
+      "es": "ES",
+      "fr": "FR"
+    },
+    "full": {
+      "en": "English",
+      "zhCN": "简体中文",
+      "zhTW": "繁體中文",
+      "ja": "日本語",
+      "ko": "한국어",
+      "pt": "Português",
+      "nl": "Nederlands",
+      "it": "Italiano",
+      "es": "Español",
+      "fr": "Français"
+    }
   }
 }

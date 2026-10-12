@@ -1,4 +1,5 @@
 import {
+  getCurrentUser,
   handleSignInCallback,
   isIdpConfigured,
   type LuminaryAuthSession,
@@ -15,6 +16,11 @@ let callbackInflight: Promise<{
   session: LuminaryAuthSession;
   returnUrl?: string;
 }> | null = null;
+/** Survives StrictMode remount so we never re-run signinRedirectCallback after success. */
+let callbackResolved: {
+  session: LuminaryAuthSession;
+  returnUrl?: string;
+} | null = null;
 
 export function toIdpConfig(
   runtime: RuntimeConfig,
@@ -46,11 +52,33 @@ export async function completeCallback(
 ): Promise<{ session: LuminaryAuthSession; returnUrl?: string }> {
   const config = toIdpConfig(runtime, origin);
   if (!config) throw new Error("Identity is not configured");
+  if (callbackResolved) return callbackResolved;
   if (callbackInflight) return callbackInflight;
-  callbackInflight = handleSignInCallback(config).finally(() => {
-    callbackInflight = null;
-  });
+  // StrictMode remounts after the code is consumed — reuse stored UserManager session.
+  const existing = await getCurrentUser(config);
+  if (existing?.accessToken) {
+    callbackResolved = { session: existing };
+    return callbackResolved;
+  }
+  callbackInflight = handleSignInCallback(config)
+    .then((result) => {
+      callbackResolved = result;
+      return result;
+    })
+    .finally(() => {
+      callbackInflight = null;
+    });
   return callbackInflight;
+}
+
+/** Hydrate SPA session after hard navigation / refresh. */
+export async function restoreSession(
+  runtime: RuntimeConfig,
+  origin: string,
+): Promise<LuminaryAuthSession | null> {
+  const config = toIdpConfig(runtime, origin);
+  if (!config) return null;
+  return getCurrentUser(config);
 }
 
 export async function signOut(

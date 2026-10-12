@@ -19,8 +19,13 @@
     "pnpm": ">=11"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.3.4",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@fastify/static": "^10.1.2",
-    "@luminaryworks/auth-react": "^0.7.2",
+    "@luminaryworks/auth-react": "^0.7.4",
+    "antd": "^6.6.5",
     "fastify": "^5.12.5",
     "i18next": "^24.2.3",
     "react": "^19.2.0",

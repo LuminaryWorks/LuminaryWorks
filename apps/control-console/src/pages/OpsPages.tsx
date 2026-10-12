@@ -1,8 +1,11 @@
+import { ReloadOutlined } from "@ant-design/icons";
+import { Button } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ErrorBanner, PageHeader } from "../components/ErrorBanner";
 import type { createApiClient } from "../lib/api-client";
 import { confirmDestructive } from "../lib/confirm";
+import { buildOrderTimeline } from "../lib/order-timeline";
 import { collectCreemAmounts } from "../lib/payment-providers";
 
 type Api = ReturnType<typeof createApiClient>;
@@ -107,6 +110,8 @@ export function OrdersPage({ api }: { api: Api }) {
     return String(order?.paymentProvider ?? "");
   }, [detail]);
 
+  const pageCount = Math.max(1, Math.ceil(total / 20));
+
   return (
     <section>
       <PageHeader title={t("orders.title")} />
@@ -129,7 +134,7 @@ export function OrdersPage({ api }: { api: Api }) {
         ))}
       </div>
       <form
-        className="inline"
+        className="toolbar"
         onSubmit={(ev) => {
           ev.preventDefault();
           setPage(1);
@@ -146,21 +151,31 @@ export function OrdersPage({ api }: { api: Api }) {
         <table>
           <thead>
             <tr>
-              <th>id</th>
+              <th>{t("common.id")}</th>
               <th>{t("providers.providerId")}</th>
               <th>{t("common.status")}</th>
               <th>{t("common.details")}</th>
             </tr>
           </thead>
           <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={4}>{t("common.empty")}</td>
+              </tr>
+            ) : null}
             {rows.map((row) => (
               <tr key={String(row.id)}>
-                <td>{String(row.id)}</td>
+                <td className="id-cell" title={String(row.id)}>
+                  {shortId(String(row.id))}
+                </td>
                 <td>{rowProvider(row, tab)}</td>
-                <td>{String(row.status)}</td>
+                <td>
+                  <span className="badge">{String(row.status)}</span>
+                </td>
                 <td>
                   <button
                     type="button"
+                    className="btn"
                     onClick={() => {
                       const id = String(row.id);
                       const orderId = String(row.orderId ?? row.id);
@@ -181,112 +196,285 @@ export function OrdersPage({ api }: { api: Api }) {
           </tbody>
         </table>
       </div>
-      <p>
-        {t("common.page")} {page} / {Math.max(1, Math.ceil(total / 20))}
+      <div className="pager">
+        <span>
+          {t("common.page")} {page} / {pageCount}
+        </span>
         <button
           type="button"
+          className="btn btn-ghost"
+          disabled={page <= 1}
           onClick={() => setPage((p) => Math.max(1, p - 1))}
         >
-          ‹
+          {t("common.previous")}
         </button>
-        <button type="button" onClick={() => setPage((p) => p + 1)}>
-          ›
+        <button
+          type="button"
+          className="btn btn-ghost"
+          disabled={page >= pageCount}
+          onClick={() => setPage((p) => p + 1)}
+        >
+          {t("common.next")}
         </button>
-      </p>
+      </div>
       {detail ? (
-        <div className="stack">
-          <CreemMorAmountsPanel
-            detail={{
-              order: detail.order as Record<string, unknown> | undefined,
-              attempts: detail.attempts as
-                | Record<string, unknown>[]
-                | undefined,
-              refunds: detail.refunds as Record<string, unknown>[] | undefined,
-            }}
-          />
-          {detailProvider === "doerflow_credit" ? (
-            <p className="muted">{t("orders.doerflowCreditNote")}</p>
-          ) : null}
-          <pre>{JSON.stringify(detail, null, 2)}</pre>
-          <label>
-            {t("common.reason")}
-            <input
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              required
+        <div className="stack section-gap">
+          <article className="panel-card">
+            <CreemMorAmountsPanel
+              detail={{
+                order: detail.order as Record<string, unknown> | undefined,
+                attempts: detail.attempts as
+                  | Record<string, unknown>[]
+                  | undefined,
+                refunds: detail.refunds as
+                  | Record<string, unknown>[]
+                  | undefined,
+              }}
             />
-          </label>
-          <label>
-            {t("common.ticket")}
-            <input value={ticket} onChange={(e) => setTicket(e.target.value)} />
-          </label>
-          <label>
-            {t("common.amount")}
-            <input value={amount} onChange={(e) => setAmount(e.target.value)} />
-          </label>
-          <div className="row-actions">
-            <button
-              type="button"
-              onClick={() => {
-                const order = detail.order as { id?: string } | undefined;
-                const id = order?.id;
-                if (!id) return;
-                void confirmDestructive(t("confirm.manualConfirm"))
-                  .then((ok) => {
-                    if (!ok) return;
-                    return api
-                      .post(`/v1/admin/payments/orders/${id}/manual-confirm`, {
-                        reason,
-                        ticket,
-                      })
-                      .then(load);
-                  })
-                  .catch(setError);
-              }}
-            >
-              {t("common.manualConfirm")}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const order = detail.order as { id?: string } | undefined;
-                const id = order?.id;
-                if (!id) return;
-                void confirmDestructive(t("confirm.refund"))
-                  .then((ok) => {
-                    if (!ok) return;
-                    return api
-                      .post(`/v1/admin/payments/orders/${id}/refund`, {
-                        reason,
-                        ticket,
-                        amountCents: Number(amount),
-                        refundIdempotencyKey: `console-${id}-${Date.now()}`,
-                      })
-                      .then(load);
-                  })
-                  .catch(setError);
-              }}
-            >
-              {t("common.refund")}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const attempts = (detail.attempts as { id?: string }[]) ?? [];
-                const id = attempts[0]?.id;
-                if (!id) return;
-                void api
-                  .post(`/v1/admin/payments/attempts/${id}/reconcile`)
-                  .then(load)
-                  .catch(setError);
-              }}
-            >
-              {t("common.reconcile")}
-            </button>
-          </div>
+            {detailProvider === "doerflow_credit" ? (
+              <p className="muted">{t("orders.doerflowCreditNote")}</p>
+            ) : null}
+            <ol className="timeline">
+              {buildOrderTimeline(detail).map((event) => (
+                <li key={`${event.kind}-${event.id}`}>
+                  <strong>{t(`orders.event.${event.kind}`)}</strong>{" "}
+                  {event.provider} {event.status}
+                  <span className="muted"> {event.at}</span>
+                </li>
+              ))}
+            </ol>
+            <details>
+              <summary>{t("orders.rawPayload")}</summary>
+              <pre>{JSON.stringify(detail, null, 2)}</pre>
+            </details>
+          </article>
+          <article className="panel-card">
+            <h2>{t("orders.operator")}</h2>
+            <div className="create-grid">
+              <label>
+                {t("common.reason")}
+                <input
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                {t("common.ticket")}
+                <input
+                  value={ticket}
+                  onChange={(e) => setTicket(e.target.value)}
+                />
+              </label>
+              <label>
+                {t("common.amount")}
+                <input
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </label>
+            </div>
+            <div className="row-actions section-gap">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  const order = detail.order as { id?: string } | undefined;
+                  const id = order?.id;
+                  if (!id) return;
+                  void confirmDestructive(t("confirm.manualConfirm"))
+                    .then((ok) => {
+                      if (!ok) return;
+                      return api
+                        .post(
+                          `/v1/admin/payments/orders/${id}/manual-confirm`,
+                          {
+                            reason,
+                            ticket,
+                          },
+                        )
+                        .then(load);
+                    })
+                    .catch(setError);
+                }}
+              >
+                {t("common.manualConfirm")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => {
+                  const order = detail.order as { id?: string } | undefined;
+                  const id = order?.id;
+                  if (!id) return;
+                  void confirmDestructive(t("confirm.refund"))
+                    .then((ok) => {
+                      if (!ok) return;
+                      return api
+                        .post(`/v1/admin/payments/orders/${id}/refund`, {
+                          reason,
+                          ticket,
+                          amountCents: Number(amount),
+                          refundIdempotencyKey: `console-${id}-${Date.now()}`,
+                        })
+                        .then(load);
+                    })
+                    .catch(setError);
+                }}
+              >
+                {t("common.refund")}
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  const attempts = (detail.attempts as { id?: string }[]) ?? [];
+                  const id = attempts[0]?.id;
+                  if (!id) return;
+                  void api
+                    .post(`/v1/admin/payments/attempts/${id}/reconcile`)
+                    .then(load)
+                    .catch(setError);
+                }}
+              >
+                {t("common.reconcile")}
+              </button>
+            </div>
+          </article>
         </div>
       ) : null}
     </section>
+  );
+}
+
+function shortId(id: string): string {
+  return id.length > 12 ? `${id.slice(0, 8)}…` : id;
+}
+
+function objectRows(value: unknown): Record<string, unknown>[] | null {
+  const list = Array.isArray(value)
+    ? value
+    : value &&
+        typeof value === "object" &&
+        Array.isArray((value as { items?: unknown }).items)
+      ? (value as { items: unknown[] }).items
+      : null;
+  if (
+    !list ||
+    list.some(
+      (item) => !item || typeof item !== "object" || Array.isArray(item),
+    )
+  ) {
+    return null;
+  }
+  return list as Record<string, unknown>[];
+}
+
+function scalarColumns(rows: Record<string, unknown>[]): string[] {
+  const keys: string[] = [];
+  for (const row of rows.slice(0, 20)) {
+    for (const [key, cell] of Object.entries(row)) {
+      if (keys.includes(key)) continue;
+      if (
+        cell == null ||
+        typeof cell === "string" ||
+        typeof cell === "number" ||
+        typeof cell === "boolean"
+      ) {
+        keys.push(key);
+      }
+    }
+  }
+  return keys.slice(0, 8);
+}
+
+function RecordBlock({ title, value }: { title: string; value: unknown }) {
+  const { t } = useTranslation();
+  const rows = objectRows(value);
+  const columns = rows ? scalarColumns(rows) : [];
+  return (
+    <article className="panel-card">
+      <h2>{title}</h2>
+      {rows && columns.length > 0 ? (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                {columns.map((column) => (
+                  <th key={column}>{column}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={columns.length}>{t("common.empty")}</td>
+                </tr>
+              ) : (
+                rows.map((row, index) => (
+                  <tr key={String(row.id ?? index)}>
+                    {columns.map((column) => (
+                      <td key={column}>{String(row[column] ?? "")}</td>
+                    ))}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+      <details>
+        <summary>{t("legal.raw")}</summary>
+        <pre>{JSON.stringify(value, null, 2)}</pre>
+      </details>
+    </article>
+  );
+}
+
+function ProbeCard({
+  title,
+  configured,
+  result,
+}: {
+  title: string;
+  configured: boolean;
+  result: { ok: boolean; body?: unknown; error?: string } | unknown;
+}) {
+  const { t } = useTranslation();
+  const probe = result as { ok?: boolean; error?: string } | null;
+  const reachable = configured && probe?.ok === true;
+  const waiting = configured && result == null;
+  return (
+    <article className="panel-card">
+      <div className="card-head">
+        <h2>{title}</h2>
+        <span
+          className={
+            waiting
+              ? "badge"
+              : !configured
+                ? "badge badge-warn"
+                : reachable
+                  ? "badge badge-on"
+                  : "badge badge-off"
+          }
+        >
+          {waiting
+            ? t("common.loading")
+            : !configured
+              ? t("common.notConfigured")
+              : reachable
+                ? t("capacity.reachable")
+                : t("capacity.unreachable")}
+        </span>
+      </div>
+      {configured && result != null ? (
+        <details>
+          <summary>{t("legal.raw")}</summary>
+          <pre>{JSON.stringify(result, null, 2)}</pre>
+        </details>
+      ) : null}
+    </article>
   );
 }
 
@@ -317,7 +505,7 @@ export function CleanupPage({ api }: { api: Api }) {
       <PageHeader title={t("cleanup.title")} />
       <ErrorBanner error={error} />
       <form
-        className="inline"
+        className="toolbar"
         onSubmit={(ev) => {
           ev.preventDefault();
           void load().catch(setError);
@@ -328,7 +516,7 @@ export function CleanupPage({ api }: { api: Api }) {
           <input value={status} onChange={(e) => setStatus(e.target.value)} />
         </label>
         <label>
-          productCode
+          {t("catalog.product")}
           <input
             value={productCode}
             onChange={(e) => setProductCode(e.target.value)}
@@ -340,21 +528,31 @@ export function CleanupPage({ api }: { api: Api }) {
         <table>
           <thead>
             <tr>
-              <th>id</th>
+              <th>{t("common.id")}</th>
               <th>{t("common.status")}</th>
-              <th>product</th>
+              <th>{t("catalog.product")}</th>
               <th>{t("common.actions")}</th>
             </tr>
           </thead>
           <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={4}>{t("common.empty")}</td>
+              </tr>
+            ) : null}
             {rows.map((row) => (
               <tr key={String(row.id)}>
-                <td>{String(row.id)}</td>
-                <td>{String(row.status)}</td>
+                <td className="id-cell" title={String(row.id)}>
+                  {shortId(String(row.id))}
+                </td>
+                <td>
+                  <span className="badge">{String(row.status)}</span>
+                </td>
                 <td>{String(row.productCode ?? "")}</td>
                 <td className="row-actions">
                   <button
                     type="button"
+                    className="btn"
                     onClick={() =>
                       void confirmDestructive(t("confirm.retryJob"))
                         .then((ok) => {
@@ -370,6 +568,7 @@ export function CleanupPage({ api }: { api: Api }) {
                   </button>
                   <button
                     type="button"
+                    className="btn btn-danger"
                     onClick={() =>
                       void confirmDestructive(t("confirm.cancelJob"))
                         .then((ok) => {
@@ -416,20 +615,20 @@ export function LegalPage({
     <section>
       <PageHeader title={t("legal.title")} />
       <ErrorBanner error={error} />
-      <p>
-        {t("legal.docs")}:{" "}
+      <article className="panel-card">
+        <h2>{t("legal.docs")}</h2>
         {legalDocsUrl ? (
           <a href={legalDocsUrl} rel="noreferrer" target="_blank">
             {legalDocsUrl}
           </a>
         ) : (
-          t("common.notConfigured")
+          <p className="muted">{t("common.notConfigured")}</p>
         )}
-      </p>
-      <h2>{t("legal.acceptances")}</h2>
-      <pre>{JSON.stringify(acceptances, null, 2)}</pre>
-      <h2>{t("legal.audit")}</h2>
-      <pre>{JSON.stringify(audit, null, 2)}</pre>
+      </article>
+      <div className="stack section-gap">
+        <RecordBlock title={t("legal.acceptances")} value={acceptances} />
+        <RecordBlock title={t("legal.audit")} value={audit} />
+      </div>
     </section>
   );
 }
@@ -504,28 +703,34 @@ export function CapacityPage({
     <section>
       <PageHeader
         title={t("capacity.title")}
+        lead={t("capacity.noHa")}
         actions={
-          <button type="button" onClick={() => void load().catch(setError)}>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => void load().catch(setError)}
+          >
             {t("common.refresh")}
-          </button>
+          </Button>
         }
       />
-      <p className="muted">{t("capacity.noHa")}</p>
       <ErrorBanner error={error} />
-      <h2>{t("capacity.entitlementReady")}</h2>
-      <pre>{JSON.stringify(entitlement, null, 2)}</pre>
-      <h2>{t("capacity.doris")}</h2>
-      {runtime.capacity.dorisPilotUrl ? (
-        <pre>{JSON.stringify(doris, null, 2)}</pre>
-      ) : (
-        <p>{t("common.notConfigured")}</p>
-      )}
-      <h2>{t("capacity.storage")}</h2>
-      {runtime.capacity.objectStorageUrl ? (
-        <pre>{JSON.stringify(storage, null, 2)}</pre>
-      ) : (
-        <p>{t("common.notConfigured")}</p>
-      )}
+      <div className="probe-grid">
+        <ProbeCard
+          title={t("capacity.entitlementReady")}
+          configured
+          result={entitlement ? { ok: true, body: entitlement } : null}
+        />
+        <ProbeCard
+          title={t("capacity.doris")}
+          configured={Boolean(runtime.capacity.dorisPilotUrl)}
+          result={doris}
+        />
+        <ProbeCard
+          title={t("capacity.storage")}
+          configured={Boolean(runtime.capacity.objectStorageUrl)}
+          result={storage}
+        />
+      </div>
     </section>
   );
 }

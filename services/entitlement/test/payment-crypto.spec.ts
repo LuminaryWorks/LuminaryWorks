@@ -7,6 +7,7 @@ import {
   encryptPaymentSecrets,
   fingerprintPaymentMasterKey,
   parsePaymentMasterKey,
+  publicCredentialFields,
   redactPaymentSecrets,
 } from "../src/common/payment-crypto";
 import { EntitlementException } from "../src/common/errors";
@@ -86,6 +87,18 @@ describe("payment credential envelope", () => {
     expect(redacted.nested).toEqual({ privateKey: "[redacted]" });
     expect(redacted.providerId).toBe("mock");
     expect(credentialLastFour({ appId: "app_1234" })).toBe("1234");
+    expect(
+      publicCredentialFields({
+        appId: "9021000168692418",
+        merchantPrivateKey: "secret-pem",
+        alipayPublicKey: "public-key",
+        notifyUrl: "https://luminaryworks.dev/notify",
+      }),
+    ).toEqual({
+      appId: "9021000168692418",
+      alipayPublicKey: "public-key",
+      notifyUrl: "https://luminaryworks.dev/notify",
+    });
   });
 
   it("rejects non-string credential maps", () => {

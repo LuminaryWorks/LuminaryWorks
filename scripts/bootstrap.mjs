@@ -154,12 +154,14 @@ Ready:
   · website           → pnpm web:dev
   · entitlement DB    → localhost:5434
   · auth-gateway env  → pnpm auth:gateway  (needs identity up)
+  · control-console   → pnpm console:dev  (http://127.0.0.1:3050; needs id + ent)
 
 Next (optional, long-running):
   pnpm docs:dev
   pnpm web:dev
   pnpm ent:dev
   pnpm auth:gateway
+  pnpm console:dev
 
 Product apps (DataLuminary / BlockyEdu / …) live outside this MetaRepo —
 install inside each product directory separately.

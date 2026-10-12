@@ -13,23 +13,23 @@
     "blockyedu": "blockyedu.com",
     "doerflow": "doerflow.dev",
     "vistacast": "vistacast.dev",
-    "vistaremote": "vistaremote.vistacast.dev",
+    "vistaremote": "remote-app.vistacast.dev",
     "syncrobrain": "syncrobrain.com"
   },
   "products": {
     "control-plane": { "enabled": true },
-    "dataluminary": { "enabled": false },
+    "dataluminary": { "enabled": true },
     "blockyedu": {
-      "enabled": false,
+      "enabled": true,
       "seed": {
         "profile": "full-demo",
         "packs": ["syncrobrain", "dataluminary", "vistacast", "doerflow", "vistaremote"],
         "oerGrowth": ["oer-growth-v1"]
       }
     },
-    "doerflow": { "enabled": false },
-    "vistaremote": { "enabled": false },
-    "vistacast": { "enabled": false },
-    "syncrobrain": { "enabled": false }
+    "doerflow": { "enabled": true },
+    "vistaremote": { "enabled": true },
+    "vistacast": { "enabled": true },
+    "syncrobrain": { "enabled": true }
   }
 }

@@ -31,8 +31,18 @@ describe("locale parity", () => {
     readFileSync(join(root, "public/locales/zh/common.json"), "utf8"),
   ) as Record<string, unknown>;
 
-  it("has matching en/zh keys", () => {
-    expect(flatten(en).sort()).toEqual(flatten(zh).sort());
+  it("has matching keys in every locale", () => {
+    const expected = flatten(en).sort();
+    const locales = readdirSync(join(root, "public/locales"));
+    for (const locale of locales) {
+      const file = join(root, "public/locales", locale, "common.json");
+      const json = JSON.parse(readFileSync(file, "utf8")) as Record<
+        string,
+        unknown
+      >;
+      expect(flatten(json).sort(), locale).toEqual(expected);
+    }
+    expect(flatten(zh).sort()).toEqual(expected);
   });
 
   it("does not use i18next defaultValue in source", () => {

@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createIdpDevProxyMap } from "@luminaryworks/auth-dev-proxy";
+import { registerCodeCooldownMiddleware } from "../../services/auth-gateway/src/register-abuse.mjs";
 import { defineConfig, loadEnv } from "@rsbuild/core";
 import { pluginReact } from "@rsbuild/plugin-react";
 import { buildRuntimeConfig } from "./server/config.mjs";
@@ -49,9 +50,10 @@ function publicRegisterPolicy(): Record<string, unknown> {
   } catch {
     return {
       enabled: true,
-      mode: "allowlist",
+      mode: "off",
       allowlist: [],
       blocklist: [],
+      codeCooldownSec: 120,
     };
   }
 }
@@ -83,11 +85,23 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(root, "src"),
+      react: resolve(root, "node_modules/react"),
+      "react-dom": resolve(root, "node_modules/react-dom"),
+      // Workspace copy, so register validation matches Auth Gateway before the next npm publish.
+      "@luminaryworks/auth-react/style.css": resolve(
+        root,
+        "../../shared/packages/auth-react/dist/style.css",
+      ),
+      "@luminaryworks/auth-react": resolve(
+        root,
+        "../../shared/packages/auth-react/dist/index.js",
+      ),
     },
   },
   html: {
     template: "./index.html",
     title: "LuminaryWorks Control Console",
+    favicon: resolve(root, "../../assets/logo.svg"),
   },
   server: {
     host: "127.0.0.1",
@@ -97,6 +111,7 @@ export default defineConfig({
     // Register before built-in SPA fallback so /config.json is not rewritten to index.html.
     // See https://rsbuild.rs/config/server/setup
     setup: ({ server }) => {
+      server.middlewares.use(registerCodeCooldownMiddleware({ cooldownSec: 120 }));
       server.middlewares.use((req, res, next) => {
         const path = req.url?.split("?")[0] ?? "";
         if (path === "/config.json") {

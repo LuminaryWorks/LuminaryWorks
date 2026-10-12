@@ -101,6 +101,18 @@ describe("gauge delta math", () => {
   });
 });
 
+function quotaLimits(plan: { features: Array<{ code: string; limitValue?: number }> } | undefined) {
+  return Object.fromEntries(
+    (plan?.features ?? [])
+      .filter((row) => row.limitValue != null)
+      .map((row) => [row.code, row.limitValue]),
+  );
+}
+
+function featureCodes(plan: { features: Array<{ code: string }> } | undefined) {
+  return (plan?.features ?? []).map((row) => row.code).sort();
+}
+
 describe("planned gauge catalog", () => {
   const byCode = (productCode: string) => {
     const product = CATALOG.find((row) => row.code === productCode);
@@ -150,6 +162,8 @@ describe("planned gauge catalog", () => {
     const proDashboard = pro?.features.find((row) => row.code === "dashboard.count")?.limitValue;
     expect(ultraDashboard).toBeGreaterThan(proDashboard ?? 0);
     expect(product.plans.find((plan) => plan.code === "trial")?.features.length).toBeGreaterThan(0);
+    expect(quotaLimits(trial)).toEqual(quotaLimits(pro));
+    expect(featureCodes(trial)).toEqual(featureCodes(pro));
   });
 
   it("seeds VistaRemote device and recording gauges", () => {
@@ -245,6 +259,20 @@ describe("planned gauge catalog", () => {
     expect(pro?.features.find((row) => row.code === "ai.tutor")).toBeUndefined();
     expect(trial?.features.find((row) => row.code === "ai.agent")).toBeUndefined();
     expect(product.trialPolicy).toBe("standard_7d");
+    expect(features.get("code.execute.trial")).toMatchObject({
+      kind: "quota",
+      quotaPeriod: "lifetime",
+    });
+    expect(features.get("ai.voice.trial.seconds")).toMatchObject({ quotaPeriod: "lifetime" });
+    expect(trial?.features.find((row) => row.code === "code.execute.trial")?.limitValue).toBe(
+      BLOCKYEDU_PLAN_LIMITS.trial.codeRuns,
+    );
+    expect(trial?.features.find((row) => row.code === "ai.voice.trial.seconds")?.limitValue).toBe(
+      BLOCKYEDU_PLAN_LIMITS.trial.voiceSeconds,
+    );
+    expect(trial?.features.some((row) => row.code === "code.execute.daily")).toBe(false);
+    expect(trial?.features.some((row) => row.code === "ai.voice.monthly.seconds")).toBe(false);
+    expect(pro?.features.some((row) => row.code === "ai.voice.monthly.seconds")).toBe(true);
   });
 
   it("keeps voice/API monthly consumption as counters", () => {
@@ -256,8 +284,8 @@ describe("planned gauge catalog", () => {
     expect(doerflow.get("agent.limit")).toMatchObject({ meteringMode: "gauge" });
   });
 
-  it("does not invent Trial for disabled VistaCast/SyncroBrain placeholders", () => {
-    for (const code of ["vistacast", "syncrobrain"] as const) {
+  it("does not invent Trial for the disabled SyncroBrain placeholder", () => {
+    for (const code of ["syncrobrain"] as const) {
       const { product, features } = byCode(code);
       expect(product.trialPolicy).toBe("disabled");
       expect(product.sellable).toBe(false);

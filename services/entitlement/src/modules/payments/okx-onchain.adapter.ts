@@ -83,8 +83,31 @@ export class OkxOnchainPaymentAdapter implements PaymentAdapter {
   async completeCheckout(input: CompleteCheckoutInput): Promise<PaymentQueryResult> {
     const creds = assertOkxOnchainCredentials(input.config.credentials);
     const session = await this.factoryFn()(creds);
+    // Resume path: prior settle already returned a tx hash — poll instead of re-signing.
+    if (
+      typeof input.providerRef === "string" &&
+      /^0x[0-9a-fA-F]{64}$/.test(input.providerRef) &&
+      !input.buyerProof?.paymentSignature &&
+      !input.buyerProof?.paymentPayload
+    ) {
+      const queried = await session.querySettlement(input.providerRef);
+      const succeeded = queried.success === true && queried.status !== "failed" && queried.status !== "pending";
+      return {
+        providerRef: queried.transaction || input.providerRef,
+        orderId: input.orderId,
+        attemptId: input.attemptId,
+        status: succeeded ? "succeeded" : "pending",
+        amountCents: input.amountCents,
+        currency: input.currency,
+        merchantId: input.config.merchantId || creds.payTo,
+        settlementProof: redactPaymentSecrets({ ...queried }),
+      };
+    }
     const payload = this.decodeBuyerProof(session, input);
     const requirements = this.storedRequirements(input.action);
+    // Official facilitator requires paymentPayload.accepted; pin it to the
+    // server-stored challenge so a buyer cannot swap terms in the header.
+    payload.accepted = requirements;
     const verified = await session.verifyPayment(payload, requirements);
     if (!verified.isValid) {
       throw new EntitlementException(
@@ -93,22 +116,53 @@ export class OkxOnchainPaymentAdapter implements PaymentAdapter {
       );
     }
     const settled = await session.settlePayment(payload, requirements);
+    const tx = typeof settled.transaction === "string" ? settled.transaction : "";
+    let statusRaw = settled.status ?? (settled.success ? "success" : "failed");
+    // Facilitator often returns success+pending while the chain confirms; poll briefly.
+    if (settled.success === true && tx && statusRaw === "pending") {
+      for (let i = 0; i < 8; i++) {
+        const queried = await session.querySettlement(tx);
+        statusRaw = queried.status ?? statusRaw;
+        if (queried.success === true && queried.status !== "pending" && queried.status !== "failed") {
+          return {
+            providerRef: queried.transaction || tx,
+            orderId: input.orderId,
+            attemptId: input.attemptId,
+            status: "succeeded",
+            amountCents: input.amountCents,
+            currency: input.currency,
+            merchantId: input.config.merchantId || creds.payTo,
+            settlementProof: redactPaymentSecrets({
+              transaction: queried.transaction || tx,
+              network: settled.network,
+              payer: settled.payer,
+              status: queried.status ?? "success",
+            }),
+          };
+        }
+        if (queried.status === "failed") {
+          statusRaw = "failed";
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+    }
     const success =
-      settled.success === true && settled.status !== "timeout" && settled.status !== "failed";
-    if (!success || settled.status === "pending") {
+      settled.success === true && statusRaw !== "timeout" && statusRaw !== "failed";
+    if (!success || statusRaw === "pending") {
       return {
-        providerRef: settled.transaction || input.providerRef,
+        providerRef: tx || input.providerRef,
         orderId: input.orderId,
         attemptId: input.attemptId,
         status: "pending",
         amountCents: input.amountCents,
         currency: input.currency,
         merchantId: input.config.merchantId || creds.payTo,
-        settlementProof: redactPaymentSecrets({ ...settled }),
+        settlementProof: redactPaymentSecrets({ ...settled, status: statusRaw }),
       };
     }
     return {
-      providerRef: settled.transaction || input.providerRef,
+      providerRef: tx || input.providerRef,
       orderId: input.orderId,
       attemptId: input.attemptId,
       status: "succeeded",
@@ -116,10 +170,10 @@ export class OkxOnchainPaymentAdapter implements PaymentAdapter {
       currency: input.currency,
       merchantId: input.config.merchantId || creds.payTo,
       settlementProof: redactPaymentSecrets({
-        transaction: settled.transaction,
+        transaction: tx || settled.transaction,
         network: settled.network,
         payer: settled.payer,
-        status: settled.status ?? "success",
+        status: statusRaw || "success",
       }),
     };
   }
@@ -225,7 +279,8 @@ export class OkxOnchainPaymentAdapter implements PaymentAdapter {
     payload: Record<string, unknown>,
   ): Record<string, unknown> {
     const sanitized = { ...payload };
-    delete sanitized.accepted;
+    // Drop alternate challenge shapes; `accepted` is overwritten from storage
+    // in completeCheckout before verify/settle.
     delete sanitized.paymentRequired;
     delete sanitized.accepts;
     return sanitized;

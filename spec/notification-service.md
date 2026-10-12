@@ -14,7 +14,7 @@
 | D-N5 | 认证邮件服务自有 Postgres（profile / 幂等 / 额度）。**不引入** BullMQ。产品报表路径仍无独立 DB | `services/notification` |
 | D-N6 | SMTP / API 凭据只进环境变量、Secret 或加密列，**禁止**写入源码或示例真实值 | 见 §5 |
 | D-N7 | **Logto 拥有验证码状态机**；Notification 只负责投递 | 六个产品不自建 OTP |
-| D-N8 | 认证信 Provider 链：Resend → Brevo → Mailgun → SMTP（SES 槽位）。平台发件人与显示名只读 `MAIL_FROM` / `MAIL_FROM_NAME`；Mailgun 域名只读 `MAILGUN_DOMAIN`。用到日/月额度 **95%** 换下一家。超时不 failover，幂等键禁止双发 | `@luminaryworks/notification` auth-mail |
+| D-N8 | 认证信 Provider 链：配置了 `SMTP_HOST` 时先走自建 SMTP（Maddy，587），明确失败后再 Resend → Brevo → Mailgun，直到有一家收下或全部失败。所有收件域同一顺序，不为 Gmail 单独改道。对方收下后丢弃、且没有退信时，服务端视为已发送。未配置 SMTP 时仍是 Resend → Brevo → Mailgun。平台发件人 `MAIL_FROM=auth@luminaryworks.dev`。Mailgun 域名只读 `MAILGUN_DOMAIN`。用到日/月额度 **95%** 换下一家。超时或连接中断且无法确认对方是否已收下时不换下一家，避免同一封信发两次。幂等键禁止双发 | `@luminaryworks/notification` auth-mail |
 | D-N9 | `EMAIL_AUTH_ENABLED=false` 关闭认证邮件（内网私有化）。SaaS 企业可存自带 Brevo / Resend / Mailgun / SMTP，未配置走平台链，发件人取 `MAIL_FROM` | `mail_profiles` |
 
 ## 1. 目标架构
@@ -155,7 +155,7 @@ Product SPA → Auth Gateway → Logto
               ┌───────────────┼────────────────┐
               ▼               ▼                ▼
          组织 profile    部署 profile      平台链
-         （已验证）      （私有化默认）   Resend → Brevo → Mailgun → SMTP
+         （已验证）      （私有化默认）   SMTP → Resend → Brevo → Mailgun
 ```
 
 选路：
@@ -165,7 +165,7 @@ Product SPA → Auth Gateway → Logto
 3. 否则使用已验证的 `deployment` profile（私有化客户默认发信）
 4. 否则走平台链。发件人与显示名取环境变量 `MAIL_FROM`、`MAIL_FROM_NAME`。Mailgun 使用 `MAILGUN_DOMAIN`，未设置则不加入链。
 
-平台链按 `usage=auth|product` 分开计数。认证信默认 Resend 日 100 / 月 3000、Brevo 日 300。达到 **95%** 的新邮件走下一家，不等供应商把额度打满。OVH 上走供应商 HTTPS API（443），不用 25 端口。SMTP 槽位留给以后的 SES Mail Manager（587 + STARTTLS）和企业自带 SMTP。
+平台链按 `usage=auth|product` 分开计数。配了 `SMTP_HOST` 时自建 Maddy 优先，额度 0 表示不按额度切换。认证信后备仍是 Resend 日 100 / 月 3000、Brevo 日 300。达到 **95%** 的新邮件走下一家，不等供应商把额度打满。私有化不配 `SMTP_HOST`、只配某一家 API 密钥时，仍走那一家。SMTP 也用于企业自带或以后的 SES Mail Manager（587 + STARTTLS）。
 
 幂等键 `sha256(to + type + code + link)`。已成功直接返回；`pending` / 超时 `unknown` **不再打第二家**。只有明确拒绝（4xx，不含超时）或额度用尽才 failover。Logto 只有在供应商接受后才收到 HTTP 200。
 

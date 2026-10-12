@@ -1,19 +1,24 @@
 {
   "app": {
     "title": "LuminaryWorks コントロールコンソール",
-    "subtitle": "顧客管理者はここでチェックアウト、カタログ、注文を管理します。これは Logto 管理コンソールではありません。",
-    "notLogtoAdmin": "Logto Admin Console は Identity 管理ポートに残ります。このアプリは資格管理 API のみを呼び出します。"
+    "subtitle": "顧客管理者はここでチェックアウト、カタログ、注文を管理します。これは Logto 管理コンソールではありません。"
   },
   "nav": {
     "overview": "概要",
     "catalog": "カタログ",
-    "providers": "チェックアウト",
+    "providers": "決済チャネル",
     "orders": "注文",
     "cleanup": "トライアルのクリーンアップ",
     "legal": "法務と監査",
     "capacity": "容量",
     "logout": "サインアウト",
-    "language": "言語"
+    "language": "言語",
+    "groupCommerce": "商用運用",
+    "groupTrust": "信頼",
+    "groupPlatform": "プラットフォーム",
+    "skip": "本文へスキップ",
+    "collapse": "折りたたむ",
+    "expand": "展開"
   },
   "auth": {
     "title": "オペレーターのサインイン",
@@ -24,10 +29,9 @@
     "callbackError": "サインインコールバックが失敗しました",
     "required": "サインインが必要です",
     "reauth": "セッションの有効期限が切れました。再度サインインします。",
-    "termsLead": "",
-    "termsAnd": "そして",
-    "platformTerms": "LuminaryWorks 規約",
-    "productTerms": "コントロールコンソールの用語",
+    "termsLead": "以下を読み、同意します",
+    "termsAnd": "および",
+    "terms": "利用規約",
     "privacy": "プライバシーポリシー"
   },
   "errors": {
@@ -63,7 +67,11 @@
     "ticket": "チケット",
     "amount": "金額（小単位）",
     "status": "状態",
-    "actions": "アクション"
+    "actions": "アクション",
+    "id": "ID",
+    "version": "バージョン",
+    "previous": "前へ",
+    "next": "次へ"
   },
   "confirm": {
     "title": "破壊行為の確認",
@@ -81,7 +89,14 @@
   "overview": {
     "title": "概要",
     "entitlement": "権利付与サービス",
-    "identityBoundary": "認証境界: OIDC PKCE (ブラウザー クライアント シークレットなし)。アクセス トークンには、リソース https://entitlement.luminaryworks.dev とスコープ entitlement:admin が含まれている必要があります。 :3002 の Logto Admin は別のアプリケーションです。"
+    "identityBoundary": "認証境界: OIDC PKCE (ブラウザー クライアント シークレットなし)。アクセス トークンには、リソース https://entitlement.luminaryworks.dev とスコープ entitlement:admin が含まれている必要があります。 :3002 の Logto Admin は別のアプリケーションです。",
+    "service": "エンタイトルメント",
+    "ready": "準備完了",
+    "shortcuts": "ショートカット",
+    "addChannel": "決済チャネル",
+    "openCatalog": "カタログを開く",
+    "openOrders": "注文を開く",
+    "paymentsDisabled": "この配備では決済が無効です。ライセンス、付与、権限を使用します。"
   },
   "catalog": {
     "title": "カタログの改訂",
@@ -89,11 +104,19 @@
     "invalidJson": "オファリング JSON は無効です",
     "notes": "注意事項",
     "createDraft": "ドラフトの作成",
-    "copyPublished": "公開された製品をコピーする"
+    "copyPublished": "公開された製品をコピーする",
+    "sku": "SKU",
+    "product": "製品",
+    "plan": "プラン",
+    "interval": "期間",
+    "currency": "通貨",
+    "amount": "金額",
+    "market": "市場",
+    "publishPreview": "この下書きの販売項目",
+    "advancedJson": "詳細 JSON"
   },
   "providers": {
-    "title": "チェックアウト",
-    "lead": "導入顧客の管理者は、ここでチェックアウトを維持します。つまり、どの支払いチャネルが開いているか、および各チャネルの販売者の構成を管理します。保存された認証情報は再度表示されません。テストしてから有効にします。製品メンバーシップ ページには、有効なチャネルのみがリストされます。",
+    "title": "決済チャネル",
     "providerId": "プロバイダー",
     "environment": "環境",
     "merchantId": "販売者/店舗ID",
@@ -128,7 +151,9 @@
       "doerflow_credit": "DoerFlow ステーブルコイン",
       "manual": "手動確認",
       "mock": "サンドボックスモック",
-      "contract": "エンタープライズ契約"
+      "contract": "エンタープライズ契約",
+      "polar": "Polar",
+      "paddle": "Paddle"
     },
     "fields": {
       "apiKey": "APIキー",
@@ -162,7 +187,22 @@
       "serviceKey": "サービスキー",
       "merchantAccount": "販売者アカウント",
       "asset": "ステーブルコイン資産（オプション）",
-      "chainId": "チェーンID"
+      "chainId": "チェーンID",
+      "apiKeyId": "CDP API キー ID",
+      "apiKeySecret": "CDP API キー秘密",
+      "successRedirectUrl": "成功時のリダイレクト URL（任意）",
+      "failRedirectUrl": "失敗時のリダイレクト URL（任意）",
+      "okxSecretKey": "API 秘密",
+      "passphrase": "API パスフレーズ",
+      "payTo": "受取アドレス",
+      "network": "ネットワーク（eip155:…）",
+      "resourceBaseUrl": "決済サービスの公開 URL",
+      "posToken": "POS トークン",
+      "notificationUrl": "通知 URL（HTTPS）",
+      "merchantToken": "加盟店トークン（任意、返金用）",
+      "privateKey": "署名鍵（任意、返金用）",
+      "polarProductId": "商品 UUID",
+      "priceId": "価格 id（pri_…）"
     },
     "capabilities": {
       "checkout": "チェックアウト",
@@ -179,7 +219,92 @@
     "createTitle": "チャンネルを追加する",
     "detailTitle": "チャンネルの詳細",
     "enabled": "有効",
-    "disabled": "有効になっていません"
+    "disabled": "有効になっていません",
+    "testOk": "テスト成功",
+    "testFailed": "テスト失敗",
+    "testResult": "最新のテスト",
+    "retiringUntil": "旧認証情報の退役時刻",
+    "saveMetadata": "メタデータを保存",
+    "rotateAction": "認証情報をローテーション",
+    "saved": "メタデータを保存しました",
+    "rotated": "認証情報を更新しました。有効化する前に再テストしてください。",
+    "tested": "テストが完了しました",
+    "view": "表示",
+    "statusActive": "稼働中",
+    "statusDisabled": "停止",
+    "statusRetiring": "ローテーション中",
+    "envSandbox": "サンドボックス",
+    "envLive": "本番",
+    "wizardTitle": "決済チャネルを追加",
+    "stepProvider": "プロバイダ",
+    "stepRoute": "ルーティング",
+    "stepCredentials": "認証情報",
+    "stepReview": "確認",
+    "back": "戻る",
+    "next": "次へ",
+    "retestRequired": "現在の認証情報と環境に一致する成功テストがあるまで有効化できません。",
+    "liveConfirm": "本番の加盟店契約が有効であることを確認します。",
+    "facts": "チャネル情報",
+    "catalogLede": "これは LuminaryWorks のレジです。BlockyEdu の会員や講座の購入は、ここで有効にしたチャネルをこの順で使います。設定とテストが通るまでチャネルはオフです。プライベート配置でも同じ一覧を使います。",
+    "configure": "設定",
+    "moveUp": "上へ",
+    "moveDown": "下へ",
+    "statusUnconfigured": "未設定",
+    "statusNeedsTest": "テスト待ち",
+    "statusTestFailed": "テスト失敗",
+    "statusReady": "テスト成功",
+    "statusEnabledRetest": "有効、再テストが必要",
+    "extensionTitle": "一覧にないチャネル",
+    "extensionBody": "このコンソールに新しいゲートウェイを貼り付けて追加することはできません。チャネルは、決済、署名検証、照会、返金を実装したアダプタになってから一覧に出ます。Creem、Polar、Paddle はすでにその形で内蔵され、設定とテストが通るまでオフです。",
+    "setupLede": "このチャネルの主要な加盟店情報だけを入力します。市場と通貨は入っています。保存してテストし、成功してから有効にします。",
+    "saveConfig": "設定を保存",
+    "configSaved": "設定を保存しました。有効にする前にテストしてください。",
+    "testLocked": "テストの前に設定を保存してください。",
+    "enableNeedsSetup": "現在の認証情報と環境でテストが成功するまで、有効にはできません。",
+    "missingFields": "必須項目を入力してください：{{fields}}",
+    "routingRequired": "市場と通貨は必須です。",
+    "instructions": "購入者への案内",
+    "instructionsHint": "オフラインまたは契約での支払いに表示します。",
+    "advancedRouting": "市場と通貨",
+    "routingEncapsulated": "チャネルに合わせて入っています。別の市場で売るときだけ変更します。",
+    "orderSaved": "レジの順序を保存しました",
+    "showMore": "その他の内蔵チャネル（{{count}}）",
+    "hideMore": "追加チャネルを隠す",
+    "envHint": "テストが通るまではサンドボックスです。本番の加盟店契約が有効なときだけライブに切り替えます。",
+    "credentialKept": "秘密項目を空にすると、保存済みの認証情報を維持します。",
+    "columns": {
+      "order": "順序",
+      "channel": "チャネル",
+      "status": "状態",
+      "enable": "有効",
+      "configure": "設定",
+      "environment": "環境"
+    },
+    "tags": {
+      "cn": "中国本土",
+      "global": "グローバル",
+      "crypto": "暗号資産",
+      "mor": "記録商人",
+      "offline": "オフライン"
+    },
+    "hints": {
+      "alipay_f2f": "Alipay の QR 決済です。オープンプラットフォームの AppId、加盟店秘密鍵、Alipay 公開鍵を入力します。",
+      "paypal": "PayPal Checkout です。REST の Client ID、Secret、Webhook ID を入力します。",
+      "wechat_pay_v3": "WeChat Pay API v3 です。加盟店番号、APIv3 キー、加盟店秘密鍵、プラットフォーム証明書を入力します。",
+      "unionpay_quickpass": "UnionPay QuickPass です。加盟店番号、署名鍵、契約の戻り URL を入力します。",
+      "stripe_checkout": "Stripe のホスト型 Checkout です。Secret Key と Webhook 署名秘密です。カード番号はここを通りません。",
+      "coinbase_commerce": "Coinbase Business です。CDP の API Key Id、Secret、Webhook 秘密を入力します。中国本土の購入者には表示しません。",
+      "okx_onchain": "OKX のオンチェーン決済です。API Key、Secret、Passphrase、受取アドレス、ネットワーク、このサービスの公開 HTTPS URL を入力します。",
+      "bitpay": "BitPay の請求書です。POS トークンと HTTPS 通知 URL を入力します。返金には加盟店トークンと署名鍵も必要です。",
+      "doerflow_credit": "DoerFlow のステーブルコイン台帳です。Service Key、Webhook 秘密、加盟店口座、チェーン id を入力します。中国本土の購入者には表示しません。",
+      "creem": "Creem は記録商人として税込で受け取ります。API Key、Webhook 秘密、商品 id を入力します。",
+      "polar": "Polar の記録商人です。組織アクセストークン、Webhook 秘密、商品 UUID を入力します。",
+      "paddle": "Paddle Billing の記録商人です。API Key、Webhook 秘密、価格 id（pri_）を入力します。",
+      "manual": "決済の秘密情報は不要です。購入者向けのオフライン案内を書き、テスト後に有効化します。入金は運用者が確認します。",
+      "mock": "実験用の模擬チャネルです。レジの一覧には出ません。",
+      "contract": "決済の秘密情報は不要です。契約または発注書で支払います。入金は運用者が確認します。"
+    },
+    "dragHandle": "ドラッグして並べ替え"
   },
   "orders": {
     "title": "注文と支払い",
@@ -191,7 +316,14 @@
     "grossAmount": "総計（小単位）",
     "taxAmount": "税金（小単位）",
     "netAmount": "正味（小単位）",
-    "doerflowCreditNote": "DoerFlow クレジットは、オンチェーンのステーブルコイン台帳残高を引き落とします。ホストされたチェックアウトのリダイレクトはありません。"
+    "doerflowCreditNote": "DoerFlow クレジットは、オンチェーンのステーブルコイン台帳残高を引き落とします。ホストされたチェックアウトのリダイレクトはありません。",
+    "rawPayload": "生データ",
+    "event": {
+      "order": "注文",
+      "attempt": "試行",
+      "refund": "返金"
+    },
+    "operator": "運用操作"
   },
   "cleanup": {
     "title": "試用版のクリーンアップ ジョブ"
@@ -200,13 +332,42 @@
     "title": "法的受理と監査",
     "acceptances": "ポリシーの承諾",
     "audit": "監査ログ",
-    "docs": "法的文書"
+    "docs": "法的文書",
+    "raw": "生の JSON"
   },
   "capacity": {
     "title": "容量",
     "entitlementReady": "権利の準備状況",
     "doris": "ドリス・パイロット",
     "storage": "内部オブジェクトストレージ",
-    "noHa": "このページでは、設定されたプローブのみがレポートされます。高可用性を主張するものではありません。"
+    "noHa": "このページでは、設定されたプローブのみがレポートされます。高可用性を主張するものではありません。",
+    "reachable": "到達可能",
+    "unreachable": "到達不能"
+  },
+  "lang": {
+    "short": {
+      "en": "EN",
+      "zhCN": "简中",
+      "zhTW": "繁中",
+      "ja": "日",
+      "ko": "한",
+      "pt": "PT",
+      "nl": "NL",
+      "it": "IT",
+      "es": "ES",
+      "fr": "FR"
+    },
+    "full": {
+      "en": "English",
+      "zhCN": "简体中文",
+      "zhTW": "繁體中文",
+      "ja": "日本語",
+      "ko": "한국어",
+      "pt": "Português",
+      "nl": "Nederlands",
+      "it": "Italiano",
+      "es": "Español",
+      "fr": "Français"
+    }
   }
 }

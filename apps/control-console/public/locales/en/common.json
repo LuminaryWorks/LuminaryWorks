@@ -1,19 +1,24 @@
 {
   "app": {
     "title": "LuminaryWorks Control Console",
-    "subtitle": "Customer admins maintain checkout, catalog, and orders here. This is not the Logto Admin Console.",
-    "notLogtoAdmin": "Logto Admin Console stays on the Identity admin port. This app only calls Entitlement admin APIs."
+    "subtitle": "Customer admins maintain checkout, catalog, and orders here. This is not the Logto Admin Console."
   },
   "nav": {
     "overview": "Overview",
     "catalog": "Catalog",
-    "providers": "Checkout",
+    "providers": "Payment channels",
     "orders": "Orders",
     "cleanup": "Trial cleanup",
     "legal": "Legal & audit",
     "capacity": "Capacity",
     "logout": "Sign out",
-    "language": "Language"
+    "language": "Language",
+    "groupCommerce": "Commerce",
+    "groupTrust": "Trust",
+    "groupPlatform": "Platform",
+    "skip": "Skip to content",
+    "collapse": "Collapse",
+    "expand": "Expand"
   },
   "auth": {
     "title": "Operator sign-in",
@@ -26,8 +31,7 @@
     "reauth": "Session expired. Sign in again.",
     "termsLead": "I have read and agree to the",
     "termsAnd": "and",
-    "platformTerms": "LuminaryWorks Terms",
-    "productTerms": "Control Console Terms",
+    "terms": "User Agreement",
     "privacy": "Privacy Policy"
   },
   "errors": {
@@ -63,7 +67,11 @@
     "ticket": "Ticket",
     "amount": "Amount (minor units)",
     "status": "Status",
-    "actions": "Actions"
+    "actions": "Actions",
+    "id": "ID",
+    "version": "Version",
+    "previous": "Previous",
+    "next": "Next"
   },
   "confirm": {
     "title": "Confirm destructive action",
@@ -81,7 +89,14 @@
   "overview": {
     "title": "Overview",
     "entitlement": "Entitlement service",
-    "identityBoundary": "Auth boundary: OIDC PKCE (no browser client secret). Access tokens must include resource https://entitlement.luminaryworks.dev and scope entitlement:admin. Logto Admin on :3002 is a different application."
+    "identityBoundary": "Auth boundary: OIDC PKCE (no browser client secret). Access tokens must include resource https://entitlement.luminaryworks.dev and scope entitlement:admin. Logto Admin on :3002 is a different application.",
+    "service": "Entitlement",
+    "ready": "Ready",
+    "shortcuts": "Shortcuts",
+    "addChannel": "Payment channels",
+    "openCatalog": "Open catalog",
+    "openOrders": "Open orders",
+    "paymentsDisabled": "Payments are disabled for this deployment. Use licenses, grants, and permissions."
   },
   "catalog": {
     "title": "Catalog revisions",
@@ -89,11 +104,19 @@
     "invalidJson": "Offerings JSON is invalid",
     "notes": "Notes",
     "createDraft": "Create draft",
-    "copyPublished": "Copy published offerings"
+    "copyPublished": "Copy published offerings",
+    "sku": "SKU",
+    "product": "Product",
+    "plan": "Plan",
+    "interval": "Interval",
+    "currency": "Currency",
+    "amount": "Amount",
+    "market": "Market",
+    "publishPreview": "Offerings in this draft",
+    "advancedJson": "Advanced JSON"
   },
   "providers": {
-    "title": "Checkout",
-    "lead": "The deployment customer admin maintains checkout here: which payment channels are open, and each channel's merchant configuration. Saved credentials are not shown again. Test, then enable. Product membership pages only list enabled channels.",
+    "title": "Payment channels",
     "providerId": "Provider",
     "environment": "Environment",
     "merchantId": "Merchant / store id",
@@ -128,7 +151,9 @@
       "doerflow_credit": "DoerFlow stablecoin",
       "manual": "Manual confirmation",
       "mock": "Sandbox mock",
-      "contract": "Enterprise contract"
+      "contract": "Enterprise contract",
+      "polar": "Polar",
+      "paddle": "Paddle"
     },
     "fields": {
       "apiKey": "API key",
@@ -162,7 +187,22 @@
       "serviceKey": "Service key",
       "merchantAccount": "Merchant account",
       "asset": "Stablecoin asset (optional)",
-      "chainId": "Chain id"
+      "chainId": "Chain id",
+      "apiKeyId": "CDP API key id",
+      "apiKeySecret": "CDP API key secret",
+      "successRedirectUrl": "Success redirect URL (optional)",
+      "failRedirectUrl": "Failure redirect URL (optional)",
+      "okxSecretKey": "API secret",
+      "passphrase": "API passphrase",
+      "payTo": "Receiving address",
+      "network": "Network (eip155:…)",
+      "resourceBaseUrl": "Public payment service URL",
+      "posToken": "POS token",
+      "notificationUrl": "Notification URL (HTTPS)",
+      "merchantToken": "Merchant token (optional, for refunds)",
+      "privateKey": "Signing key (optional, for refunds)",
+      "polarProductId": "Product UUID",
+      "priceId": "Price id (pri_…)"
     },
     "capabilities": {
       "checkout": "Checkout",
@@ -179,7 +219,92 @@
     "createTitle": "Add a channel",
     "detailTitle": "Channel details",
     "enabled": "Enabled",
-    "disabled": "Not enabled"
+    "disabled": "Not enabled",
+    "testOk": "Test passed",
+    "testFailed": "Test failed",
+    "testResult": "Latest test",
+    "retiringUntil": "Previous credentials retire at",
+    "saveMetadata": "Save metadata",
+    "rotateAction": "Rotate credentials",
+    "saved": "Metadata saved",
+    "rotated": "Credentials rotated. Run the test again before enabling.",
+    "tested": "Test finished",
+    "view": "View",
+    "statusActive": "Active",
+    "statusDisabled": "Disabled",
+    "statusRetiring": "Rotating",
+    "envSandbox": "Sandbox",
+    "envLive": "Live",
+    "wizardTitle": "Add a payment channel",
+    "stepProvider": "Provider",
+    "stepRoute": "Routing",
+    "stepCredentials": "Credentials",
+    "stepReview": "Review",
+    "back": "Back",
+    "next": "Next",
+    "retestRequired": "Enable stays locked until a successful test matches the current credentials and environment.",
+    "liveConfirm": "I confirm the live merchant contract is active.",
+    "facts": "Channel",
+    "catalogLede": "This is the LuminaryWorks checkout. Products such as BlockyEdu memberships and courses charge through the channels you enable here, in this order. A channel stays off until it is configured and its test passes. A private deployment uses the same list.",
+    "configure": "Configure",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "statusUnconfigured": "Not configured",
+    "statusNeedsTest": "Test required",
+    "statusTestFailed": "Test failed",
+    "statusReady": "Test passed",
+    "statusEnabledRetest": "Enabled, retest required",
+    "extensionTitle": "A channel that is not in this list",
+    "extensionBody": "You do not paste a new gateway into this console. A channel appears here only after an adapter implements checkout, signature checks, query, and refund. Creem, Polar, and Paddle are already built that way and stay off until you configure and test them.",
+    "setupLede": "Enter the few merchant fields for this channel. Market and currency are already filled in. Save, run the test, and enable only after the test passes.",
+    "saveConfig": "Save configuration",
+    "configSaved": "Configuration saved. Run the test before enabling.",
+    "testLocked": "Save the configuration before running the test.",
+    "enableNeedsSetup": "Enable stays off until the test passes for the current credentials and environment.",
+    "missingFields": "Fill in the required fields: {{fields}}",
+    "routingRequired": "Market and currency are required.",
+    "instructions": "Instructions for the buyer",
+    "instructionsHint": "Shown when the buyer pays offline or against a contract.",
+    "advancedRouting": "Market and currency",
+    "routingEncapsulated": "These defaults match the channel. Change them only when this deployment sells in another market.",
+    "orderSaved": "Checkout order saved",
+    "showMore": "More built-in channels ({{count}})",
+    "hideMore": "Hide extra channels",
+    "envHint": "Use sandbox until the test passes. Switch to live only for the production merchant contract.",
+    "credentialKept": "Leave the secret fields blank to keep the saved credentials.",
+    "columns": {
+      "order": "Order",
+      "channel": "Channel",
+      "status": "Status",
+      "enable": "Enable",
+      "configure": "Configure",
+      "environment": "Environment"
+    },
+    "tags": {
+      "cn": "China mainland",
+      "global": "Global",
+      "crypto": "Crypto",
+      "mor": "Merchant of record",
+      "offline": "Offline"
+    },
+    "hints": {
+      "alipay_f2f": "Alipay QR. App id, merchant private key, and Alipay public key from the open platform.",
+      "paypal": "PayPal Checkout. REST client id, secret, and webhook id.",
+      "wechat_pay_v3": "WeChat Pay API v3. Merchant id, API v3 key, merchant private key, and the platform certificate.",
+      "unionpay_quickpass": "UnionPay QuickPass. Merchant id, signing key, and the return URLs from your contract.",
+      "stripe_checkout": "Stripe-hosted Checkout. Secret key and webhook signing secret. Card numbers stay at Stripe.",
+      "coinbase_commerce": "Coinbase Business. CDP API key id, secret, and webhook secret. Hidden for buyers in mainland China.",
+      "okx_onchain": "OKX on-chain checkout. API key, secret, passphrase, receiving address, network, and this service's public HTTPS URL.",
+      "bitpay": "BitPay invoice. POS token and HTTPS notification URL. Refunds also need the merchant token and signing key.",
+      "doerflow_credit": "DoerFlow stablecoin ledger. Service key, webhook secret, merchant account, and chain id. Hidden for buyers in mainland China.",
+      "creem": "Creem collects tax as merchant of record. API key, webhook secret, and Creem product id.",
+      "polar": "Polar merchant of record. Organization access token, webhook secret, and the Polar product UUID.",
+      "paddle": "Paddle Billing merchant of record. API key, webhook secret, and the Paddle price id.",
+      "manual": "No payment secret. Write the offline payment instructions, run the test, then enable. An operator confirms each payment.",
+      "mock": "Laboratory simulator. It is not part of the checkout catalog.",
+      "contract": "No payment secret. Buyers pay against a contract or purchase order. An operator confirms each payment."
+    },
+    "dragHandle": "Drag to reorder"
   },
   "orders": {
     "title": "Orders & payments",
@@ -191,7 +316,14 @@
     "grossAmount": "Gross (minor units)",
     "taxAmount": "Tax (minor units)",
     "netAmount": "Net (minor units)",
-    "doerflowCreditNote": "DoerFlow credit debits an on-chain stablecoin ledger balance. There is no hosted checkout redirect."
+    "doerflowCreditNote": "DoerFlow credit debits an on-chain stablecoin ledger balance. There is no hosted checkout redirect.",
+    "rawPayload": "Raw payload",
+    "event": {
+      "order": "Order",
+      "attempt": "Attempt",
+      "refund": "Refund"
+    },
+    "operator": "Operator actions"
   },
   "cleanup": {
     "title": "Trial cleanup jobs"
@@ -200,13 +332,42 @@
     "title": "Legal acceptances & audit",
     "acceptances": "Policy acceptances",
     "audit": "Audit log",
-    "docs": "Legal documents"
+    "docs": "Legal documents",
+    "raw": "Raw JSON"
   },
   "capacity": {
     "title": "Capacity",
     "entitlementReady": "Entitlement readiness",
     "doris": "Doris Pilot",
     "storage": "Internal object storage",
-    "noHa": "This page reports configured probes only. It does not claim high availability."
+    "noHa": "This page reports configured probes only. It does not claim high availability.",
+    "reachable": "Reachable",
+    "unreachable": "Unreachable"
+  },
+  "lang": {
+    "short": {
+      "en": "EN",
+      "zhCN": "简中",
+      "zhTW": "繁中",
+      "ja": "日",
+      "ko": "한",
+      "pt": "PT",
+      "nl": "NL",
+      "it": "IT",
+      "es": "ES",
+      "fr": "FR"
+    },
+    "full": {
+      "en": "English",
+      "zhCN": "简体中文",
+      "zhTW": "繁體中文",
+      "ja": "日本語",
+      "ko": "한국어",
+      "pt": "Português",
+      "nl": "Nederlands",
+      "it": "Italiano",
+      "es": "Español",
+      "fr": "Français"
+    }
   }
 }

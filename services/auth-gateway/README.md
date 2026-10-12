@@ -114,5 +114,6 @@ Still planned: per-product branding injection, Redis-backed quotas for multi-rep
 | `AUTH_REGISTER_EMAIL_BLOCKLIST` | from file | Comma-separated override |
 | `AUTH_REGISTER_IP_DAILY_LIMIT` | from file / `5` | Register starts / IP / UTC day |
 | `AUTH_REGISTER_CODE_IP_HOURLY_LIMIT` | from file / `10` | Register email codes / IP / hour |
+| `AUTH_REGISTER_CODE_COOLDOWN_SEC` | from file / `120` | Minimum gap before the same email can request another register code |
 
 Public: `GET /api/register-policy`. Enforced on Experience `verification-code` (Register) and `new-password-identity`.

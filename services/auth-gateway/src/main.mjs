@@ -25,6 +25,7 @@ import {
 } from "./health.mjs";
 import {
   clientIp,
+  createEmailCodeCooldownStore,
   createIpQuotaStore,
   inspectRegisterAbuse,
   loadRegisterAbuseConfig,
@@ -79,6 +80,7 @@ const CORS_ORIGINS = (process.env.AUTH_GATEWAY_CORS_ORIGINS ||
 
 const registerAbuseConfig = loadRegisterAbuseConfig(process.env);
 const registerQuotas = createIpQuotaStore();
+const registerCodeCooldowns = createEmailCodeCooldownStore();
 
 function currentRegisterAbuseConfig() {
   // Hot-reload policy JSON when the file mtime changes (default on).
@@ -312,6 +314,7 @@ function proxy(req, res) {
           ip: clientIp(req),
           config: currentRegisterAbuseConfig(),
           quotas: registerQuotas,
+          cooldowns: registerCodeCooldowns,
         });
         if (blocked) {
           applyCors(req, res);

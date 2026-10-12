@@ -268,6 +268,7 @@ IP 只控制 UI / 渠道路由，**不是** KYC、制裁或加密支付合规的
 | `PAYMENT_REFUND_UNSUPPORTED` | 409 | 渠道或订单状态不允许退款 |
 | `LEDGER_INSUFFICIENT_FUNDS` | 402 | `doerflow_credit` 账本可用余额不足；不部分扣款 |
 | `PAYMENT_BILLING_PROFILE_INCOMPLETE` | 400 | `payerType=business` 缺 `companyName` / `countryCode`，或 MoR 税区判定所需地址缺失 |
+| `PAYMENT_CHANNEL_TEST_REQUIRED` | 409 | 启用渠道时最近一次健康检查未成功，或凭证指纹 / 环境已变化 |
 
 与权益不足的 `ENTITLEMENT_*` 区分：未付钱走支付/权益 402；验签伪造走 400；市场政策拒绝走 403 且 **不是** Casbin 资源拒绝。
 

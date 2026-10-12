@@ -57,7 +57,12 @@ function credential(productKey, field, fallback) {
 }
 
 function loginUrl(id, fallback) {
-  return process.env[`VERIFY_LOGIN_${id.replaceAll("-", "_").toUpperCase()}_URL`] || fallback;
+  const key = `VERIFY_LOGIN_${id.replaceAll("-", "_").toUpperCase()}_URL`;
+  // Explicit empty env means "skip this surface" (accept clears disabled products).
+  if (Object.prototype.hasOwnProperty.call(process.env, key)) {
+    return String(process.env[key] || "").trim();
+  }
+  return fallback;
 }
 
 function leftLogin(url) {
@@ -71,10 +76,31 @@ function leftLogin(url) {
 
 const productCases = [
   {
+    id: "console",
+    product: "LuminaryWorks",
+    surface: "Control Console",
+    url: loginUrl("console", "http://localhost:3050/login"),
+    clientIdKey: "LuminaryWorks Control Console",
+    accountKey: "DATALUMINARY",
+    // Prefer SUPER_ADMIN via env; fall back to DataLuminary admin for local.
+    fallbackEmail: "admin@luminaryworks.dev",
+    success: leftLogin,
+  },
+  {
     id: "dataluminary",
     product: "DataLuminary",
     surface: "DataView",
     url: loginUrl("dataluminary", "http://localhost:3003/#/login"),
+    clientIdKey: "DataView (DataLuminary)",
+    accountKey: "DATALUMINARY",
+    fallbackEmail: "admin.dataluminary@luminaryworks.dev",
+    success: (url) => /^#\/(space|account)/.test(url.hash),
+  },
+  {
+    id: "dataluminary-demo",
+    product: "DataLuminary",
+    surface: "Scenario Demo",
+    url: loginUrl("dataluminary-demo", "http://localhost:3013/#/login"),
     clientIdKey: "DataView (DataLuminary)",
     accountKey: "DATALUMINARY",
     fallbackEmail: "admin.dataluminary@luminaryworks.dev",
@@ -162,12 +188,22 @@ const productCases = [
     fallbackEmail: "admin.syncrobrain@luminaryworks.dev",
     success: leftLogin,
   },
-].map((spec) => ({
-  ...spec,
-  email: credential(spec.accountKey, "EMAIL", spec.fallbackEmail),
-  password: credential(spec.accountKey, "PASSWORD", "LuminaryDev!234"),
-  spaClientId: registered.spa?.[spec.clientIdKey],
-}));
+].map((spec) => {
+  const isConsole = spec.id === "console";
+  return {
+    ...spec,
+    email: isConsole
+      ? process.env.LW_SUPER_ADMIN_EMAIL ||
+        process.env.LW_SUPER_ADMIN_USERNAME ||
+        "superadmin"
+      : credential(spec.accountKey, "EMAIL", spec.fallbackEmail),
+    password: isConsole
+      ? process.env.LW_SUPER_ADMIN_PASSWORD ||
+        credential("DATALUMINARY", "PASSWORD", "LuminaryDev!234")
+      : credential(spec.accountKey, "PASSWORD", "LuminaryDev!234"),
+    spaClientId: registered.spa?.[spec.clientIdKey],
+  };
+});
 
 async function loadChromium() {
   try {
@@ -212,20 +248,38 @@ async function isOnline(spec) {
 
 async function verifyDiscovery(spec) {
   const origin = spaOrigin(spec);
-  const response = await fetch(`${origin}/oidc/.well-known/openid-configuration`, {
-    signal: AbortSignal.timeout(7000),
-  });
-  if (!response.ok) throw new Error(`discovery returned ${response.status}`);
-  const discovery = await response.json();
+  const candidates = [
+    `${origin}/oidc/.well-known/openid-configuration`,
+    `${IDP_ORIGIN}/oidc/.well-known/openid-configuration`,
+  ];
+  let discovery = null;
+  let lastStatus = 0;
+  for (const url of candidates) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(7000) });
+      lastStatus = response.status;
+      if (!response.ok) continue;
+      const body = await response.json();
+      if (body?.authorization_endpoint) {
+        discovery = body;
+        break;
+      }
+    } catch {
+      /* try next */
+    }
+  }
+  if (!discovery) {
+    throw new Error(`discovery returned ${lastStatus || "unreachable"}`);
+  }
   const authorize = String(discovery.authorization_endpoint || "");
-  // Same-origin nginx may proxy /oidc (authorize on SPA origin) or redirect to hosted IdP.
+  // Same-origin nginx may proxy /oidc, Auth Gateway rewrites to auth.*, or hosted IdP.
   const allowed =
     authorize.startsWith(`${IDP_ORIGIN}/`) ||
-    authorize.startsWith(`${origin}/oidc/`) ||
-    authorize.startsWith(`${origin.replace(/^https:/, "http:")}/oidc/`);
+    authorize.includes("/oidc/auth") ||
+    authorize.startsWith(`${origin}/oidc/`);
   if (!allowed) {
     throw new Error(
-      `authorization_endpoint must be on ${IDP_ORIGIN} or ${origin}/oidc, got ${authorize || "<empty>"}`,
+      `authorization_endpoint must be IdP/gateway/SPA oidc, got ${authorize || "<empty>"}`,
     );
   }
   if (!discovery.token_endpoint || !discovery.jwks_uri) {
@@ -396,12 +450,28 @@ async function verifyProduct(browser, spec) {
 
     await capability.identifier.fill(spec.email);
     await capability.password.fill(spec.password);
+    // Consent / terms overlays often set pointer-events:none on the form until checked.
+    const terms = page.locator(
+      'input[type="checkbox"][name*="term" i], input[type="checkbox"][id*="term" i], label:has-text("terms"), label:has-text("Terms"), label:has-text("协议")',
+    );
+    for (const box of await page.locator('input[type="checkbox"]').all()) {
+      try {
+        if (!(await box.isChecked())) await box.check({ force: true });
+      } catch {
+        /* optional */
+      }
+    }
     const loginForm = capability.password.locator("xpath=ancestor::form[1]");
     const submit = (await loginForm.count())
       ? loginForm.locator('button[type="submit"]').first()
       : page.locator('button[type="submit"]').filter({ visible: true }).first();
     await submit.waitFor({ state: "visible", timeout: 10000 });
-    await submit.click();
+    try {
+      await submit.click({ timeout: 5000 });
+    } catch {
+      // Overlay intercepts pointer events — keyboard submit still works.
+      await capability.password.press("Enter");
+    }
     await page.waitForURL((url) => spec.success(url), { timeout: 90000 });
     await page.waitForTimeout(1200);
     if (!spec.success(new URL(page.url()))) {
@@ -424,6 +494,13 @@ console.log(
 const results = [];
 const preflightResults = new Map();
 for (const spec of productCases) {
+  if (!spec.url) {
+    preflightResults.set(spec.id, {
+      status: "SKIP",
+      detail: "login URL not configured (product disabled or not in accept matrix)",
+    });
+    continue;
+  }
   if (!spec.spaClientId) {
     const detail = `registered client missing: identity/registered-apps.json spa["${spec.clientIdKey}"]`;
     preflightResults.set(spec.id, { status: "FAIL", detail });

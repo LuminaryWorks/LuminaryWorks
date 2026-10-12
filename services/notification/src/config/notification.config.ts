@@ -5,6 +5,9 @@ export interface SmtpEnv {
   pass?: string;
   secure: boolean;
   requireTLS: boolean;
+  /** When false, the SMTP client accepts a self-signed submission certificate. */
+  rejectUnauthorized: boolean;
+  tlsServername?: string;
   dailyQuota: number;
   monthlyQuota: number;
 }
@@ -80,6 +83,8 @@ export function loadNotificationConfig(
           pass: env.SMTP_PASS ?? undefined,
           secure,
           requireTLS: flag(env.SMTP_REQUIRE_TLS, !secure && smtpPort === 587),
+          rejectUnauthorized: flag(env.SMTP_TLS_REJECT_UNAUTHORIZED, true),
+          tlsServername: env.SMTP_TLS_SERVERNAME?.trim() || undefined,
           dailyQuota: integer(env.SMTP_DAILY_QUOTA, 0),
           monthlyQuota: integer(env.SMTP_MONTHLY_QUOTA, 0),
         }

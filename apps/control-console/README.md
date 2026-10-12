@@ -26,7 +26,7 @@ Toolchain: **Rsbuild** + **RsTest** + Biome（与生态前端一致；非 Vite�
 
 Login: platform `superadmin` from `identity/ACCOUNTS.dev.env` (not Logto Admin `:3002`). Use the language switcher on the login page (en / zh).
 
-Same-origin IdP proxy (`@luminaryworks/auth-dev-proxy`, `spaOriginFromRequest`) is enabled for Headless login. Entitlement CORS must allow the console origin, or use the Rsbuild `/v1` proxy. Start Entitlement (`pnpm ent:dev`) for catalog / providers APIs.
+Same-origin IdP proxy (`@luminaryworks/auth-dev-proxy`, `spaOriginFromRequest`) is enabled for Headless login. Entitlement CORS must allow the console origin, or use the Rsbuild `/v1` proxy. Start Entitlement (`pnpm ent:dev`) with **`ENTITLEMENT_AUTH_MODE=oidc`** (and matching `ENTITLEMENT_OIDC_*`) — `legacy` rejects Logto tokens, so every admin menu call returns 401 and the SPA sends you back to login.
 ## Production
 
 `pnpm build && node server/main.mjs` (or the Docker image). Endpoints: `/health`, `/ready`, `/version`, `/config.json`.

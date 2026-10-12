@@ -11,6 +11,7 @@ export { BillingProfileEntity } from "./billing-profile.entity";
 export { OfferingEntity } from "./offering.entity";
 export { OrderEntity } from "./order.entity";
 export { PaymentAttemptEntity } from "./payment-attempt.entity";
+export { PaymentCatalogOrderEntity } from "./payment-catalog-order.entity";
 export { PaymentProviderConfigEntity } from "./payment-provider-config.entity";
 export { ProviderWebhookEventEntity } from "./provider-webhook-event.entity";
 export { RefundEntity } from "./refund.entity";
@@ -45,6 +46,7 @@ import { BillingProfileEntity } from "./billing-profile.entity";
 import { OfferingEntity } from "./offering.entity";
 import { OrderEntity } from "./order.entity";
 import { PaymentAttemptEntity } from "./payment-attempt.entity";
+import { PaymentCatalogOrderEntity } from "./payment-catalog-order.entity";
 import { PaymentProviderConfigEntity } from "./payment-provider-config.entity";
 import { ProviderWebhookEventEntity } from "./provider-webhook-event.entity";
 import { RefundEntity } from "./refund.entity";
@@ -87,6 +89,7 @@ export const ALL_ENTITIES = [
   ConsumeIdempotencyEntity,
   OrderEntity,
   PaymentProviderConfigEntity,
+  PaymentCatalogOrderEntity,
   PaymentAttemptEntity,
   ProviderWebhookEventEntity,
   RefundEntity,

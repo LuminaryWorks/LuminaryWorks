@@ -57,8 +57,12 @@ export const DOERFLOW_INTEGRATION_QUOTAS = {
   enterprise: { eventMonthly: 100_000, apiMonthly: 10_000_000 },
 } as const;
 
-/** Conservative Hosted ToC gauges/counters. Not market research. */
+/**
+ * Paid plans keep calendar-month task/API caps because the subscription renews.
+ * The 7-day Trial uses the Pro amounts once, on lifetime counters, so they do not reset mid-trial.
+ */
 export const DOERFLOW_PLAN_LIMITS = {
+  trial: { agents: 3, taskPublish: 20, apiRequest: 5_000 },
   pro: { agents: 3, taskPublishMonthly: 20, apiRequestMonthly: 5_000 },
   ultra: { agents: 10, taskPublishMonthly: 100, apiRequestMonthly: 20_000 },
   enterprise: { agents: 10_000, taskPublishMonthly: 100_000, apiRequestMonthly: 10_000_000 },
@@ -132,13 +136,14 @@ const GIB = 1024 * 1024 * 1024;
 export const STORAGE_BYTE_LIMITS = {
   dataluminary: {
     object: {
-      trial: 1 * GIB,
+      // 7-day Trial is Pro-equivalent (D-TRIAL-1). planCode stays `trial`.
+      trial: 10 * GIB,
       pro: 10 * GIB,
       ultra: 100 * GIB,
       enterprise: 1024 * GIB,
     },
     analytical: {
-      trial: 512 * MIB,
+      trial: 5 * GIB,
       pro: 5 * GIB,
       ultra: 50 * GIB,
       enterprise: 500 * GIB,
@@ -146,7 +151,7 @@ export const STORAGE_BYTE_LIMITS = {
   },
   vistaremote: {
     recording: {
-      trial: 100 * MIB,
+      trial: 1 * GIB,
       pro: 1 * GIB,
       ultra: 5 * GIB,
       enterprise: 50 * GIB,
@@ -162,6 +167,7 @@ export const STORAGE_BYTE_LIMITS = {
   },
   vistacast: {
     recording: {
+      trial: 1 * GIB,
       pro: 1 * GIB,
       ultra: 5 * GIB,
       enterprise: 50 * GIB,
@@ -193,10 +199,12 @@ export const VISTAREMOTE_ENTERPRISE_ONLY_FEATURES = [
 ] as const;
 
 /**
- * VistaCast ToC gauges/config. sellable stays false; no Trial plan.
+ * VistaCast ToC gauges. Trial matches Pro for the 7-day window.
+ * Checkout stays closed (`sellable: false`) until the product is ready to sell.
  * Cloud Bridge, face/staff/fall/smoke, and production CV stay ungranted on ToC.
  */
 export const VISTACAST_PLAN_LIMITS = {
+  trial: { cameras: 2, sites: 1, previewConcurrent: 1, eventRetentionDays: 7 },
   pro: { cameras: 2, sites: 1, previewConcurrent: 1, eventRetentionDays: 7 },
   ultra: { cameras: 8, sites: 2, previewConcurrent: 2, eventRetentionDays: 30 },
   enterprise: { cameras: 50, sites: 20, previewConcurrent: 8, eventRetentionDays: 90 },
@@ -227,9 +235,13 @@ export const SYNCROBRAIN_TOC_BOOL_FEATURES = ["console", "mqtt"] as const;
 
 export const SYNCROBRAIN_UNGRANTED_FEATURES = ["ha", "doerflow.commerce"] as const;
 
-/** Conservative BlockyEdu gauges. Trial matches Pro; enterprise is a higher configurable default. */
+/**
+ * Trial lasts 7 days, so its code and voice budgets are one lifetime pool
+ * for that window. Paid Pro keeps a calendar-day code cap and a calendar-month
+ * voice cap because the subscription renews.
+ */
 export const BLOCKYEDU_PLAN_LIMITS = {
-  trial: { students: 5, artifacts: 10, codeDaily: 20, voiceMonthlySeconds: 600 },
+  trial: { students: 5, artifacts: 10, codeRuns: 20 * 7, voiceSeconds: 600 },
   pro: { students: 5, artifacts: 10, codeDaily: 20, voiceMonthlySeconds: 600 },
   ultra: { students: 20, artifacts: 50, codeDaily: 80, voiceMonthlySeconds: 1800 },
   enterprise: { students: 200, artifacts: 200, codeDaily: 400, voiceMonthlySeconds: 7200 },
@@ -442,6 +454,12 @@ export const CATALOG: ProductSeed[] = [
         kind: "quota",
         quotaPeriod: "calendar_day",
       },
+      {
+        code: "code.execute.trial",
+        name: "Cloud code runs for the 7-day trial",
+        kind: "quota",
+        quotaPeriod: "lifetime",
+      },
     ],
     plans: [
       {
@@ -453,13 +471,13 @@ export const CATALOG: ProductSeed[] = [
           { code: "ai.copilot" },
           { code: "ai.voice" },
           {
-            code: "ai.voice.monthly.seconds",
-            limitValue: BLOCKYEDU_PLAN_LIMITS.trial.voiceMonthlySeconds,
+            code: "ai.voice.trial.seconds",
+            limitValue: BLOCKYEDU_PLAN_LIMITS.trial.voiceSeconds,
           },
           { code: "student.limit", limitValue: BLOCKYEDU_PLAN_LIMITS.trial.students },
           { code: "artifact.count", limitValue: BLOCKYEDU_PLAN_LIMITS.trial.artifacts },
           { code: "storage.bytes", limitValue: STORAGE_BYTE_LIMITS.blockyedu.object.trial },
-          { code: "code.execute.daily", limitValue: BLOCKYEDU_PLAN_LIMITS.trial.codeDaily },
+          { code: "code.execute.trial", limitValue: BLOCKYEDU_PLAN_LIMITS.trial.codeRuns },
         ],
       },
       {
@@ -598,17 +616,17 @@ export const CATALOG: ProductSeed[] = [
         features: [
           { code: "dashboard.export" },
           { code: "ai.analysis" },
-          { code: "space.count", limitValue: 1 },
-          { code: "dashboard.count", limitValue: 5 },
-          { code: "dataset.count", limitValue: 5 },
-          { code: "sync.task.count", limitValue: 2 },
+          { code: "space.count", limitValue: 5 },
+          { code: "dashboard.count", limitValue: 50 },
+          { code: "dataset.count", limitValue: 50 },
+          { code: "sync.task.count", limitValue: 20 },
           { code: "storage.bytes", limitValue: STORAGE_BYTE_LIMITS.dataluminary.object.trial },
           {
             code: "analytical.storage.bytes",
             limitValue: STORAGE_BYTE_LIMITS.dataluminary.analytical.trial,
           },
           { code: DATALUMINARY_ANALYTICAL_FEATURES.sharedDemo },
-          { code: "sync.run.daily", limitValue: 50 },
+          { code: "sync.run.daily", limitValue: 500 },
         ],
       },
       {
@@ -680,7 +698,7 @@ export const CATALOG: ProductSeed[] = [
   {
     code: "doerflow",
     name: "DoerFlow",
-    trialPolicy: "disabled",
+    trialPolicy: "standard_7d",
     sellable: true,
     features: [
       { code: "agent.publish", name: "Publish agents", kind: "bool" },
@@ -712,9 +730,34 @@ export const CATALOG: ProductSeed[] = [
         kind: "quota",
         quotaPeriod: "calendar_month",
       },
+      {
+        code: "task.publish.trial",
+        name: "Task publications for the 7-day trial",
+        kind: "quota",
+        quotaPeriod: "lifetime",
+      },
+      {
+        code: "api.request.trial",
+        name: "API requests for the 7-day trial",
+        kind: "quota",
+        quotaPeriod: "lifetime",
+      },
       ...DOERFLOW_INTEGRATION_FEATURES,
     ],
     plans: [
+      {
+        code: "trial",
+        name: "Trial",
+        rank: 1,
+        features: [
+          { code: "agent.publish" },
+          { code: "skill.register" },
+          { code: "task.publish" },
+          { code: "agent.limit", limitValue: DOERFLOW_PLAN_LIMITS.trial.agents },
+          { code: "task.publish.trial", limitValue: DOERFLOW_PLAN_LIMITS.trial.taskPublish },
+          { code: "api.request.trial", limitValue: DOERFLOW_PLAN_LIMITS.trial.apiRequest },
+        ],
+      },
       {
         code: "pro",
         name: "Pro",
@@ -774,7 +817,7 @@ export const CATALOG: ProductSeed[] = [
   {
     code: "vistacast",
     name: "VistaCast",
-    trialPolicy: "disabled",
+    trialPolicy: "standard_7d",
     sellable: false,
     features: [
       { code: "visual.event", name: "Visual event ingest", kind: "bool" },
@@ -825,6 +868,29 @@ export const CATALOG: ProductSeed[] = [
       },
     ],
     plans: [
+      {
+        code: "trial",
+        name: "Trial",
+        rank: 1,
+        features: [
+          { code: "visual.event" },
+          { code: "preview.p2p" },
+          { code: "camera.limit", limitValue: VISTACAST_PLAN_LIMITS.trial.cameras },
+          { code: "site.limit", limitValue: VISTACAST_PLAN_LIMITS.trial.sites },
+          {
+            code: "preview.concurrent",
+            limitValue: VISTACAST_PLAN_LIMITS.trial.previewConcurrent,
+          },
+          {
+            code: "event.retention.days",
+            limitValue: VISTACAST_PLAN_LIMITS.trial.eventRetentionDays,
+          },
+          {
+            code: "recording.storage.bytes",
+            limitValue: STORAGE_BYTE_LIMITS.vistacast.recording.trial,
+          },
+        ],
+      },
       {
         code: "pro",
         name: "Pro",

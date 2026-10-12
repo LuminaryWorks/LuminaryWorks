@@ -19,6 +19,12 @@ export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 export const REQUIRES_ADMIN_KEY = "entitlement:admin";
 export const RequireAdmin = () => SetMetadata(REQUIRES_ADMIN_KEY, true);
 
+export const REQUIRES_CATALOG_ACCESS_KEY = "entitlement:catalog-access";
+export const RequireCatalogAccess = () => SetMetadata(REQUIRES_CATALOG_ACCESS_KEY, true);
+
+export const REQUIRES_TENANT_COMMERCE_KEY = "entitlement:tenant-commerce";
+export const RequireTenantCommerce = () => SetMetadata(REQUIRES_TENANT_COMMERCE_KEY, true);
+
 export const REQUIRES_PARTNER_SCOPES_KEY = "entitlement:partner-scopes";
 export const RequirePartnerScopes = (...scopes: string[]) =>
   SetMetadata(REQUIRES_PARTNER_SCOPES_KEY, scopes);

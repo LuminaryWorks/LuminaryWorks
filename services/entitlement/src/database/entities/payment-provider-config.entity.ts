@@ -70,6 +70,25 @@ export class PaymentProviderConfigEntity {
   @Column({ type: "jsonb", default: {} })
   metadata!: Record<string, unknown>;
 
+  @Index()
+  @Column({ name: "tenant_id", type: "varchar", length: 128, nullable: true })
+  tenantId!: string | null;
+
+  @Column({ name: "last_test_ok", type: "boolean", nullable: true })
+  lastTestOk!: boolean | null;
+
+  @Column({ name: "last_tested_at", type: "timestamptz", nullable: true })
+  lastTestedAt!: Date | null;
+
+  @Column({ name: "last_test_issues", type: "jsonb", default: [] })
+  lastTestIssues!: string[];
+
+  @Column({ name: "last_test_fingerprint", type: "varchar", length: 64, default: "" })
+  lastTestFingerprint!: string;
+
+  @Column({ name: "last_test_environment", type: "varchar", length: 16, nullable: true })
+  lastTestEnvironment!: string | null;
+
   @CreateDateColumn({ name: "created_at", type: "timestamptz" })
   createdAt!: Date;
 

@@ -8,6 +8,8 @@ export const PAYMENT_PROVIDER_IDS = [
   "okx_onchain",
   "bitpay",
   "creem",
+  "polar",
+  "paddle",
   "doerflow_credit",
   "manual",
   "mock",
@@ -139,6 +141,26 @@ export const DEFAULT_PROVIDER_CAPABILITIES: Record<
     qr: false,
     requiresQueryBeforeFulfill: false,
   },
+  polar: {
+    checkout: true,
+    webhook: true,
+    query: true,
+    refund: true,
+    partialRefund: true,
+    hostedUrl: true,
+    qr: false,
+    requiresQueryBeforeFulfill: false,
+  },
+  paddle: {
+    checkout: true,
+    webhook: true,
+    query: true,
+    refund: true,
+    partialRefund: true,
+    hostedUrl: true,
+    qr: false,
+    requiresQueryBeforeFulfill: false,
+  },
   doerflow_credit: {
     checkout: true,
     webhook: true,
@@ -218,10 +240,22 @@ export const STRUCTURED_CREDENTIAL_FIELDS: Partial<
   ],
   paypal: [
     { key: "clientId", labelKey: "providers.fields.clientId" },
-    { key: "clientSecret", labelKey: "providers.fields.clientSecret", secret: true },
+    {
+      key: "clientSecret",
+      labelKey: "providers.fields.clientSecret",
+      secret: true,
+    },
     { key: "webhookId", labelKey: "providers.fields.webhookId" },
-    { key: "returnUrl", labelKey: "providers.fields.returnUrl", optional: true },
-    { key: "cancelUrl", labelKey: "providers.fields.cancelUrl", optional: true },
+    {
+      key: "returnUrl",
+      labelKey: "providers.fields.returnUrl",
+      optional: true,
+    },
+    {
+      key: "cancelUrl",
+      labelKey: "providers.fields.cancelUrl",
+      optional: true,
+    },
   ],
   wechat_pay_v3: [
     { key: "mchid", labelKey: "providers.fields.mchid" },
@@ -234,7 +268,10 @@ export const STRUCTURED_CREDENTIAL_FIELDS: Partial<
     },
     { key: "apiV3Key", labelKey: "providers.fields.apiV3Key", secret: true },
     { key: "platformCertPem", labelKey: "providers.fields.platformCertPem" },
-    { key: "platformCertSerial", labelKey: "providers.fields.platformCertSerial" },
+    {
+      key: "platformCertSerial",
+      labelKey: "providers.fields.platformCertSerial",
+    },
   ],
   unionpay_quickpass: [
     { key: "merId", labelKey: "providers.fields.merId" },
@@ -244,7 +281,10 @@ export const STRUCTURED_CREDENTIAL_FIELDS: Partial<
       labelKey: "providers.fields.merchantPrivateKey",
       secret: true,
     },
-    { key: "unionpayPublicKey", labelKey: "providers.fields.unionpayPublicKey" },
+    {
+      key: "unionpayPublicKey",
+      labelKey: "providers.fields.unionpayPublicKey",
+    },
     { key: "frontUrl", labelKey: "providers.fields.frontUrl" },
     { key: "backUrl", labelKey: "providers.fields.backUrl" },
     { key: "checkoutMode", labelKey: "providers.fields.checkoutMode" },
@@ -256,8 +296,100 @@ export const STRUCTURED_CREDENTIAL_FIELDS: Partial<
       labelKey: "providers.fields.webhookSecret",
       secret: true,
     },
-    { key: "successUrl", labelKey: "providers.fields.successUrl", optional: true },
-    { key: "cancelUrl", labelKey: "providers.fields.cancelUrl", optional: true },
+    {
+      key: "successUrl",
+      labelKey: "providers.fields.successUrl",
+      optional: true,
+    },
+    {
+      key: "cancelUrl",
+      labelKey: "providers.fields.cancelUrl",
+      optional: true,
+    },
+  ],
+  coinbase_commerce: [
+    { key: "apiKeyId", labelKey: "providers.fields.apiKeyId" },
+    {
+      key: "apiKeySecret",
+      labelKey: "providers.fields.apiKeySecret",
+      secret: true,
+    },
+    {
+      key: "webhookSecret",
+      labelKey: "providers.fields.webhookSecret",
+      secret: true,
+    },
+    {
+      key: "successRedirectUrl",
+      labelKey: "providers.fields.successRedirectUrl",
+      optional: true,
+    },
+    {
+      key: "failRedirectUrl",
+      labelKey: "providers.fields.failRedirectUrl",
+      optional: true,
+    },
+  ],
+  okx_onchain: [
+    { key: "apiKey", labelKey: "providers.fields.apiKey", secret: true },
+    {
+      key: "secretKey",
+      labelKey: "providers.fields.okxSecretKey",
+      secret: true,
+    },
+    {
+      key: "passphrase",
+      labelKey: "providers.fields.passphrase",
+      secret: true,
+    },
+    { key: "payTo", labelKey: "providers.fields.payTo" },
+    { key: "network", labelKey: "providers.fields.network" },
+    { key: "resourceBaseUrl", labelKey: "providers.fields.resourceBaseUrl" },
+    { key: "asset", labelKey: "providers.fields.asset", optional: true },
+  ],
+  bitpay: [
+    { key: "posToken", labelKey: "providers.fields.posToken", secret: true },
+    { key: "notificationUrl", labelKey: "providers.fields.notificationUrl" },
+    {
+      key: "merchantToken",
+      labelKey: "providers.fields.merchantToken",
+      secret: true,
+      optional: true,
+    },
+    {
+      key: "privateKey",
+      labelKey: "providers.fields.privateKey",
+      secret: true,
+      optional: true,
+    },
+  ],
+  polar: [
+    { key: "apiKey", labelKey: "providers.fields.apiKey", secret: true },
+    {
+      key: "webhookSecret",
+      labelKey: "providers.fields.webhookSecret",
+      secret: true,
+    },
+    { key: "productId", labelKey: "providers.fields.polarProductId" },
+    {
+      key: "successUrl",
+      labelKey: "providers.fields.successUrl",
+      optional: true,
+    },
+  ],
+  paddle: [
+    { key: "apiKey", labelKey: "providers.fields.apiKey", secret: true },
+    {
+      key: "webhookSecret",
+      labelKey: "providers.fields.webhookSecret",
+      secret: true,
+    },
+    { key: "priceId", labelKey: "providers.fields.priceId" },
+    {
+      key: "successUrl",
+      labelKey: "providers.fields.successUrl",
+      optional: true,
+    },
   ],
   mock: [
     {
@@ -312,6 +444,8 @@ export function defaultMarketScopes(providerId: ProviderId): string[] {
     providerId === "paypal" ||
     providerId === "stripe_checkout" ||
     providerId === "creem" ||
+    providerId === "polar" ||
+    providerId === "paddle" ||
     providerId === "doerflow_credit" ||
     providerId === "coinbase_commerce" ||
     providerId === "okx_onchain" ||
@@ -324,7 +458,11 @@ export function defaultMarketScopes(providerId: ProviderId): string[] {
 
 export function defaultCurrencies(providerId: ProviderId): string[] {
   if (defaultMarketScopes(providerId).includes("CN")) return ["CNY"];
-  if (providerId === "mock" || providerId === "manual" || providerId === "contract") {
+  if (
+    providerId === "mock" ||
+    providerId === "manual" ||
+    providerId === "contract"
+  ) {
     return ["CNY", "USD"];
   }
   return ["USD"];

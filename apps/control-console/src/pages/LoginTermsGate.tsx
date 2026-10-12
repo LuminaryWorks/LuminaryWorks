@@ -5,7 +5,9 @@ const TOS_KEY = "lw.control-console.tos.login.v1";
 
 function envUrl(name: string, fallback: string): string {
   const env = import.meta.env as Record<string, string | undefined>;
-  return env[`PUBLIC_${name}`]?.trim() || env[`VITE_${name}`]?.trim() || fallback;
+  return (
+    env[`PUBLIC_${name}`]?.trim() || env[`VITE_${name}`]?.trim() || fallback
+  );
 }
 
 export function useLoginTermsAccepted() {
@@ -43,14 +45,13 @@ export function LoginTermsCheckbox({
           "LEGAL_PLATFORM_TERMS_URL",
           "https://luminaryworks.dev/legal/terms",
         ),
-        label: t("auth.platformTerms"),
+        label: t("auth.terms"),
       },
       {
-        href: envUrl("LEGAL_PRODUCT_TERMS_URL", "/legal/terms"),
-        label: t("auth.productTerms"),
-      },
-      {
-        href: envUrl("LEGAL_PRODUCT_PRIVACY_URL", "/legal/privacy"),
+        href: envUrl(
+          "LEGAL_PLATFORM_PRIVACY_URL",
+          "https://luminaryworks.dev/legal/privacy",
+        ),
         label: t("auth.privacy"),
       },
     ],
@@ -58,7 +59,9 @@ export function LoginTermsCheckbox({
   );
 
   return (
-    <label style={{ display: "block", marginTop: 12, fontSize: 13, lineHeight: 1.5 }}>
+    <label
+      style={{ display: "block", marginTop: 0, fontSize: 13, lineHeight: 1.5 }}
+    >
       <input
         type="checkbox"
         checked={accepted}

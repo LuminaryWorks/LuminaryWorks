@@ -1,0 +1,10 @@
+# Send-only Maddy. Publish 587 only. Do not publish 25 or IMAP.
+services:
+  maddy:
+    image: foxcpp/maddy:0.7
+    container_name: luminary-maddy
+    restart: unless-stopped
+    ports:
+      - "587:587"
+    volumes:
+      - ./data:/data

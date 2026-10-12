@@ -1,5 +1,9 @@
 import { registerAs } from "@nestjs/config";
 import { parseCorsOrigins } from "../common/cors";
+import {
+  parsePaymentDeploymentMode,
+  type PaymentDeploymentMode,
+} from "../common/payment-deployment-mode";
 import { parsePaymentsEnabled } from "../common/payments-enabled";
 import {
   DEFAULT_LEGAL_POLICY_VERSION,
@@ -79,6 +83,9 @@ export interface EntitlementConfig {
    * Default true. Private/on-prem deployments can ship without a PSP surface.
    */
   paymentsEnabled: boolean;
+  paymentDeploymentMode: PaymentDeploymentMode;
+  /** Merchant ids owned by LuminaryWorks. Tenant configs must not reuse them. */
+  platformMerchantIds: string[];
   /**
    * Browser origins allowed to call this API with CORS.
    * Empty (the production default) closes CORS — same-origin / non-browser only.
@@ -165,7 +172,15 @@ export default registerAs("entitlement", (): EntitlementConfig => {
       process.env.PAYMENT_MARKET_POLICY === "scopes_only" ? "scopes_only" : "hosted",
     paymentReconcilePendingMinutes: Number(process.env.PAYMENT_RECONCILE_PENDING_MINUTES ?? 5),
     paymentCredentialRetiringHours: Number(process.env.PAYMENT_CREDENTIAL_RETIRING_HOURS ?? 48),
-    paymentsEnabled: parsePaymentsEnabled(process.env.PAYMENTS_ENABLED),
+    paymentDeploymentMode: parsePaymentDeploymentMode(process.env.PAYMENT_DEPLOYMENT_MODE),
+    platformMerchantIds: (process.env.PAYMENT_PLATFORM_MERCHANT_IDS ?? "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    paymentsEnabled:
+      parsePaymentDeploymentMode(process.env.PAYMENT_DEPLOYMENT_MODE) === "disabled"
+        ? false
+        : parsePaymentsEnabled(process.env.PAYMENTS_ENABLED),
     // Browser origins allowed to call Entitlement. Control Console checkout admin uses this.
     corsOrigins: parseCorsOrigins(process.env.ENTITLEMENT_CORS_ORIGINS),
   };

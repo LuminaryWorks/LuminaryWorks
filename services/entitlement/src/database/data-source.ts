@@ -11,6 +11,8 @@ import { ResourceAllocations1730600000000 } from "./migrations/1730600000000-Res
 import { PolicyAcceptanceAndCleanup1730700000000 } from "./migrations/1730700000000-PolicyAcceptanceAndCleanup";
 import { PaymentPlatform1730800000000 } from "./migrations/1730800000000-PaymentPlatform";
 import { BillingProfilePayerType1730900000000 } from "./migrations/1730900000000-BillingProfilePayerType";
+import { PaymentChannelLifecycle1731000000000 } from "./migrations/1731000000000-PaymentChannelLifecycle";
+import { PaymentCatalogOrder1731100000000 } from "./migrations/1731100000000-PaymentCatalogOrder";
 
 const url =
   process.env.ENTITLEMENT_DATABASE_URL ??
@@ -31,6 +33,8 @@ export default new DataSource({
     PolicyAcceptanceAndCleanup1730700000000,
     PaymentPlatform1730800000000,
     BillingProfilePayerType1730900000000,
+    PaymentChannelLifecycle1731000000000,
+    PaymentCatalogOrder1731100000000,
   ],
   synchronize: false,
 });

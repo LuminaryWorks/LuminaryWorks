@@ -1,8 +1,16 @@
 import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
-import type { Repository } from "typeorm";
+import { IsNull, type Repository } from "typeorm";
 import {
+  catalogScopeKey,
+  normalizeCatalogOrder,
+  priorityForCatalogIndex,
+} from "../../common/catalog-order";
+import { channelEnablementBlocker } from "../../common/channel-enablement";
+import { usesReservedPlatformMerchant } from "../../common/tenant-merchant";
+import {
+  assertGenericCredentials,
   assertPaymentMasterKeyAvailable,
   credentialLastFour,
   decryptPaymentSecrets,
@@ -10,6 +18,7 @@ import {
   fingerprintCredentials,
   fingerprintPaymentMasterKey,
   parsePaymentMasterKey,
+  publicCredentialFields,
   redactPaymentSecrets,
   type GenericCredentials,
 } from "../../common/payment-crypto";
@@ -23,6 +32,7 @@ import {
 } from "../../common/payment-providers";
 import type { EntitlementConfig } from "../../config/entitlement.config";
 import { EntitlementException } from "../../common/errors";
+import { PaymentCatalogOrderEntity } from "../../database/entities/payment-catalog-order.entity";
 import { PaymentProviderConfigEntity } from "../../database/entities/payment-provider-config.entity";
 import { AuditService } from "../audit/audit.service";
 import { PAYMENT_ADAPTERS, type PaymentAdapter, type ProviderConfig } from "./payment-adapter";
@@ -46,6 +56,13 @@ export interface PaymentConfigPublicView {
   metadata: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
+  tenantId: string | null;
+  lastTestOk: boolean | null;
+  lastTestedAt: string | null;
+  lastTestIssues: string[];
+  lastTestEnvironment: string | null;
+  lastTestFingerprint: string;
+  credentialPublic: Record<string, string>;
 }
 
 @Injectable()
@@ -56,6 +73,8 @@ export class PaymentConfigService implements OnModuleInit {
     private readonly config: ConfigService,
     @InjectRepository(PaymentProviderConfigEntity)
     private readonly configs: Repository<PaymentProviderConfigEntity>,
+    @InjectRepository(PaymentCatalogOrderEntity)
+    private readonly catalogOrders: Repository<PaymentCatalogOrderEntity>,
     private readonly audit: AuditService,
     @Inject(PAYMENT_ADAPTERS) private readonly adapters: PaymentAdapter[],
   ) {}
@@ -131,20 +150,111 @@ export class PaymentConfigService implements OnModuleInit {
       metadata: redactPaymentSecrets(row.metadata ?? {}),
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
+      tenantId: row.tenantId ?? null,
+      lastTestOk: row.lastTestOk ?? null,
+      lastTestedAt: row.lastTestedAt?.toISOString() ?? null,
+      lastTestIssues: row.lastTestIssues ?? [],
+      lastTestEnvironment: row.lastTestEnvironment ?? null,
+      lastTestFingerprint: row.lastTestFingerprint ?? "",
+      credentialPublic: this.credentialPublic(row),
     };
   }
 
-  async list(filter?: { providerId?: string; enabled?: boolean; environment?: string }) {
-    const where: Record<string, unknown> = {};
+  async list(
+    filter?: { providerId?: string; enabled?: boolean; environment?: string },
+    tenantId: string | null = null,
+  ) {
+    const where: Record<string, unknown> = {
+      tenantId: tenantId == null ? IsNull() : tenantId,
+    };
     if (filter?.providerId) where.providerId = filter.providerId;
     if (filter?.enabled != null) where.enabled = filter.enabled;
     if (filter?.environment) where.environment = filter.environment;
     const rows = await this.configs.find({ where, order: { priority: "ASC", createdAt: "ASC" } });
-    return { items: rows.map((row) => this.toPublicView(row)) };
+    const catalogOrder = await this.readCatalogOrder(tenantId);
+    return { items: rows.map((row) => this.toPublicView(row)), catalogOrder };
   }
 
-  async getPublic(id: string): Promise<PaymentConfigPublicView> {
-    return this.toPublicView(await this.requireRow(id));
+  async reorder(
+    providerIds: readonly string[],
+    opts: { actor: string; requestId?: string; tenantId?: string | null },
+  ): Promise<{ catalogOrder: string[]; updated: number }> {
+    const tenantId = opts.tenantId ?? null;
+    const catalogOrder = normalizeCatalogOrder(providerIds);
+    if (catalogOrder.length === 0) {
+      throw new EntitlementException(
+        "VALIDATION_ERROR",
+        "providerIds must include a known channel",
+      );
+    }
+    const scopeKey = catalogScopeKey(tenantId);
+    const existing = await this.catalogOrders.findOne({ where: { scopeKey } });
+    if (existing) {
+      existing.providerIds = catalogOrder;
+      await this.catalogOrders.save(existing);
+    } else {
+      await this.catalogOrders.save(
+        this.catalogOrders.create({ scopeKey, providerIds: catalogOrder }),
+      );
+    }
+    const rows = await this.configs.find({
+      where: { tenantId: tenantId == null ? IsNull() : tenantId },
+    });
+    let updated = 0;
+    for (const row of rows) {
+      const index = catalogOrder.indexOf(row.providerId);
+      if (index < 0) continue;
+      const priority = priorityForCatalogIndex(index);
+      if (row.priority === priority) continue;
+      row.priority = priority;
+      await this.configs.save(row);
+      updated += 1;
+    }
+    await this.audit.record({
+      actor: opts.actor,
+      action: "payment_config.reorder",
+      resourceType: "payment_catalog_order",
+      resourceId: scopeKey,
+      requestId: opts.requestId,
+      payload: { catalogOrder, updated },
+    });
+    return { catalogOrder, updated };
+  }
+
+  private async readCatalogOrder(tenantId: string | null): Promise<string[]> {
+    try {
+      const row = await this.catalogOrders.findOne({
+        where: { scopeKey: catalogScopeKey(tenantId) },
+      });
+      return normalizeCatalogOrder(row?.providerIds ?? []);
+    } catch (error) {
+      if (!isMissingRelation(error)) throw error;
+      this.logger.warn(
+        "payment_catalog_orders is missing; channel list order falls back until migration runs",
+      );
+      return [];
+    }
+  }
+
+  async listTenantSummaries() {
+    const rows = await this.configs.find({ order: { createdAt: "ASC" } });
+    return {
+      items: rows
+        .filter((row) => row.tenantId)
+        .map((row) => ({
+          id: row.id,
+          tenantId: row.tenantId,
+          providerId: row.providerId,
+          environment: row.environment,
+          enabled: row.enabled,
+          status: row.status,
+          lastTestOk: row.lastTestOk ?? null,
+        })),
+    };
+  }
+
+  async getPublic(id: string, tenantId: string | null = null): Promise<PaymentConfigPublicView> {
+    return this.toPublicView(await this.requireRow(id, tenantId));
   }
 
   async create(input: {
@@ -158,11 +268,22 @@ export class PaymentConfigService implements OnModuleInit {
     credentials?: unknown;
     metadata?: Record<string, unknown>;
     enabled?: boolean;
+    tenantId?: string | null;
     actor: string;
     requestId?: string;
   }): Promise<PaymentConfigPublicView> {
     if (!isProviderId(input.providerId)) {
       throw new EntitlementException("VALIDATION_ERROR", `Unknown provider ${input.providerId}`);
+    }
+    const tenantId = input.tenantId ?? null;
+    if (
+      tenantId &&
+      usesReservedPlatformMerchant(input.merchantId, this.conf().platformMerchantIds)
+    ) {
+      throw new EntitlementException(
+        "FORBIDDEN",
+        "Tenant checkout cannot reuse a LuminaryWorks platform merchant id",
+      );
     }
     const credentials = this.credentialsOrEmpty(input.providerId, input.credentials);
     const encrypted = this.encryptCredentials(credentials);
@@ -187,6 +308,12 @@ export class PaymentConfigService implements OnModuleInit {
         credentialLastFour: encrypted.lastFour,
         keyFingerprint: encrypted.keyFingerprint,
         metadata: redactPaymentSecrets(input.metadata ?? {}),
+        tenantId,
+        lastTestOk: null,
+        lastTestedAt: null,
+        lastTestIssues: [],
+        lastTestFingerprint: "",
+        lastTestEnvironment: null,
       }),
     );
     await this.audit.record({
@@ -218,16 +345,33 @@ export class PaymentConfigService implements OnModuleInit {
       environment?: PaymentEnvironment;
       actor: string;
       requestId?: string;
+      tenantId?: string | null;
     },
   ): Promise<PaymentConfigPublicView> {
-    const row = await this.requireRow(id);
+    const row = await this.requireRow(id, patch.tenantId ?? null);
+    if (
+      row.tenantId &&
+      patch.merchantId !== undefined &&
+      usesReservedPlatformMerchant(patch.merchantId, this.conf().platformMerchantIds)
+    ) {
+      throw new EntitlementException(
+        "FORBIDDEN",
+        "Tenant checkout cannot reuse a LuminaryWorks platform merchant id",
+      );
+    }
     if (patch.marketScopes) row.marketScopes = patch.marketScopes;
     if (patch.currencies) row.currencies = patch.currencies.map((item) => item.toUpperCase());
     if (patch.priority != null) row.priority = patch.priority;
     if (patch.capabilities) row.capabilities = { ...row.capabilities, ...patch.capabilities };
     if (patch.merchantId !== undefined) row.merchantId = patch.merchantId;
     if (patch.metadata) row.metadata = redactPaymentSecrets({ ...row.metadata, ...patch.metadata });
-    if (patch.environment) row.environment = patch.environment;
+    if (patch.environment && patch.environment !== row.environment) {
+      row.environment = patch.environment;
+      row.lastTestOk = null;
+      row.lastTestFingerprint = "";
+      row.lastTestEnvironment = null;
+      row.lastTestIssues = [];
+    }
     await this.configs.save(row);
     await this.audit.record({
       actor: patch.actor,
@@ -246,9 +390,25 @@ export class PaymentConfigService implements OnModuleInit {
   async setEnabled(
     id: string,
     enabled: boolean,
-    opts: { actor: string; requestId?: string },
+    opts: { actor: string; requestId?: string; tenantId?: string | null },
   ): Promise<PaymentConfigPublicView> {
-    const row = await this.requireRow(id);
+    const row = await this.requireRow(id, opts.tenantId ?? null);
+    if (enabled) {
+      const blocker = channelEnablementBlocker({
+        lastTestOk: row.lastTestOk ?? null,
+        lastTestFingerprint: row.lastTestFingerprint ?? "",
+        credentialFingerprint: row.credentialFingerprint,
+        lastTestEnvironment: row.lastTestEnvironment ?? null,
+        environment: row.environment,
+      });
+      if (blocker) {
+        throw new EntitlementException(
+          "PAYMENT_CHANNEL_TEST_REQUIRED",
+          "Channel cannot be enabled until a matching health check succeeds",
+          { details: { blocker } },
+        );
+      }
+    }
     row.enabled = enabled;
     row.status = enabled ? "active" : "disabled";
     await this.configs.save(row);
@@ -266,10 +426,10 @@ export class PaymentConfigService implements OnModuleInit {
   async rotate(
     id: string,
     credentialsRaw: unknown,
-    opts: { actor: string; requestId?: string },
+    opts: { actor: string; requestId?: string; tenantId?: string | null },
   ): Promise<PaymentConfigPublicView> {
-    const row = await this.requireRow(id);
-    const credentials = this.credentialsOrEmpty(row.providerId, credentialsRaw);
+    const row = await this.requireRow(id, opts.tenantId ?? null);
+    const credentials = this.mergeCredentials(row, credentialsRaw);
     const encrypted = this.encryptCredentials(credentials);
     const retiringHours = this.conf().paymentCredentialRetiringHours;
     row.previousCredentialsCiphertext = row.credentialsCiphertext || null;
@@ -280,6 +440,10 @@ export class PaymentConfigService implements OnModuleInit {
     row.keyFingerprint = encrypted.keyFingerprint;
     row.rotatedAt = new Date();
     if (row.enabled) row.status = "retiring";
+    row.lastTestOk = null;
+    row.lastTestFingerprint = "";
+    row.lastTestEnvironment = null;
+    row.lastTestIssues = [];
     await this.configs.save(row);
     await this.audit.record({
       actor: opts.actor,
@@ -297,7 +461,10 @@ export class PaymentConfigService implements OnModuleInit {
     return this.toPublicView(row);
   }
 
-  async testMetadata(id: string): Promise<{
+  async testMetadata(
+    id: string,
+    tenantId: string | null = null,
+  ): Promise<{
     ok: boolean;
     issues: string[];
     capabilities: ProviderCapabilities;
@@ -306,10 +473,16 @@ export class PaymentConfigService implements OnModuleInit {
     providerId: string;
     environment: string;
   }> {
-    const row = await this.requireRow(id);
+    const row = await this.requireRow(id, tenantId);
     const adapter = this.adapterFor(row.providerId);
     const decrypted = this.decryptForAdapter(row);
     const health = await adapter.healthCheck(decrypted, { remote: true });
+    row.lastTestOk = health.ok;
+    row.lastTestedAt = new Date();
+    row.lastTestIssues = health.issues;
+    row.lastTestFingerprint = health.ok ? row.credentialFingerprint : "";
+    row.lastTestEnvironment = health.ok ? row.environment : null;
+    await this.configs.save(row);
     return {
       ok: health.ok,
       issues: health.issues,
@@ -374,7 +547,40 @@ export class PaymentConfigService implements OnModuleInit {
   }
 
   async listEnabledRows(): Promise<PaymentProviderConfigEntity[]> {
+    const mode = this.conf().paymentDeploymentMode;
+    if (mode === "platform") {
+      return this.configs.find({
+        where: { enabled: true, tenantId: IsNull() },
+        order: { priority: "ASC" },
+      });
+    }
     return this.configs.find({ where: { enabled: true }, order: { priority: "ASC" } });
+  }
+
+  private mergeCredentials(
+    row: PaymentProviderConfigEntity,
+    credentialsRaw: unknown,
+  ): GenericCredentials {
+    const incoming = assertGenericCredentials(credentialsRaw);
+    return assertProviderCredentials(row.providerId, {
+      ...this.storedCredentials(row),
+      ...incoming,
+    });
+  }
+
+  private storedCredentials(row: PaymentProviderConfigEntity): GenericCredentials {
+    if (!row.credentialsCiphertext) return {};
+    try {
+      return JSON.parse(
+        decryptPaymentSecrets(row.credentialsCiphertext, this.masterKeyBuffer()),
+      ) as GenericCredentials;
+    } catch {
+      return {};
+    }
+  }
+
+  private credentialPublic(row: PaymentProviderConfigEntity): Record<string, string> {
+    return publicCredentialFields(this.storedCredentials(row));
   }
 
   private credentialsOrEmpty(providerId: ProviderId, raw: unknown): GenericCredentials {
@@ -401,10 +607,26 @@ export class PaymentConfigService implements OnModuleInit {
     };
   }
 
-  private async requireRow(id: string): Promise<PaymentProviderConfigEntity> {
+  private async requireRow(
+    id: string,
+    tenantId: string | null = null,
+  ): Promise<PaymentProviderConfigEntity> {
     const row = await this.configs.findOne({ where: { id } });
-    if (!row)
+    if (!row || (row.tenantId ?? null) !== tenantId) {
       throw new EntitlementException("NOT_FOUND", `Payment provider config ${id} not found`);
+    }
     return row;
   }
+}
+
+function relationCode(error: unknown): string | undefined {
+  if (!error || typeof error !== "object" || !("code" in error)) return undefined;
+  const code = (error as { code?: unknown }).code;
+  return typeof code === "string" ? code : undefined;
+}
+
+function isMissingRelation(error: unknown): boolean {
+  if (relationCode(error) === "42P01") return true;
+  if (!error || typeof error !== "object" || !("driverError" in error)) return false;
+  return relationCode((error as { driverError?: unknown }).driverError) === "42P01";
 }

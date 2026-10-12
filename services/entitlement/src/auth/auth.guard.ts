@@ -12,7 +12,14 @@ import { EntitlementException } from "../common/errors";
 import type { EntitlementConfig } from "../config/entitlement.config";
 import type { AuthPrincipal } from "./auth.types";
 import { REQUEST_ID_KEY, REQUEST_PRINCIPAL_KEY } from "./auth.types";
-import { IS_PUBLIC_KEY, REQUIRES_ADMIN_KEY, REQUIRES_PARTNER_SCOPES_KEY } from "./decorators";
+import { catalogScopeFromScopes } from "../common/catalog-scope";
+import {
+  IS_PUBLIC_KEY,
+  REQUIRES_ADMIN_KEY,
+  REQUIRES_CATALOG_ACCESS_KEY,
+  REQUIRES_PARTNER_SCOPES_KEY,
+  REQUIRES_TENANT_COMMERCE_KEY,
+} from "./decorators";
 
 type AuthedRequest = {
   headers: Record<string, string | string[] | undefined>;
@@ -91,6 +98,32 @@ export class AuthGuard implements CanActivate {
         conf.adminScopes.some((s) => principal.scopes.includes(s));
       if (!ok) {
         throw new EntitlementException("FORBIDDEN", "Admin or service credential required");
+      }
+      return true;
+    }
+
+    const needsCatalog = this.reflector.getAllAndOverride<boolean>(REQUIRES_CATALOG_ACCESS_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (needsCatalog) {
+      const scope = catalogScopeFromScopes(principal);
+      if (scope.kind === "products" && scope.productCodes.length === 0) {
+        throw new EntitlementException("FORBIDDEN", "Catalog scope required");
+      }
+      return true;
+    }
+
+    const needsTenant = this.reflector.getAllAndOverride<boolean>(REQUIRES_TENANT_COMMERCE_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (needsTenant) {
+      const tenantOk =
+        principal.scopes.includes("entitlement:tenant-commerce") &&
+        Boolean(principal.organizationId);
+      if (!tenantOk) {
+        throw new EntitlementException("FORBIDDEN", "Tenant commerce scope required");
       }
       return true;
     }
@@ -199,6 +232,20 @@ export class AuthGuard implements CanActivate {
   }
 }
 
+/** Logto User roles that imply Entitlement Control Console admin (see identity seed). */
+const ADMIN_ROLE_NAMES = new Set(["super_admin", "platform_admin"]);
+
+function rolesFromPayload(payload: Record<string, unknown>): string[] {
+  const raw = payload.roles;
+  if (Array.isArray(raw)) {
+    return raw.filter((r): r is string => typeof r === "string" && Boolean(r));
+  }
+  if (typeof raw === "string" && raw.trim()) {
+    return raw.split(/[,\s]+/).filter(Boolean);
+  }
+  return [];
+}
+
 function principalFromPayload(payload: Record<string, unknown>): AuthPrincipal {
   const sub = typeof payload.sub === "string" ? payload.sub : null;
   if (!sub) {
@@ -217,15 +264,21 @@ function principalFromPayload(payload: Record<string, unknown>): AuthPrincipal {
         ? (payload.scopes as string[]).join(" ")
         : "";
   const scopes = scopeStr.split(/\s+/).filter(Boolean);
+  const roles = rolesFromPayload(payload);
   const orgId =
     (typeof payload.org_id === "string" && payload.org_id) ||
     (typeof payload.orgId === "string" && payload.orgId) ||
     null;
-  const isAdmin = scopes.some((s) => s.includes("entitlement:admin"));
+  // Prefer API resource scope; also accept seeded Logto roles when JWT customizer
+  // injects `roles` but role→scope binding was missing on the IdP (staging 403).
+  const isAdmin =
+    scopes.some((s) => s.includes("entitlement:admin")) ||
+    roles.some((r) => ADMIN_ROLE_NAMES.has(r));
   return {
     subjectId: sub,
     kind: isAdmin ? "admin" : "user",
-    scopes,
+    scopes:
+      isAdmin && !scopes.includes("entitlement:admin") ? [...scopes, "entitlement:admin"] : scopes,
     organizationId: orgId,
   };
 }

@@ -6,6 +6,7 @@
 
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { dirname, isAbsolute, join } from "node:path";
+import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -36,21 +37,20 @@ const BUILTIN_ALLOWLIST = [
   "139.com",
 ];
 
-const BUILTIN_BLOCKLIST = [
-  "mailinator.com",
-  "guerrillamail.com",
-  "guerrillamail.net",
-  "10minutemail.com",
-  "tempmail.com",
-  "temp-mail.org",
-  "yopmail.com",
-  "trashmail.com",
-  "sharklasers.com",
-  "getnada.com",
-  "maildrop.cc",
-  "discard.email",
-  "mailnesia.com",
-];
+/** Keep in sync with auth-react `register-field-limits.ts`. */
+export const REGISTER_FIELD_LIMITS = {
+  emailMin: 6,
+  emailMax: 64,
+  usernameMin: 3,
+  usernameMax: 20,
+  passwordMin: 8,
+  passwordMax: 32,
+  codeLength: 6,
+};
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const USERNAME_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const CODE_RE = /^\d{6}$/;
 
 function parseList(raw, fallback) {
   if (raw == null || (typeof raw === "string" && !raw.trim())) return [...fallback];
@@ -74,10 +74,17 @@ function parseList(raw, fallback) {
 }
 
 function normalizeMode(raw) {
-  const key = String(raw || "allowlist").trim().toLowerCase();
-  if (key === "off" || key === "false" || key === "0" || key === "disabled") return "off";
+  const key = String(raw ?? "").trim().toLowerCase();
+  if (key === "allowlist" || key === "allow") return "allowlist";
   if (key === "blocklist" || key === "deny" || key === "blacklist") return "blocklist";
+  if (!key || key === "off" || key === "false" || key === "0" || key === "disabled") return "off";
   return "allowlist";
+}
+
+function finiteNonNegative(raw, fallback) {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) return fallback;
+  return n;
 }
 
 export function resolvePolicyFilePath(env = process.env) {
@@ -127,25 +134,24 @@ export function loadRegisterAbuseConfig(env = process.env) {
   const blockFromEnv = env.AUTH_REGISTER_EMAIL_BLOCKLIST;
   const ipFromEnv = env.AUTH_REGISTER_IP_DAILY_LIMIT;
   const codeFromEnv = env.AUTH_REGISTER_CODE_IP_HOURLY_LIMIT;
+  const cooldownFromEnv = env.AUTH_REGISTER_CODE_COOLDOWN_SEC;
 
   return {
-    emailMode: normalizeMode(modeFromEnv ?? f.mode ?? "allowlist"),
+    emailMode: normalizeMode(modeFromEnv ?? f.mode ?? "off"),
     allowlist: parseList(
       allowFromEnv != null && String(allowFromEnv).trim() !== "" ? allowFromEnv : f.allowlist,
       BUILTIN_ALLOWLIST,
     ),
     blocklist: parseList(
       blockFromEnv != null && String(blockFromEnv).trim() !== "" ? blockFromEnv : f.blocklist,
-      BUILTIN_BLOCKLIST,
+      [],
     ),
     ipDailyLimit: Math.max(
       0,
       Number(ipFromEnv ?? f.ipDailyLimit ?? 5),
     ),
-    codeHourlyLimit: Math.max(
-      0,
-      Number(codeFromEnv ?? f.codeHourlyLimit ?? 10),
-    ),
+    codeHourlyLimit: finiteNonNegative(codeFromEnv ?? f.codeHourlyLimit, 10),
+    codeCooldownSec: finiteNonNegative(cooldownFromEnv ?? f.codeCooldownSec, 120),
     enabled: env.AUTH_REGISTER_ABUSE_GUARD !== "0",
     policyFile: file?.filePath || resolvePolicyFilePath(env),
     policyLoaded: Boolean(file),
@@ -160,6 +166,7 @@ export function publicRegisterPolicy(config) {
     blocklist: config.blocklist,
     ipDailyLimit: config.ipDailyLimit,
     codeHourlyLimit: config.codeHourlyLimit,
+    codeCooldownSec: config.codeCooldownSec,
     enabled: config.enabled,
   };
 }
@@ -182,12 +189,15 @@ export function emailDomain(email) {
 }
 
 export function evaluateRegisterEmail(email, config) {
-  const domain = emailDomain(email);
-  if (!domain || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
+  const value = String(email || "").trim();
+  const domain = emailDomain(value);
+  if (
+    !domain ||
+    value.length < REGISTER_FIELD_LIMITS.emailMin ||
+    value.length > REGISTER_FIELD_LIMITS.emailMax ||
+    !EMAIL_RE.test(value)
+  ) {
     return { ok: false, reason: "invalid" };
-  }
-  if (config.blocklist.includes(domain)) {
-    return { ok: false, reason: "disposable", domain };
   }
   if (config.emailMode === "off" || config.emailMode === "blocklist") {
     return { ok: true, domain };
@@ -196,6 +206,96 @@ export function evaluateRegisterEmail(email, config) {
     return { ok: false, reason: "not_allowed", domain };
   }
   return { ok: true, domain };
+}
+
+function fieldInvalid(field, message) {
+  return {
+    status: 422,
+    body: {
+      error: "register_field_invalid",
+      field,
+      message,
+    },
+  };
+}
+
+function checkUsername(value) {
+  const username = String(value || "").trim();
+  if (
+    username.length < REGISTER_FIELD_LIMITS.usernameMin ||
+    username.length > REGISTER_FIELD_LIMITS.usernameMax ||
+    !USERNAME_RE.test(username)
+  ) {
+    return fieldInvalid(
+      "username",
+      "Username must be 3–20 characters and start with a letter or underscore.",
+    );
+  }
+  return null;
+}
+
+function checkPassword(value) {
+  const password = String(value ?? "");
+  if (
+    password.length < REGISTER_FIELD_LIMITS.passwordMin ||
+    password.length > REGISTER_FIELD_LIMITS.passwordMax
+  ) {
+    return fieldInvalid("password", "Password must be 8–32 characters.");
+  }
+  return null;
+}
+
+function checkCode(value) {
+  if (!CODE_RE.test(String(value || "").trim())) {
+    return fieldInvalid("code", "Verification code must be 6 digits.");
+  }
+  return null;
+}
+
+/**
+ * Length and shape checks for register Experience writes.
+ * @returns {null | { status: number, body: object }}
+ */
+export function inspectRegisterFields({ method, pathname, bodyText }) {
+  if (method !== "POST" || !bodyText) return null;
+  const path = String(pathname || "").replace(/\/$/, "") || "/";
+  let json = null;
+  try {
+    json = JSON.parse(bodyText);
+  } catch {
+    return null;
+  }
+  if (!json || typeof json !== "object") return null;
+
+  const isCode = path.endsWith("/verification/verification-code");
+  const isVerify = path.endsWith("/verification/verification-code/verify");
+  const isPasswordIdentity = path.endsWith("/verification/new-password-identity");
+  const isProfile = path.endsWith("/profile");
+
+  if (isCode || isVerify) {
+    const event = json.interactionEvent;
+    if (event && event !== "Register") return null;
+    const email = json?.identifier?.value;
+    if (!email) return null;
+    const decision = evaluateRegisterEmail(email, { emailMode: "off", allowlist: [] });
+    if (!decision.ok) {
+      return fieldInvalid("email", "Enter a valid email address (6–64 characters).");
+    }
+    if (isVerify) return checkCode(json.code);
+    return null;
+  }
+
+  if (isPasswordIdentity) {
+    const username = json?.identifier?.value;
+    return checkUsername(username) || checkPassword(json.password);
+  }
+
+  if (isProfile) {
+    if (json.type === "username") return checkUsername(json.value);
+    if (json.type === "password") return checkPassword(json.value);
+  }
+
+  return null;
 }
 
 function dayKey(ip) {
@@ -252,6 +352,115 @@ export function createIpQuotaStore() {
 /**
  * @returns {null | { status: number, body: object, headers?: Record<string,string> }}
  */
+/**
+ * Per-email resend gap for register verification codes.
+ * In-memory — single node. Multi-replica deploys should move this to Redis.
+ */
+/**
+ * Connect middleware for local IdP proxies that do not pass through Auth Gateway.
+ * Same 120s per-email gap as `inspectRegisterAbuse`.
+ * @param {{ cooldownSec?: number }} [options]
+ */
+export function registerCodeCooldownMiddleware(options = {}) {
+  const cooldowns = createEmailCodeCooldownStore();
+  const cooldownSec = options.cooldownSec ?? 120;
+  return function registerCodeCooldown(req, res, next) {
+    const path = String(req.url || "").split("?")[0].replace(/\/$/, "");
+    const watchesRegisterBody =
+      path.endsWith("/verification/verification-code") ||
+      path.endsWith("/verification/verification-code/verify") ||
+      path.endsWith("/verification/new-password-identity") ||
+      path.endsWith("/profile");
+    if (req.method !== "POST" || !watchesRegisterBody) {
+      next();
+      return;
+    }
+    const chunks = [];
+    req.on("data", (chunk) => {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+    req.on("error", (err) => next(err));
+    req.on("end", () => {
+      const buf = Buffer.concat(chunks);
+      const fields = inspectRegisterFields({
+        method: "POST",
+        pathname: path,
+        bodyText: buf.toString("utf8"),
+      });
+      if (fields) {
+        res.statusCode = fields.status;
+        res.setHeader("content-type", "application/json; charset=utf-8");
+        res.setHeader("cache-control", "no-store");
+        res.end(JSON.stringify(fields.body));
+        return;
+      }
+      const blocked = cooldownDecision(buf, cooldowns, cooldownSec);
+      if (blocked) {
+        res.statusCode = 429;
+        res.setHeader("content-type", "application/json; charset=utf-8");
+        res.setHeader("cache-control", "no-store");
+        res.setHeader("retry-after", String(blocked.retryAfterSec));
+        res.end(JSON.stringify(blocked.body));
+        return;
+      }
+      const stream = Readable.from(buf);
+      req.pipe = stream.pipe.bind(stream);
+      next();
+    });
+  };
+}
+
+function cooldownDecision(buf, cooldowns, cooldownSec) {
+  let json = null;
+  try {
+    json = JSON.parse(buf.toString("utf8"));
+  } catch {
+    return null;
+  }
+  const event = json?.interactionEvent;
+  if (event && event !== "Register") return null;
+  if (json?.identifier?.type && json.identifier.type !== "email") return null;
+  const email = json?.identifier?.value;
+  if (!email || cooldownSec <= 0) return null;
+  const left = cooldowns.remainingSec(email);
+  if (left > 0) {
+    return {
+      retryAfterSec: left,
+      body: {
+        error: "register_code_cooldown",
+        message: "Wait before requesting another verification code for this email.",
+        retryAfterSec: left,
+      },
+    };
+  }
+  cooldowns.arm(email, cooldownSec);
+  return null;
+}
+
+export function createEmailCodeCooldownStore() {
+  /** @type {Map<string, number>} */
+  const untilByEmail = new Map();
+  return {
+    /** @param {string} email */
+    remainingSec(email, now = Date.now()) {
+      const key = String(email || "").trim().toLowerCase();
+      const until = untilByEmail.get(key);
+      if (!until || until <= now) {
+        if (until) untilByEmail.delete(key);
+        return 0;
+      }
+      return Math.max(1, Math.ceil((until - now) / 1000));
+    },
+    /** @param {string} email @param {number} cooldownSec */
+    arm(email, cooldownSec, now = Date.now()) {
+      if (cooldownSec <= 0) return;
+      const key = String(email || "").trim().toLowerCase();
+      if (!key) return;
+      untilByEmail.set(key, now + cooldownSec * 1000);
+    },
+  };
+}
+
 export function inspectRegisterAbuse({
   method,
   pathname,
@@ -259,7 +468,10 @@ export function inspectRegisterAbuse({
   ip,
   config,
   quotas,
+  cooldowns,
 }) {
+  const fields = inspectRegisterFields({ method, pathname, bodyText });
+  if (fields) return fields;
   if (!config.enabled) return null;
   const path = pathname.replace(/\/$/, "") || "/";
   const isExperienceRoot = path === "/api/experience" || path.endsWith("/api/experience");
@@ -293,10 +505,23 @@ export function inspectRegisterAbuse({
               error: "register_email_rejected",
               reason: decision.reason,
               message:
-                decision.reason === "disposable"
-                  ? "Disposable email addresses are not allowed"
+                decision.reason === "invalid"
+                  ? "Enter a valid email address (6–64 characters)."
                   : "Email domain is not allowed for self-registration",
               domain: decision.domain,
+            },
+          };
+        }
+        const cooldownSec = config.codeCooldownSec ?? 120;
+        const left = cooldowns?.remainingSec(email) ?? 0;
+        if (cooldownSec > 0 && left > 0) {
+          return {
+            status: 429,
+            headers: { "retry-after": String(left) },
+            body: {
+              error: "register_code_cooldown",
+              message: "Wait before requesting another verification code for this email.",
+              retryAfterSec: left,
             },
           };
         }
@@ -323,6 +548,8 @@ export function inspectRegisterAbuse({
           },
         };
       }
+      const cooldownSec = config.codeCooldownSec ?? 120;
+      if (email && cooldownSec > 0) cooldowns?.arm(email, cooldownSec);
     }
     return null;
   }

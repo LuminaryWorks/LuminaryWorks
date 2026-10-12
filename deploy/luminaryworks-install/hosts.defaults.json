@@ -30,8 +30,8 @@
     {
       "id": "vistaremote",
       "label": "VistaRemote",
-      "host": "vistaremote.vistacast.dev",
-      "note": "没有独立主域名。必须挂在 vistacast.dev 下（本次 DNS：vistaremote.vistacast.dev）。不要写成 vistaremote.dev。品牌文档里的官网是 remote.vistacast.dev，以你实际解析为准。"
+      "host": "remote-app.vistacast.dev",
+      "note": "没有独立主域名。挂在 vistacast.dev 下一层：remote-app / remote-admin / remote-api。官网是 remote.vistacast.dev。"
     },
     {
       "id": "syncrobrain",

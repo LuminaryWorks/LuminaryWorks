@@ -1,19 +1,24 @@
 {
   "app": {
     "title": "LuminaryWorks Consola de control",
-    "subtitle": "Los administradores de clientes mantienen el pago, el catálogo y los pedidos aquí. Esta no es la consola de administración de Logto.",
-    "notLogtoAdmin": "Logto Admin Console permanece en el puerto de administración de identidad. Esta aplicación solo llama a las API de administración de derechos."
+    "subtitle": "Los administradores de clientes mantienen el pago, el catálogo y los pedidos aquí. Esta no es la consola de administración de Logto."
   },
   "nav": {
     "overview": "Descripción general",
     "catalog": "Catalogar",
-    "providers": "Verificar",
+    "providers": "Canales de pago",
     "orders": "Órdenes",
     "cleanup": "Limpieza de prueba",
     "legal": "Legal y auditoría",
     "capacity": "Capacidad",
     "logout": "desconectar",
-    "language": "Idioma"
+    "language": "Idioma",
+    "groupCommerce": "Comercio",
+    "groupTrust": "Confianza",
+    "groupPlatform": "Plataforma",
+    "skip": "Saltar al contenido",
+    "collapse": "Contraer",
+    "expand": "Expandir"
   },
   "auth": {
     "title": "Inicio de sesión del operador",
@@ -26,9 +31,8 @@
     "reauth": "La sesión expiró. Inicia sesión nuevamente.",
     "termsLead": "He leído y acepto las",
     "termsAnd": "y",
-    "platformTerms": "LuminaryWorks Términos",
-    "productTerms": "Términos de la consola de control",
-    "privacy": "política de privacidad"
+    "terms": "Acuerdo de usuario",
+    "privacy": "Política de privacidad"
   },
   "errors": {
     "code": "código de error",
@@ -63,7 +67,11 @@
     "ticket": "Boleto",
     "amount": "Cantidad (unidades menores)",
     "status": "Estado",
-    "actions": "Comportamiento"
+    "actions": "Comportamiento",
+    "id": "ID",
+    "version": "Versión",
+    "previous": "Anterior",
+    "next": "Siguiente"
   },
   "confirm": {
     "title": "Confirmar acción destructiva",
@@ -81,7 +89,14 @@
   "overview": {
     "title": "Descripción general",
     "entitlement": "Servicio de derechos",
-    "identityBoundary": "Límite de autenticación: OIDC PKCE (sin secreto de cliente del navegador). Los tokens de acceso deben incluir el recurso https://entitlement.luminaryworks.dev y el derecho de alcance: admin. Logto Admin en :3002 es una aplicación diferente."
+    "identityBoundary": "Límite de autenticación: OIDC PKCE (sin secreto de cliente del navegador). Los tokens de acceso deben incluir el recurso https://entitlement.luminaryworks.dev y el derecho de alcance: admin. Logto Admin en :3002 es una aplicación diferente.",
+    "service": "Entitlement",
+    "ready": "Listo",
+    "shortcuts": "Accesos",
+    "addChannel": "Canales de pago",
+    "openCatalog": "Abrir catálogo",
+    "openOrders": "Abrir pedidos",
+    "paymentsDisabled": "Los pagos están desactivados en este despliegue. Use licencias, concesiones y permisos."
   },
   "catalog": {
     "title": "Revisiones del catálogo",
@@ -89,11 +104,19 @@
     "invalidJson": "Las ofertas JSON no son válidas",
     "notes": "Notas",
     "createDraft": "Crear borrador",
-    "copyPublished": "Copiar ofertas publicadas"
+    "copyPublished": "Copiar ofertas publicadas",
+    "sku": "SKU",
+    "product": "Producto",
+    "plan": "Plan",
+    "interval": "Intervalo",
+    "currency": "Moneda",
+    "amount": "Importe",
+    "market": "Mercado",
+    "publishPreview": "Ofertas de este borrador",
+    "advancedJson": "JSON avanzado"
   },
   "providers": {
-    "title": "Verificar",
-    "lead": "El administrador del cliente de implementación mantiene el proceso de pago aquí: qué canales de pago están abiertos y la configuración comercial de cada canal. Las credenciales guardadas no se vuelven a mostrar. Pruebe y luego habilítelo. Las páginas de membresía de productos solo enumeran los canales habilitados.",
+    "title": "Canales de pago",
     "providerId": "Proveedor",
     "environment": "Ambiente",
     "merchantId": "ID de comerciante/tienda",
@@ -128,7 +151,9 @@
       "doerflow_credit": "DoerFlow moneda estable",
       "manual": "Confirmación manual",
       "mock": "simulacro de caja de arena",
-      "contract": "Contrato empresarial"
+      "contract": "Contrato empresarial",
+      "polar": "Polar",
+      "paddle": "Paddle"
     },
     "fields": {
       "apiKey": "tecla API",
@@ -162,7 +187,22 @@
       "serviceKey": "clave de servicio",
       "merchantAccount": "cuenta mercantil",
       "asset": "Activo de moneda estable (opcional)",
-      "chainId": "Identificación de cadena"
+      "chainId": "Identificación de cadena",
+      "apiKeyId": "Id de clave CDP",
+      "apiKeySecret": "Secreto de clave CDP",
+      "successRedirectUrl": "URL de éxito (opcional)",
+      "failRedirectUrl": "URL de fallo (opcional)",
+      "okxSecretKey": "Secreto de API",
+      "passphrase": "Passphrase de API",
+      "payTo": "Dirección de cobro",
+      "network": "Red (eip155:…)",
+      "resourceBaseUrl": "URL pública del servicio de pago",
+      "posToken": "Token POS",
+      "notificationUrl": "URL de aviso (HTTPS)",
+      "merchantToken": "Token del comercio (opcional, para reembolsos)",
+      "privateKey": "Clave de firma (opcional, para reembolsos)",
+      "polarProductId": "UUID del producto",
+      "priceId": "Id de precio (pri_…)"
     },
     "capabilities": {
       "checkout": "Verificar",
@@ -179,7 +219,92 @@
     "createTitle": "Agregar un canal",
     "detailTitle": "Detalles del canal",
     "enabled": "Activado",
-    "disabled": "No habilitado"
+    "disabled": "No habilitado",
+    "testOk": "Prueba correcta",
+    "testFailed": "Prueba fallida",
+    "testResult": "Última prueba",
+    "retiringUntil": "Las credenciales anteriores caducan el",
+    "saveMetadata": "Guardar metadatos",
+    "rotateAction": "Rotar credenciales",
+    "saved": "Metadatos guardados",
+    "rotated": "Credenciales rotadas. Vuelva a probar antes de activar.",
+    "tested": "Prueba terminada",
+    "view": "Ver",
+    "statusActive": "Activo",
+    "statusDisabled": "Desactivado",
+    "statusRetiring": "En rotación",
+    "envSandbox": "Sandbox",
+    "envLive": "Producción",
+    "wizardTitle": "Añadir canal de pago",
+    "stepProvider": "Proveedor",
+    "stepRoute": "Enrutado",
+    "stepCredentials": "Credenciales",
+    "stepReview": "Revisión",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "retestRequired": "La activación permanece bloqueada hasta que una prueba correcta coincida con las credenciales y el entorno actuales.",
+    "liveConfirm": "Confirmo que el contrato de comercio en producción está activo.",
+    "facts": "Datos del canal",
+    "catalogLede": "Esta es la caja de LuminaryWorks. Las compras, como membresías y cursos de BlockyEdu, usan los canales que actives aquí, en este orden. Un canal sigue apagado hasta que está configurado y la prueba pasa. Un despliegue privado usa la misma lista.",
+    "configure": "Configurar",
+    "moveUp": "Subir",
+    "moveDown": "Bajar",
+    "statusUnconfigured": "Sin configurar",
+    "statusNeedsTest": "Prueba pendiente",
+    "statusTestFailed": "Prueba fallida",
+    "statusReady": "Prueba superada",
+    "statusEnabledRetest": "Activo, hay que volver a probar",
+    "extensionTitle": "Un canal que no está en la lista",
+    "extensionBody": "No se pega una pasarela nueva en esta consola. Un canal aparece solo cuando un adaptador implementa el cobro, la verificación de firma, la consulta y el reembolso. Creem, Polar y Paddle ya están así y siguen apagados hasta que los configures y pruebes.",
+    "setupLede": "Completa solo los datos esenciales del comercio. El mercado y la moneda ya vienen rellenos. Guarda, prueba y activa solo si la prueba pasa.",
+    "saveConfig": "Guardar configuración",
+    "configSaved": "Configuración guardada. Ejecuta la prueba antes de activar.",
+    "testLocked": "Guarda la configuración antes de probar.",
+    "enableNeedsSetup": "La activación sigue apagada hasta que la prueba pase para estas credenciales y este entorno.",
+    "missingFields": "Completa los campos obligatorios: {{fields}}",
+    "routingRequired": "El mercado y la moneda son obligatorios.",
+    "instructions": "Instrucciones para el comprador",
+    "instructionsHint": "Se muestran cuando el comprador paga offline o por contrato.",
+    "advancedRouting": "Mercado y moneda",
+    "routingEncapsulated": "Estos valores siguen al canal. Cámbialos solo si este despliegue vende en otro mercado.",
+    "orderSaved": "Orden de la caja guardado",
+    "showMore": "Más canales incluidos ({{count}})",
+    "hideMore": "Ocultar canales extra",
+    "envHint": "Usa sandbox hasta que la prueba pase. Cambia a live solo con el contrato de producción activo.",
+    "credentialKept": "Deja los secretos en blanco para conservar las credenciales guardadas.",
+    "columns": {
+      "order": "Orden",
+      "channel": "Canal",
+      "status": "Estado",
+      "enable": "Activar",
+      "configure": "Configurar",
+      "environment": "Entorno"
+    },
+    "tags": {
+      "cn": "China continental",
+      "global": "Global",
+      "crypto": "Cripto",
+      "mor": "Comercio de registro",
+      "offline": "Offline"
+    },
+    "hints": {
+      "alipay_f2f": "QR de Alipay. App id, clave privada del comercio y clave pública de Alipay.",
+      "paypal": "PayPal Checkout. Client id REST, secreto e id del webhook.",
+      "wechat_pay_v3": "WeChat Pay API v3. Id de comercio, clave APIv3, clave privada y certificado de la plataforma.",
+      "unionpay_quickpass": "UnionPay QuickPass. Id de comercio, clave de firma y las URL de retorno del contrato.",
+      "stripe_checkout": "Checkout alojado en Stripe. Secret key y secreto de firma del webhook. El número de tarjeta se queda en Stripe.",
+      "coinbase_commerce": "Coinbase Business. Id y secreto de la clave CDP, y secreto del webhook. Oculto para compradores en China continental.",
+      "okx_onchain": "Checkout on-chain de OKX. API key, secreto, passphrase, dirección, red y la URL HTTPS pública de este servicio.",
+      "bitpay": "Factura BitPay. Token POS y URL HTTPS de aviso. Los reembolsos también piden el token del comercio y la clave de firma.",
+      "doerflow_credit": "Libro de stablecoin DoerFlow. Service key, secreto del webhook, cuenta del comercio e id de cadena. Oculto en China continental.",
+      "creem": "Creem cobra como comercio de registro, con impuestos. API key, secreto del webhook e id de producto.",
+      "polar": "Comercio de registro Polar. Token de la organización, secreto del webhook y UUID del producto.",
+      "paddle": "Comercio de registro Paddle Billing. API key, secreto del webhook e id de precio (pri_).",
+      "manual": "Sin secreto de pago. Escribe las instrucciones offline, prueba y después activa. Un operador confirma cada pago.",
+      "mock": "Simulador de laboratorio. No forma parte del catálogo de caja.",
+      "contract": "Sin secreto de pago. El comprador paga por contrato o pedido. Un operador confirma cada pago."
+    },
+    "dragHandle": "Arrastrar para reordenar"
   },
   "orders": {
     "title": "Pedidos y pagos",
@@ -191,7 +316,14 @@
     "grossAmount": "Bruto (unidades menores)",
     "taxAmount": "Impuesto (unidades menores)",
     "netAmount": "Neto (unidades menores)",
-    "doerflowCreditNote": "DoerFlow el crédito carga un saldo del libro mayor de una moneda estable en cadena. No hay ningún redireccionamiento de pago alojado."
+    "doerflowCreditNote": "DoerFlow el crédito carga un saldo del libro mayor de una moneda estable en cadena. No hay ningún redireccionamiento de pago alojado.",
+    "rawPayload": "Carga sin procesar",
+    "event": {
+      "order": "Pedido",
+      "attempt": "Intento",
+      "refund": "Reembolso"
+    },
+    "operator": "Acciones del operador"
   },
   "cleanup": {
     "title": "Trabajos de limpieza de prueba"
@@ -200,13 +332,42 @@
     "title": "Aceptaciones legales y auditoría",
     "acceptances": "Aceptaciones de políticas",
     "audit": "Registro de auditoría",
-    "docs": "Documentos legales"
+    "docs": "Documentos legales",
+    "raw": "JSON sin procesar"
   },
   "capacity": {
     "title": "Capacidad",
     "entitlementReady": "Preparación para los derechos",
     "doris": "piloto doris",
     "storage": "Almacenamiento interno de objetos",
-    "noHa": "Esta página informa únicamente sobre sondas configuradas. No afirma alta disponibilidad."
+    "noHa": "Esta página informa únicamente sobre sondas configuradas. No afirma alta disponibilidad.",
+    "reachable": "Accesible",
+    "unreachable": "Inaccesible"
+  },
+  "lang": {
+    "short": {
+      "en": "EN",
+      "zhCN": "简中",
+      "zhTW": "繁中",
+      "ja": "日",
+      "ko": "한",
+      "pt": "PT",
+      "nl": "NL",
+      "it": "IT",
+      "es": "ES",
+      "fr": "FR"
+    },
+    "full": {
+      "en": "English",
+      "zhCN": "简体中文",
+      "zhTW": "繁體中文",
+      "ja": "日本語",
+      "ko": "한국어",
+      "pt": "Português",
+      "nl": "Nederlands",
+      "it": "Italiano",
+      "es": "Español",
+      "fr": "Français"
+    }
   }
 }

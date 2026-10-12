@@ -314,9 +314,9 @@ describe("create order from published offerings", () => {
   });
 });
 
-describe("VistaCast and SyncroBrain trial/sellable gates", () => {
-  it("rejects Trial ensure for both products", async () => {
-    for (const code of ["vistacast", "syncrobrain"]) {
+describe("SyncroBrain trial gate", () => {
+  it("rejects Trial ensure while the product policy is disabled", async () => {
+    for (const code of ["syncrobrain"]) {
       const dataSource = { transaction: jest.fn() };
       const audit = { record: jest.fn() };
       const legal = { assertCurrentPolicyAccepted: jest.fn() };

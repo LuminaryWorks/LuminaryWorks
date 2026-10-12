@@ -90,11 +90,25 @@ function memoryDataSource() {
 describe("DoerFlow integration entitlement catalog", () => {
   const doerflow = CATALOG.find((product) => product.code === "doerflow");
 
-  it("keeps trialPolicy disabled, sellable, and only Pro/Ultra/Enterprise", () => {
+  it("grants a 7-day Pro trial with lifetime task and API pools", () => {
     expect(doerflow).toBeDefined();
-    expect(doerflow?.trialPolicy).toBe("disabled");
+    expect(doerflow?.trialPolicy).toBe("standard_7d");
     expect(doerflow?.sellable).toBe(true);
-    expect(doerflow?.plans.map((plan) => plan.code)).toEqual(["pro", "ultra", "enterprise"]);
+    expect(doerflow?.plans.map((plan) => plan.code)).toEqual([
+      "trial",
+      "pro",
+      "ultra",
+      "enterprise",
+    ]);
+    const trial = doerflow?.plans.find((plan) => plan.code === "trial");
+    expect(trial?.features.find((row) => row.code === "task.publish.monthly")).toBeUndefined();
+    expect(trial?.features.find((row) => row.code === "api.request.monthly")).toBeUndefined();
+    expect(trial?.features.find((row) => row.code === "task.publish.trial")?.limitValue).toBe(
+      DOERFLOW_PLAN_LIMITS.trial.taskPublish,
+    );
+    expect(trial?.features.find((row) => row.code === "api.request.trial")?.limitValue).toBe(
+      DOERFLOW_PLAN_LIMITS.trial.apiRequest,
+    );
   });
 
   it("adds provider register, event submit, and monthly event/API quotas", () => {
@@ -206,12 +220,14 @@ describe("DoerFlow integration entitlement catalog", () => {
       "vistacast",
       "syncrobrain",
     ]);
-    for (const code of ["vistacast", "syncrobrain"] as const) {
-      const product = CATALOG.find((row) => row.code === code);
-      expect(product?.trialPolicy).toBe("disabled");
-      expect(product?.sellable).toBe(false);
-      expect(product?.plans.some((plan) => plan.code === "trial")).toBe(false);
-    }
+    const vistacast = CATALOG.find((row) => row.code === "vistacast");
+    expect(vistacast?.trialPolicy).toBe("standard_7d");
+    expect(vistacast?.sellable).toBe(false);
+    expect(vistacast?.plans.some((plan) => plan.code === "trial")).toBe(true);
+    const syncrobrain = CATALOG.find((row) => row.code === "syncrobrain");
+    expect(syncrobrain?.trialPolicy).toBe("disabled");
+    expect(syncrobrain?.sellable).toBe(false);
+    expect(syncrobrain?.plans.some((plan) => plan.code === "trial")).toBe(false);
     expect(SAMPLE_BUNDLE.productCodes).toEqual(["dataluminary", "blockyedu", "vistaremote"]);
     expect(SAMPLE_BUNDLE.productCodes).not.toContain("vistacast");
     expect(SAMPLE_BUNDLE.productCodes).not.toContain("syncrobrain");
@@ -220,10 +236,8 @@ describe("DoerFlow integration entitlement catalog", () => {
     expect(SEED_OFFERINGS.every((row) => row.planCode === "pro" || row.planCode === "ultra")).toBe(
       true,
     );
-    const vistacast = CATALOG.find((row) => row.code === "vistacast");
     expect(vistacast?.features.some((row) => row.code === "broadcast.publish")).toBe(false);
     expect(vistacast?.features.some((row) => row.code === "camera.limit")).toBe(true);
-    const syncrobrain = CATALOG.find((row) => row.code === "syncrobrain");
     expect(syncrobrain?.features.some((row) => row.code === "session.host")).toBe(false);
     expect(syncrobrain?.features.some((row) => row.code === "device.limit")).toBe(true);
   });
@@ -264,7 +278,7 @@ describe("applyCatalog idempotency", () => {
 
     const products = ds.repos.get(ProductEntity)?.items ?? [];
     const doerflow = products.find((product) => product.code === "doerflow");
-    expect(doerflow?.trialPolicy).toBe("disabled");
+    expect(doerflow?.trialPolicy).toBe("standard_7d");
     expect(doerflow?.sellable).toBe(true);
     expect(products.find((product) => product.code === "vistacast")?.sellable).toBe(false);
     expect(products.find((product) => product.code === "syncrobrain")?.sellable).toBe(false);

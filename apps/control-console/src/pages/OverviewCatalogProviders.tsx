@@ -1,27 +1,23 @@
+import { ReloadOutlined } from "@ant-design/icons";
 import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+  Alert,
+  Button,
+  Card,
+  Col,
+  Form,
+  Input,
+  Row,
+  Space,
+  Table,
+  Tag,
+  Typography,
+} from "antd";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+import { requestConfirm } from "../components/ConfirmDialog";
 import { ErrorBanner, PageHeader } from "../components/ErrorBanner";
 import type { createApiClient } from "../lib/api-client";
-import { rememberWriteOnlySecret } from "../lib/api-client";
-import {
-  buildCredentialsObject,
-  capabilityKeys,
-  DEFAULT_PROVIDER_CAPABILITIES,
-  defaultCurrencies,
-  defaultMarketScopes,
-  PAYMENT_ENVIRONMENTS,
-  PAYMENT_PROVIDER_IDS,
-  type ProviderCapabilities,
-  type ProviderId,
-  providerCnRestriction,
-  STRUCTURED_CREDENTIAL_FIELDS,
-} from "../lib/payment-providers";
 import type { RuntimeConfig } from "../lib/runtime-config";
 
 type Api = ReturnType<typeof createApiClient>;
@@ -56,32 +52,201 @@ export function OverviewPage({
     void load();
   }, [load]);
 
+  const paymentsOff = runtime.paymentsMode === "disabled";
   return (
     <section>
       <PageHeader
         title={t("overview.title")}
+        lead={t("app.subtitle")}
         actions={
-          <button type="button" onClick={() => void load()}>
+          <Button icon={<ReloadOutlined />} onClick={() => void load()}>
             {t("common.refresh")}
-          </button>
+          </Button>
         }
       />
       <ErrorBanner error={error} />
-      <p>{t("app.subtitle")}</p>
-      <p className="muted">{t("overview.identityBoundary")}</p>
-      <h2>{t("overview.entitlement")}</h2>
-      <pre>
-        {JSON.stringify(
-          { version, ready, audience: runtime.audience },
-          null,
-          2,
+      {paymentsOff ? (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message={t("overview.paymentsDisabled")}
+        />
+      ) : null}
+      <Row gutter={[16, 16]}>
+        <Col xs={24} md={12}>
+          <Card
+            title={t("overview.service")}
+            extra={
+              <Tag color={ready ? "success" : "default"}>
+                {ready ? t("overview.ready") : t("common.loading")}
+              </Tag>
+            }
+          >
+            <p>{String(version?.service ?? runtime.audience)}</p>
+            <Typography.Paragraph type="secondary">
+              {t("overview.identityBoundary")}
+            </Typography.Paragraph>
+          </Card>
+        </Col>
+        {paymentsOff ? null : (
+          <Col xs={24} md={6}>
+            <Link to="/commerce/channels">
+              <Card hoverable>
+                <strong>{t("overview.addChannel")}</strong>
+              </Card>
+            </Link>
+          </Col>
         )}
-      </pre>
+        <Col xs={24} md={6}>
+          <Link to="/catalog">
+            <Card hoverable>
+              <strong>{t("overview.openCatalog")}</strong>
+            </Card>
+          </Link>
+        </Col>
+        {paymentsOff ? null : (
+          <Col xs={24} md={6}>
+            <Link to="/orders">
+              <Card hoverable>
+                <strong>{t("overview.openOrders")}</strong>
+              </Card>
+            </Link>
+          </Col>
+        )}
+      </Row>
     </section>
   );
 }
 
-export function CatalogPage({ api }: { api: Api }) {
+type OfferingDraft = {
+  sku: string;
+  productCode: string;
+  planCode: string;
+  interval: string;
+  currency: string;
+  amountMinor: number;
+  market: string;
+  active?: boolean;
+};
+
+function shortId(id: string): string {
+  if (id.length <= 12) return id;
+  return `${id.slice(0, 8)}…`;
+}
+
+function offeringPreview(raw: string): string[] {
+  try {
+    const rows = JSON.parse(raw) as OfferingDraft[];
+    if (!Array.isArray(rows)) return [];
+    return rows.map(
+      (row) =>
+        `${row.sku} ${row.productCode} ${row.amountMinor} ${row.currency} ${row.market}`,
+    );
+  } catch {
+    return [];
+  }
+}
+
+function CatalogDraftEditor({
+  draft,
+  platformAdmin,
+  onChange,
+  onSave,
+  onPublish,
+}: {
+  draft: string;
+  platformAdmin: boolean;
+  onChange: (next: string) => void;
+  onSave: () => void;
+  onPublish: () => void;
+}) {
+  const { t } = useTranslation();
+  let rows: OfferingDraft[] = [];
+  try {
+    const parsed = JSON.parse(draft) as unknown;
+    if (Array.isArray(parsed)) rows = parsed as OfferingDraft[];
+  } catch {
+    rows = [];
+  }
+  const write = (next: OfferingDraft[]) =>
+    onChange(JSON.stringify(next, null, 2));
+  return (
+    <article className="panel-card section-gap">
+      <h2>{t("catalog.publishPreview")}</h2>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>{t("catalog.sku")}</th>
+              <th>{t("catalog.product")}</th>
+              <th>{t("catalog.plan")}</th>
+              <th>{t("catalog.interval")}</th>
+              <th>{t("catalog.market")}</th>
+              <th>{t("catalog.currency")}</th>
+              <th className="num">{t("catalog.amount")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.sku}>
+                <td>{row.sku}</td>
+                <td>{row.productCode}</td>
+                <td>{row.planCode}</td>
+                <td>{row.interval}</td>
+                <td>{row.market}</td>
+                <td>{row.currency}</td>
+                <td className="num">
+                  <input
+                    aria-label={t("catalog.amount")}
+                    type="number"
+                    value={row.amountMinor}
+                    onChange={(event) => {
+                      const next = rows.map((item) =>
+                        item.sku === row.sku
+                          ? { ...item, amountMinor: Number(event.target.value) }
+                          : item,
+                      );
+                      write(next);
+                    }}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="row-actions section-gap">
+        <button type="button" className="btn" onClick={onSave}>
+          {t("common.save")}
+        </button>
+        <button type="button" className="btn btn-primary" onClick={onPublish}>
+          {t("common.publish")}
+        </button>
+      </div>
+      {platformAdmin ? (
+        <details>
+          <summary>{t("catalog.advancedJson")}</summary>
+          <textarea
+            value={draft}
+            onChange={(event) => onChange(event.target.value)}
+            rows={12}
+            spellCheck={false}
+            aria-label={t("catalog.advancedJson")}
+          />
+        </details>
+      ) : null}
+    </article>
+  );
+}
+
+export function CatalogPage({
+  api,
+  platformAdmin,
+}: {
+  api: Api;
+  platformAdmin: boolean;
+}) {
   const { t } = useTranslation();
   const [error, setError] = useState<unknown>(null);
   const [items, setItems] = useState<Record<string, unknown>[]>([]);
@@ -129,10 +294,10 @@ export function CatalogPage({ api }: { api: Api }) {
     <section>
       <PageHeader title={t("catalog.title")} />
       <ErrorBanner error={error} />
-      <form
-        className="stack"
-        onSubmit={(ev) => {
-          ev.preventDefault();
+      <Form
+        layout="inline"
+        style={{ marginBottom: 16 }}
+        onFinish={() => {
           void api
             .post("/v1/admin/catalog/revisions", {
               notes,
@@ -143,663 +308,127 @@ export function CatalogPage({ api }: { api: Api }) {
             .catch(setError);
         }}
       >
-        <label>
-          {t("catalog.notes")}
-          <input value={notes} onChange={(e) => setNotes(e.target.value)} />
-        </label>
-        <button type="submit">{t("catalog.createDraft")}</button>
-      </form>
-      <ul className="list">
-        {items.map((row) => (
-          <li key={String(row.id)}>
-            <button
-              type="button"
-              onClick={() => void openRevision(String(row.id)).catch(setError)}
-            >
-              v{String(row.version)} {String(row.status)} {String(row.id)}
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                import("../lib/confirm")
-                  .then(({ confirmDestructive }) =>
-                    confirmDestructive(t("confirm.publish")).then((ok) => {
-                      if (!ok) return;
-                      return api
-                        .post(`/v1/admin/catalog/revisions/${row.id}/publish`)
-                        .then(load);
-                    }),
-                  )
-                  .catch(setError)
-              }
-            >
-              {t("common.publish")}
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                import("../lib/confirm")
-                  .then(({ confirmDestructive }) =>
-                    confirmDestructive(t("confirm.rollback")).then((ok) => {
-                      if (!ok) return;
-                      return api
-                        .post(`/v1/admin/catalog/revisions/${row.id}/rollback`)
-                        .then(load);
-                    }),
-                  )
-                  .catch(setError)
-              }
-            >
-              {t("common.rollback")}
-            </button>
-          </li>
-        ))}
-      </ul>
-      {selected ? (
-        <>
-          <label>
-            {t("catalog.draftJson")}
-            <textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              rows={18}
-              spellCheck={false}
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => void saveDraft().catch(setError)}
-          >
-            {t("common.save")}
-          </button>
-        </>
-      ) : null}
-    </section>
-  );
-}
-
-function Field({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string;
-  htmlFor: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="field">
-      <label htmlFor={htmlFor}>{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function parseJsonObject(raw: string): Record<string, unknown> {
-  const value = JSON.parse(raw || "{}") as unknown;
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("JSON object required");
-  }
-  return value as Record<string, unknown>;
-}
-
-function parseCsvList(raw: string): string[] {
-  return raw
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function isEnabled(value: unknown): boolean {
-  return value === true || value === "true";
-}
-
-function ProviderCnBadge({ providerId }: { providerId: string }) {
-  const { t } = useTranslation();
-  const restriction = providerCnRestriction(providerId);
-  if (!restriction) return null;
-  const key =
-    restriction === "crypto_cn_blocked"
-      ? "providers.cnCryptoBlocked"
-      : "providers.cnHostedBlocked";
-  return <span className="badge badge-warn">{t(key)}</span>;
-}
-
-function ProviderCapabilitiesList({
-  capabilities,
-}: {
-  capabilities: ProviderCapabilities;
-}) {
-  const { t } = useTranslation();
-  return (
-    <ul className="cap-list">
-      {capabilityKeys(capabilities).map((key) => (
-        <li key={key}>
-          <span className="badge">{t(`providers.capabilities.${key}`)}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function StructuredCredentialFields({
-  providerId,
-  values,
-  onChange,
-  idPrefix,
-}: {
-  providerId: ProviderId;
-  values: Record<string, string>;
-  onChange: (next: Record<string, string>) => void;
-  idPrefix: string;
-}) {
-  const { t } = useTranslation();
-  const fields = STRUCTURED_CREDENTIAL_FIELDS[providerId];
-  if (!fields) return null;
-  return (
-    <>
-      {fields.map((field) => (
-        <Field
-          key={field.key}
-          label={t(field.labelKey)}
-          htmlFor={`${idPrefix}-${field.key}`}
-        >
-          <input
-            id={`${idPrefix}-${field.key}`}
-            type={field.secret ? "password" : "text"}
-            value={values[field.key] ?? ""}
-            onChange={(event) =>
-              onChange({ ...values, [field.key]: event.target.value })
-            }
-            autoComplete="off"
-            required={!field.optional}
-          />
-        </Field>
-      ))}
-    </>
-  );
-}
-
-export function ProvidersPage({ api }: { api: Api }) {
-  const { t } = useTranslation();
-  const [error, setError] = useState<unknown>(null);
-  const [items, setItems] = useState<Record<string, unknown>[]>([]);
-  const [credentialsJson, setCredentialsJson] = useState("");
-  const [credentialValues, setCredentialValues] = useState<
-    Record<string, string>
-  >({});
-  const [metadata, setMetadata] = useState("{}");
-  const [providerId, setProviderId] = useState<ProviderId>("mock");
-  const [environment, setEnvironment] =
-    useState<(typeof PAYMENT_ENVIRONMENTS)[number]>("sandbox");
-  const [merchantId, setMerchantId] = useState("");
-  const [marketScopes, setMarketScopes] = useState("GLOBAL");
-  const [currencies, setCurrencies] = useState("USD");
-  const [priority, setPriority] = useState("10");
-  const [selected, setSelected] = useState("");
-  const [selectedDetail, setSelectedDetail] = useState<Record<
-    string,
-    unknown
-  > | null>(null);
-
-  const structuredFields = STRUCTURED_CREDENTIAL_FIELDS[providerId];
-
-  const load = useCallback(async () => {
-    const data = await api.get<{ items: Record<string, unknown>[] }>(
-      "/v1/admin/payments/providers",
-    );
-    setItems(data.items ?? []);
-  }, [api]);
-
-  useEffect(() => {
-    void load().catch(setError);
-  }, [load]);
-
-  useEffect(() => {
-    setMarketScopes(defaultMarketScopes(providerId).join(", "));
-    setCurrencies(defaultCurrencies(providerId).join(", "));
-  }, [providerId]);
-
-  useEffect(() => {
-    if (!selected) {
-      setSelectedDetail(null);
-      return;
-    }
-    void api
-      .get<Record<string, unknown>>(`/v1/admin/payments/providers/${selected}`)
-      .then((detail) => {
-        setSelectedDetail(detail);
-        setMetadata(JSON.stringify(detail.metadata ?? {}, null, 2));
-      })
-      .catch(setError);
-  }, [api, selected]);
-
-  const selectedCapabilities = useMemo(() => {
-    const caps = selectedDetail?.capabilities;
-    if (caps && typeof caps === "object") {
-      return caps as ProviderCapabilities;
-    }
-    return null;
-  }, [selectedDetail]);
-
-  function resolveCredentials(): Record<string, string> | undefined {
-    if (structuredFields) {
-      const built = buildCredentialsObject(providerId, credentialValues);
-      return Object.keys(built).length > 0 ? built : undefined;
-    }
-    if (!credentialsJson.trim()) return undefined;
-    const parsed = parseJsonObject(credentialsJson) as Record<string, string>;
-    rememberWriteOnlySecret(parsed);
-    return parsed;
-  }
-
-  function resolveRotateCredentials(): Record<string, string> | undefined {
-    const detailProvider = String(selectedDetail?.providerId ?? "");
-    const rotateFields =
-      STRUCTURED_CREDENTIAL_FIELDS[detailProvider as ProviderId];
-    if (rotateFields) {
-      const built = buildCredentialsObject(
-        detailProvider as ProviderId,
-        credentialValues,
-      );
-      if (Object.keys(built).length === 0) return undefined;
-      rememberWriteOnlySecret(built);
-      return built;
-    }
-    if (!credentialsJson.trim()) return undefined;
-    const parsed = parseJsonObject(credentialsJson) as Record<string, string>;
-    rememberWriteOnlySecret(parsed);
-    return parsed;
-  }
-
-  return (
-    <section>
-      <PageHeader title={t("providers.title")} />
-      <p className="muted">{t("providers.lead")}</p>
-      <p className="muted">{t("providers.enabledFromApi")}</p>
-      <ErrorBanner error={error} />
-      <div className="providers-layout">
-        <section className="panel-card" aria-labelledby="configured-channels">
-          <h2 id="configured-channels">{t("providers.configured")}</h2>
-          {items.length === 0 ? (
-            <p className="muted empty-note">{t("providers.empty")}</p>
-          ) : (
-            <div className="provider-grid">
-              {items.map((row) => {
-                const id = String(row.id);
-                const enabled = isEnabled(row.enabled);
-                const scopes = Array.isArray(row.marketScopes)
-                  ? (row.marketScopes as string[]).join(", ")
-                  : "";
-                return (
-                  <article
-                    key={id}
-                    className={
-                      selected === id
-                        ? "provider-card is-selected"
-                        : "provider-card"
+        <Form.Item label={t("catalog.notes")}>
+          <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </Form.Item>
+        <Form.Item>
+          <Button type="primary" htmlType="submit">
+            {t("catalog.createDraft")}
+          </Button>
+        </Form.Item>
+      </Form>
+      <Table
+        rowKey={(row) => String(row.id)}
+        dataSource={items}
+        pagination={false}
+        locale={{ emptyText: t("common.empty") }}
+        columns={[
+          {
+            title: t("common.version"),
+            dataIndex: "version",
+            render: (version) => `v${String(version ?? "")}`,
+          },
+          {
+            title: t("common.status"),
+            dataIndex: "status",
+            render: (status) => {
+              const value = String(status ?? "");
+              return (
+                <Tag color={value === "published" ? "success" : "default"}>
+                  {value}
+                </Tag>
+              );
+            },
+          },
+          {
+            title: t("common.id"),
+            dataIndex: "id",
+            render: (id) => {
+              const value = String(id);
+              return <span title={value}>{shortId(value)}</span>;
+            },
+          },
+          {
+            title: t("common.actions"),
+            render: (_, row) => {
+              const id = String(row.id);
+              return (
+                <Space>
+                  <Button
+                    size="small"
+                    onClick={() => void openRevision(id).catch(setError)}
+                  >
+                    {t("common.details")}
+                  </Button>
+                  <Button
+                    size="small"
+                    type="primary"
+                    onClick={() =>
+                      import("../lib/confirm")
+                        .then(({ confirmDestructive }) =>
+                          confirmDestructive(t("confirm.publish")).then(
+                            (ok) => {
+                              if (!ok) return;
+                              return api
+                                .post(
+                                  `/v1/admin/catalog/revisions/${row.id}/publish`,
+                                )
+                                .then(load);
+                            },
+                          ),
+                        )
+                        .catch(setError)
                     }
                   >
-                    <header>
-                      <h3>{t(`providers.names.${String(row.providerId)}`)}</h3>
-                      <span className="env">
-                        {String(row.environment ?? "")}
-                      </span>
-                    </header>
-                    <div className="provider-meta">
-                      <span className={enabled ? "badge badge-on" : "badge"}>
-                        {enabled
-                          ? t("providers.enabled")
-                          : t("providers.disabled")}
-                      </span>
-                      <span className="badge">{String(row.status ?? "")}</span>
-                      <ProviderCnBadge providerId={String(row.providerId)} />
-                    </div>
-                    <p className="provider-facts">
-                      <span>
-                        {t("providers.marketScopes")} <b>{scopes || "—"}</b>
-                      </span>
-                      <span>
-                        {t("providers.lastFour")}{" "}
-                        <b>{String(row.credentialLastFour ?? "—")}</b>
-                      </span>
-                    </p>
-                    <div className="row-actions">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelected(id);
-                          setCredentialValues({});
-                          setCredentialsJson("");
-                        }}
-                      >
-                        {t("common.details")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void api
-                            .post(`/v1/admin/payments/providers/${row.id}/test`)
-                            .then(load)
-                            .catch(setError)
-                        }
-                      >
-                        {t("common.test")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          import("../lib/confirm")
-                            .then(({ confirmDestructive }) =>
-                              confirmDestructive(t("confirm.enable"), {
-                                typed: t("confirm.typeEnable"),
-                              }).then((ok) => {
-                                if (!ok) return;
-                                return api.post(
-                                  `/v1/admin/payments/providers/${row.id}/enable`,
-                                );
-                              }),
-                            )
-                            .then(load)
-                            .catch(setError)
-                        }
-                      >
-                        {t("common.enable")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          import("../lib/confirm")
-                            .then(({ confirmDestructive }) =>
-                              confirmDestructive(t("confirm.disable")).then(
-                                (ok) => {
-                                  if (!ok) return;
-                                  return api.post(
-                                    `/v1/admin/payments/providers/${row.id}/disable`,
-                                  );
-                                },
-                              ),
-                            )
-                            .then(load)
-                            .catch(setError)
-                        }
-                      >
-                        {t("common.disable")}
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
-        </section>
-        <form
-          className="panel-card create-grid"
-          onSubmit={(ev) => {
-            ev.preventDefault();
-            void (async () => {
-              const credentials = resolveCredentials();
-              const body = {
-                providerId,
-                environment,
-                merchantId: merchantId.trim() || undefined,
-                marketScopes: parseCsvList(marketScopes),
-                currencies: parseCsvList(currencies),
-                priority: Number(priority) || undefined,
-                metadata: parseJsonObject(metadata),
-                credentials,
-                enabled: false,
-              };
-              if (credentials) rememberWriteOnlySecret(credentials);
-              await api.post("/v1/admin/payments/providers", body);
-              setCredentialsJson("");
-              setCredentialValues({});
-              await load();
-            })().catch(setError);
-          }}
-        >
-          <h2 className="span-2">{t("providers.createTitle")}</h2>
-          <Field label={t("providers.providerId")} htmlFor="provider-id">
-            <select
-              id="provider-id"
-              value={providerId}
-              onChange={(event) =>
-                setProviderId(event.target.value as ProviderId)
-              }
-            >
-              {PAYMENT_PROVIDER_IDS.map((id) => (
-                <option key={id} value={id}>
-                  {t(`providers.names.${id}`)}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field
-            label={t("providers.environment")}
-            htmlFor="provider-environment"
-          >
-            <select
-              id="provider-environment"
-              value={environment}
-              onChange={(event) =>
-                setEnvironment(
-                  event.target.value as (typeof PAYMENT_ENVIRONMENTS)[number],
-                )
-              }
-            >
-              {PAYMENT_ENVIRONMENTS.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field
-            label={t("providers.merchantId")}
-            htmlFor="provider-merchant-id"
-          >
-            <input
-              id="provider-merchant-id"
-              value={merchantId}
-              onChange={(event) => setMerchantId(event.target.value)}
-              placeholder={
-                providerId === "creem"
-                  ? t("providers.merchantIdCreemHint")
-                  : undefined
-              }
-            />
-          </Field>
-          <Field
-            label={t("providers.marketScopes")}
-            htmlFor="provider-market-scopes"
-          >
-            <input
-              id="provider-market-scopes"
-              value={marketScopes}
-              onChange={(event) => setMarketScopes(event.target.value)}
-            />
-          </Field>
-          <Field
-            label={t("providers.currencies")}
-            htmlFor="provider-currencies"
-          >
-            <input
-              id="provider-currencies"
-              value={currencies}
-              onChange={(event) => setCurrencies(event.target.value)}
-            />
-          </Field>
-          <Field label={t("providers.priority")} htmlFor="provider-priority">
-            <input
-              id="provider-priority"
-              type="number"
-              min={0}
-              value={priority}
-              onChange={(event) => setPriority(event.target.value)}
-            />
-          </Field>
-          <div className="span-2">
-            {providerCnRestriction(providerId) ? (
-              <p className="muted">
-                <ProviderCnBadge providerId={providerId} />
-              </p>
-            ) : null}
-            <p>{t("providers.capabilitiesTitle")}</p>
-            <ProviderCapabilitiesList
-              capabilities={DEFAULT_PROVIDER_CAPABILITIES[providerId]}
-            />
-          </div>
-          <div className="span-2">
-            <Field label={t("providers.metadata")} htmlFor="provider-metadata">
-              <textarea
-                id="provider-metadata"
-                value={metadata}
-                onChange={(event) => setMetadata(event.target.value)}
-                rows={4}
-              />
-            </Field>
-          </div>
-          <div className="span-2 credentials-block">
-            {structuredFields ? (
-              <>
-                <p className="muted">
-                  {t("providers.structuredCredentialsHint")}
-                </p>
-                <div className="create-grid">
-                  <StructuredCredentialFields
-                    providerId={providerId}
-                    values={credentialValues}
-                    onChange={setCredentialValues}
-                    idPrefix="create"
-                  />
-                </div>
-              </>
-            ) : (
-              <Field
-                label={t("providers.credentials")}
-                htmlFor="provider-credentials"
-              >
-                <textarea
-                  id="provider-credentials"
-                  value={credentialsJson}
-                  onChange={(event) => setCredentialsJson(event.target.value)}
-                  rows={4}
-                  autoComplete="off"
-                />
-              </Field>
-            )}
-            <p className="muted">{t("providers.credentialsHint")}</p>
-          </div>
-          <button className="span-2" type="submit">
-            {t("providers.create")}
-          </button>
-        </form>
-      </div>
-      {selected && selectedDetail ? (
-        <form
-          className="panel-card providers-detail"
-          onSubmit={(ev) => {
-            ev.preventDefault();
-            void (async () => {
-              await api.put(`/v1/admin/payments/providers/${selected}`, {
-                metadata: parseJsonObject(metadata),
-              });
-              const rotateCredentials = resolveRotateCredentials();
-              if (rotateCredentials) {
-                const ok = await import("../lib/confirm").then(
-                  ({ confirmDestructive }) =>
-                    confirmDestructive(t("confirm.rotate")),
-                );
-                if (ok) {
-                  await api.post(
-                    `/v1/admin/payments/providers/${selected}/rotate`,
-                    { credentials: rotateCredentials },
-                  );
-                }
-                setCredentialsJson("");
-                setCredentialValues({});
-              }
-              await load();
-              const detail = await api.get<Record<string, unknown>>(
-                `/v1/admin/payments/providers/${selected}`,
+                    {t("common.publish")}
+                  </Button>
+                  <Button
+                    size="small"
+                    danger
+                    onClick={() =>
+                      import("../lib/confirm")
+                        .then(({ confirmDestructive }) =>
+                          confirmDestructive(t("confirm.rollback")).then(
+                            (ok) => {
+                              if (!ok) return;
+                              return api
+                                .post(
+                                  `/v1/admin/catalog/revisions/${row.id}/rollback`,
+                                )
+                                .then(load);
+                            },
+                          ),
+                        )
+                        .catch(setError)
+                    }
+                  >
+                    {t("common.rollback")}
+                  </Button>
+                </Space>
               );
-              setSelectedDetail(detail);
-            })().catch(setError);
-          }}
-        >
-          <h2>{t("providers.detailTitle")}</h2>
-          <p className="muted">{selected}</p>
-          <dl className="detail-grid">
-            <div>
-              <dt>{t("providers.providerId")}</dt>
-              <dd>{String(selectedDetail.providerId)}</dd>
-            </div>
-            <div>
-              <dt>{t("providers.environment")}</dt>
-              <dd>{String(selectedDetail.environment ?? "")}</dd>
-            </div>
-            <div>
-              <dt>{t("providers.merchantId")}</dt>
-              <dd>{String(selectedDetail.merchantId ?? "")}</dd>
-            </div>
-            <div>
-              <dt>{t("providers.lastFour")}</dt>
-              <dd>{String(selectedDetail.credentialLastFour ?? "")}</dd>
-            </div>
-            <div>
-              <dt>{t("providers.fingerprint")}</dt>
-              <dd>{String(selectedDetail.credentialFingerprint ?? "")}</dd>
-            </div>
-            <div>
-              <dt>{t("providers.rotatedAt")}</dt>
-              <dd>{String(selectedDetail.rotatedAt ?? "")}</dd>
-            </div>
-          </dl>
-          <ProviderCnBadge providerId={String(selectedDetail.providerId)} />
-          {selectedCapabilities ? (
-            <ProviderCapabilitiesList capabilities={selectedCapabilities} />
-          ) : null}
-          <Field
-            label={t("providers.metadata")}
-            htmlFor="provider-detail-metadata"
-          >
-            <textarea
-              id="provider-detail-metadata"
-              value={metadata}
-              onChange={(event) => setMetadata(event.target.value)}
-              rows={4}
-            />
-          </Field>
-          {STRUCTURED_CREDENTIAL_FIELDS[
-            String(selectedDetail.providerId) as ProviderId
-          ] ? (
-            <>
-              <p className="muted">{t("providers.rotateStructuredHint")}</p>
-              <div className="create-grid">
-                <StructuredCredentialFields
-                  providerId={String(selectedDetail.providerId) as ProviderId}
-                  values={credentialValues}
-                  onChange={setCredentialValues}
-                  idPrefix="rotate"
-                />
-              </div>
-            </>
-          ) : (
-            <Field
-              label={t("providers.credentials")}
-              htmlFor="provider-detail-credentials"
-            >
-              <textarea
-                id="provider-detail-credentials"
-                value={credentialsJson}
-                onChange={(event) => setCredentialsJson(event.target.value)}
-                rows={6}
-                autoComplete="off"
-              />
-            </Field>
-          )}
-          <button type="submit">{t("common.save")}</button>
-        </form>
+            },
+          },
+        ]}
+      />
+      {selected ? (
+        <CatalogDraftEditor
+          draft={draft}
+          platformAdmin={platformAdmin}
+          onChange={setDraft}
+          onSave={() => void saveDraft().catch(setError)}
+          onPublish={() =>
+            void requestConfirm(t("confirm.publish"), {
+              summary: offeringPreview(draft),
+            })
+              .then((ok) => {
+                if (!ok) return;
+                return api
+                  .post(`/v1/admin/catalog/revisions/${selected}/publish`)
+                  .then(load);
+              })
+              .catch(setError)
+          }
+        />
       ) : null}
     </section>
   );

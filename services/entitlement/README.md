@@ -53,8 +53,8 @@ This service does **not** make `ai=central` production-ready. The AI Platform cu
 
 | Mode | Env | Behavior |
 |------|-----|----------|
-| `legacy` (dev) | `ENTITLEMENT_AUTH_MODE=legacy` | HS256 JWT with `ENTITLEMENT_LEGACY_JWT_SECRET` |
-| `oidc` | issuer + audience | JWKS verify Logto / OIDC access tokens |
+| `oidc` (default for Control Console) | issuer + audience | JWKS verify Logto / OIDC access tokens |
+| `legacy` | `ENTITLEMENT_AUTH_MODE=legacy` | HS256 JWT with `ENTITLEMENT_LEGACY_JWT_SECRET` only — do not use with the console SPA |
 | Service | `X-Service-Key: $ENTITLEMENT_SERVICE_API_KEY` | Internal/admin; scopes include `entitlement:admin` |
 | Partner M2M | `POST /v1/oauth/token` (`client_credentials`) | Returns `partner+jwt` Bearer; scoped `partner:*` |
 

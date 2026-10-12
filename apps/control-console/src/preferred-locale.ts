@@ -99,17 +99,28 @@ const PORTUGUESE_ZONES = new Set([
 ]);
 
 /** Map one BCP 47 tag onto a supported locale, or null when it is unsupported. */
-export function matchSupportedLocale(tag: string | null | undefined): PreferredLocale | null {
+export function matchSupportedLocale(
+  tag: string | null | undefined,
+): PreferredLocale | null {
   const raw = (tag ?? "").trim().replace(/_/g, "-").toLowerCase();
   if (!raw) return null;
   if (PREFERRED_SET.has(raw)) return raw as PreferredLocale;
 
-  if (raw === "zh" || raw === "zh-cn" || raw === "zh-hans" || raw.startsWith("zh-hans") || raw.startsWith("zh-cn")) {
+  if (
+    raw === "zh" ||
+    raw === "zh-cn" ||
+    raw === "zh-hans" ||
+    raw.startsWith("zh-hans") ||
+    raw.startsWith("zh-cn")
+  ) {
     return "zh-CN";
   }
   if (
     raw.startsWith("zh") &&
-    (raw.includes("tw") || raw.includes("hk") || raw.includes("mo") || raw.includes("hant"))
+    (raw.includes("tw") ||
+      raw.includes("hk") ||
+      raw.includes("mo") ||
+      raw.includes("hant"))
   ) {
     return "zh-TW";
   }
@@ -121,7 +132,9 @@ export function matchSupportedLocale(tag: string | null | undefined): PreferredL
 }
 
 /** Guess a locale from an IANA time zone. Ambiguous zones return null. */
-export function localeFromTimeZone(timeZone: string | null | undefined): PreferredLocale | null {
+export function localeFromTimeZone(
+  timeZone: string | null | undefined,
+): PreferredLocale | null {
   const zone = (timeZone ?? "").trim().toLowerCase();
   if (!zone) return null;
   if (MAINLAND_CHINA_ZONES.has(zone)) return "zh-CN";
@@ -145,7 +158,9 @@ export interface PreferredLocaleInput {
   timeZone?: string | null;
 }
 
-export function resolvePreferredLocale(input: PreferredLocaleInput = {}): PreferredLocale {
+export function resolvePreferredLocale(
+  input: PreferredLocaleInput = {},
+): PreferredLocale {
   const stored = matchSupportedLocale(input.stored);
   if (stored) return stored;
   for (const language of input.languages ?? []) {
@@ -156,7 +171,10 @@ export function resolvePreferredLocale(input: PreferredLocaleInput = {}): Prefer
 }
 
 /** Browser signals. Empty during SSR so the server does not use its own time zone. */
-export function readClientLocaleSignals(): { languages: string[]; timeZone?: string } {
+export function readClientLocaleSignals(): {
+  languages: string[];
+  timeZone?: string;
+} {
   if (typeof navigator === "undefined") return { languages: [] };
   const languages: string[] = [];
   const seen = new Set<string>();
@@ -176,7 +194,9 @@ export function readClientLocaleSignals(): { languages: string[]; timeZone?: str
 }
 
 /** Saved value, then browser language, then time zone, then English. */
-export function detectClientPreferredLocale(stored?: string | null): PreferredLocale {
+export function detectClientPreferredLocale(
+  stored?: string | null,
+): PreferredLocale {
   const signals = readClientLocaleSignals();
   return resolvePreferredLocale({
     stored,

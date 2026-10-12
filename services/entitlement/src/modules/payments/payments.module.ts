@@ -6,6 +6,7 @@ import { GrantEntity } from "../../database/entities/grant.entity";
 import { OrderEntity } from "../../database/entities/order.entity";
 import { OutboxEventEntity } from "../../database/entities/outbox-event.entity";
 import { PaymentAttemptEntity } from "../../database/entities/payment-attempt.entity";
+import { PaymentCatalogOrderEntity } from "../../database/entities/payment-catalog-order.entity";
 import { PaymentProviderConfigEntity } from "../../database/entities/payment-provider-config.entity";
 import { ProviderWebhookEventEntity } from "../../database/entities/provider-webhook-event.entity";
 import { RefundEntity } from "../../database/entities/refund.entity";
@@ -30,6 +31,7 @@ import { defaultBitpayMerchantFactory } from "./bitpay-sdk";
 import { defaultOkxX402Factory } from "./okx-x402-sdk";
 import { PaymentAdminController, PaymentMethodsController } from "./payment-admin.controller";
 import { PaymentConfigAdminController } from "./payment-config-admin.controller";
+import { PaymentTenantController } from "./payment-tenant.controller";
 import { PaymentConfigService } from "./payment-config.service";
 import { PaymentGeoService } from "./payment-geo.service";
 import { PaymentWebhookController } from "./payment-webhook.controller";
@@ -58,6 +60,7 @@ import { WechatPayV3PaymentAdapter } from "./wechat-pay-v3.adapter";
     AuditModule,
     TypeOrmModule.forFeature([
       PaymentProviderConfigEntity,
+      PaymentCatalogOrderEntity,
       PaymentAttemptEntity,
       ProviderWebhookEventEntity,
       RefundEntity,
@@ -70,6 +73,7 @@ import { WechatPayV3PaymentAdapter } from "./wechat-pay-v3.adapter";
   ],
   controllers: [
     PaymentConfigAdminController,
+    PaymentTenantController,
     PaymentAdminController,
     PaymentMethodsController,
     PaymentWebhookController,

@@ -159,6 +159,34 @@ export function assertGenericCredentials(value: unknown): GenericCredentials {
 
 const SECRET_KEY = /secret|password|private|pem|token|credential|key|cert/i;
 
+/** Fields the setup form may show again. Private keys and secrets stay encrypted. */
+const HIDDEN_CREDENTIAL_KEYS = new Set([
+  "apiKey",
+  "apiKeySecret",
+  "apiV3Key",
+  "clientSecret",
+  "merchantPrivateKey",
+  "merchantToken",
+  "passphrase",
+  "platformCertPem",
+  "posToken",
+  "privateKey",
+  "secretKey",
+  "serviceKey",
+  "webhookSecret",
+]);
+
+export function publicCredentialFields(credentials: GenericCredentials): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(credentials)) {
+    if (HIDDEN_CREDENTIAL_KEYS.has(key)) continue;
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    out[key] = trimmed;
+  }
+  return out;
+}
+
 export function redactPaymentSecrets<T>(value: T): T {
   return redactUnknown(value) as T;
 }
