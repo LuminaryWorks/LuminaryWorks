@@ -129,6 +129,16 @@ export async function ensureRemoteLogtoAdmin(options) {
   const secret = parsePsqlScalar(secretOut);
   if (!secret) throw new Error("missing admin-tenant application m-admin");
 
+  // m-admin client_credentials requires Host to match ADMIN_ENDPOINT. Calling
+  // http://127.0.0.1:3002 from inside the container fails with oidc.invalid_client
+  // when ADMIN_ENDPOINT is the public https://logto.* URL (private / OVH).
+  const adminEndpoint = String(
+    options.adminEndpoint ||
+      process.env.IDENTITY_ADMIN_ENDPOINT ||
+      parsePsqlScalar(ssh(options, `docker exec ${identity} printenv ADMIN_ENDPOINT`)) ||
+      "http://127.0.0.1:3002",
+  ).replace(/\/$/, "");
+
   const tmp = mkdtempSync(join(tmpdir(), "lw-id-admin-"));
   try {
     const secretFile = join(tmp, "m-admin.secret");
@@ -139,6 +149,7 @@ export async function ensureRemoteLogtoAdmin(options) {
     ssh(options, `docker cp /tmp/logto-admin-in-container.cjs ${identity}:/tmp/logto-admin-in-container.cjs`);
     const envFlags = [
       `-e M_ADMIN_SECRET_FILE=/tmp/m-admin.secret`,
+      `-e IDENTITY_ADMIN_ENDPOINT=${shellQuote(adminEndpoint)}`,
       `-e LW_LOGTO_ADMIN_USERNAME=${shellQuote(options.adminUsername)}`,
       `-e LW_LOGTO_ADMIN_PASSWORD=${shellQuote(options.adminPassword)}`,
     ];
@@ -236,6 +247,7 @@ export async function initRemoteIdentity(options) {
   }
 
   console.log("[remote-identity] ensuring Logto Admin Console operator (inside identity container)");
+  // Fail closed: private installs must not leave Admin Console on Welcome/Create account.
   await ensureRemoteLogtoAdmin({
     ...options,
     adminUsername,

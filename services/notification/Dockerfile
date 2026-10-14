@@ -1,0 +1,32 @@
+# Node 24 is the ecosystem baseline; .npmrc sets engine-strict=true, so an
+# older base image fails `pnpm install` outright.
+# Build context: services/notification (same pattern as entitlement).
+FROM node:24-alpine AS deps
+WORKDIR /app
+ARG NPM_REGISTRY=https://registry.npmjs.org
+ENV NPM_CONFIG_REGISTRY=${NPM_REGISTRY}
+ENV COREPACK_NPM_REGISTRY=${NPM_REGISTRY}
+COPY package.json pnpm-lock.yaml* .npmrc pnpm-workspace.yaml* ./
+RUN corepack enable \
+    && pnpm config set registry "$NPM_REGISTRY" \
+    && pnpm config set dangerouslyAllowAllBuilds true \
+    && (pnpm install --frozen-lockfile || pnpm install)
+
+FROM node:24-alpine AS build
+WORKDIR /app
+ARG NPM_REGISTRY=https://registry.npmjs.org
+ENV NPM_CONFIG_REGISTRY=${NPM_REGISTRY}
+ENV COREPACK_NPM_REGISTRY=${NPM_REGISTRY}
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+# Avoid corepack re-fetch (flaky in CI/VPS); nest CLI is already in node_modules.
+RUN ./node_modules/.bin/nest build
+
+FROM node:24-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/node_modules ./node_modules
+COPY package.json ./
+EXPOSE 3055
+CMD ["node", "dist/main.js"]

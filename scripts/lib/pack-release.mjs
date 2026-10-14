@@ -13,6 +13,7 @@ export const CONTROL_PLANE_PACK_IMAGES = [
   "luminaryworks/auth-gateway:local",
   "luminaryworks/entitlement:local",
   "luminaryworks/control-console:local",
+  "luminaryworks/notification:local",
 ];
 
 export function packName({ target, platform, version }) {
