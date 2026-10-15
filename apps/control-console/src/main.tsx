@@ -2,7 +2,7 @@ import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
-import "./i18n";
+import { initConsoleI18n } from "./i18n";
 import "./styles.css";
 import { loadRuntimeConfig, type RuntimeConfig } from "./lib/runtime-config";
 
@@ -42,8 +42,10 @@ function Root() {
 
 const root = document.getElementById("root");
 if (!root) throw new Error("root element missing");
-createRoot(root).render(
-  <StrictMode>
-    <Root />
-  </StrictMode>,
-);
+void initConsoleI18n().then(() => {
+  createRoot(root).render(
+    <StrictMode>
+      <Root />
+    </StrictMode>,
+  );
+});
