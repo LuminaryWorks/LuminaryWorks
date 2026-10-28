@@ -1,5 +1,5 @@
 # Auth Gateway has no runtime dependencies — plain Node, no install step.
-FROM node:24-alpine
+FROM node:24.22.1-alpine
 
 WORKDIR /app
 ENV NODE_ENV=production
