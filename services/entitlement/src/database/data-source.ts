@@ -16,7 +16,7 @@ import { PaymentCatalogOrder1731100000000 } from "./migrations/1731100000000-Pay
 
 const url =
   process.env.ENTITLEMENT_DATABASE_URL ??
-  "postgres://entitlement:entitlement_dev@localhost:5434/entitlement";
+  "postgres://entitlement:CHANGE_ME@127.0.0.1:5433/entitlement";
 
 export default new DataSource({
   type: "postgres",

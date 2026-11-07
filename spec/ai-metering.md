@@ -2,6 +2,8 @@
 
 > **状态**：Accepted · **关联**：[ai-platform.md](./ai-platform.md) · [subscription-and-entitlement.md](./subscription-and-entitlement.md)
 
+> **2026-11 更新**：托管 credits 不再是「后期」。账本、grant、预占 / 结算、Rate Card 以 [ai-wallet-and-billing.md](./ai-wallet-and-billing.md) 为准；下表保留作历史参照，冲突处以新文为准。
+
 ## 1. 计费模式（混合）
 
 | 阶段 | 谁付钱 | 计量 |

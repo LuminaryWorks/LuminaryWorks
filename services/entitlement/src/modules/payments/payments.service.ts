@@ -26,6 +26,7 @@ import { PaymentAttemptEntity } from "../../database/entities/payment-attempt.en
 import { PaymentProviderConfigEntity } from "../../database/entities/payment-provider-config.entity";
 import { RefundEntity } from "../../database/entities/refund.entity";
 import { AuditService } from "../audit/audit.service";
+import { enqueueAiCreditRevoke } from "../orders/ai-credit-outbox";
 import { fulfillPaidOrderTx, revokeOrderEntitlements } from "../orders/order-fulfillment";
 import { BillingProfileService } from "./billing-profile.service";
 import { PaymentConfigService } from "./payment-config.service";
@@ -214,7 +215,10 @@ export class PaymentsService {
           where: { id: attempt.id },
           lock: { mode: "pessimistic_write" },
         });
-        if (lockedAttempt && (lockedAttempt.status === "created" || lockedAttempt.status === "pending")) {
+        if (
+          lockedAttempt &&
+          (lockedAttempt.status === "created" || lockedAttempt.status === "pending")
+        ) {
           lockedAttempt.status = "failed";
           await manager.save(lockedAttempt);
         }
@@ -739,6 +743,8 @@ export class PaymentsService {
       if (netRefundedCents >= locked.amountCents) {
         locked.status = "refunded";
         await revokeOrderEntitlements(manager, locked, new Date());
+        // Full refund only. A partial refund does not invent a cents→micro clawback.
+        await enqueueAiCreditRevoke(manager, locked.id);
       } else {
         locked.status = "partially_refunded";
       }

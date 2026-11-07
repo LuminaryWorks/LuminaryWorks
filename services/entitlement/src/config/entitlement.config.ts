@@ -12,6 +12,7 @@ import {
   type OrderFulfilledTargetMap,
   type TrialPurgeTargetMap,
 } from "../common/legal-policy";
+import { parseAiCreditPolicy } from "../common/ai-credit-policy";
 import { parsePublicKeyRing, type PublicKeyRing } from "../license/ed25519";
 
 export interface EntitlementConfig {
@@ -68,6 +69,13 @@ export interface EntitlementConfig {
   /** productCode → signed order.fulfilled ingress URL + HMAC secret. */
   orderFulfilledTargets: OrderFulfilledTargetMap;
   orderFulfilledTimeoutMs: number;
+  /**
+   * AI Platform internal base URL. Empty means deliverAiCredit no-ops (warn + sent)
+   * so a lab without the ai profile does not dead-letter credit events.
+   */
+  aiPlatformBaseUrl: string;
+  /** Sent as x-service-key. Required to be non-empty only when aiPlatformBaseUrl is set. */
+  aiPlatformInternalServiceKey: string;
   /** 32-byte hex/base64. Required in production when provider configs are enabled. */
   paymentConfigMasterKey?: string;
   /** Comma-separated IPs/CIDRs allowed to inject CF-IPCountry (CDN/Caddy). */
@@ -106,12 +114,14 @@ export default registerAs("entitlement", (): EntitlementConfig => {
 
   const legacyJwtSecret =
     process.env.ENTITLEMENT_LEGACY_JWT_SECRET ?? "dev-entitlement-secret-change-me";
+  // Throws on a broken map so a typo cannot boot a process that skips every grant.
+  parseAiCreditPolicy(process.env);
 
   return {
     port: Number(process.env.ENTITLEMENT_PORT ?? 3040),
     databaseUrl:
       process.env.ENTITLEMENT_DATABASE_URL ??
-      "postgres://entitlement:entitlement_dev@localhost:5434/entitlement",
+      "postgres://entitlement:CHANGE_ME@127.0.0.1:5433/entitlement",
     authMode: (process.env.ENTITLEMENT_AUTH_MODE as EntitlementConfig["authMode"]) ?? "legacy",
     issuer: process.env.ENTITLEMENT_OIDC_ISSUER ?? process.env.IDP_ISSUER,
     audience: process.env.ENTITLEMENT_OIDC_AUDIENCE ?? "https://entitlement.luminaryworks.dev",
@@ -162,6 +172,8 @@ export default registerAs("entitlement", (): EntitlementConfig => {
       process.env.ENTITLEMENT_ORDER_FULFILLED_TARGETS,
     ),
     orderFulfilledTimeoutMs: Number(process.env.ENTITLEMENT_ORDER_FULFILLED_TIMEOUT_MS ?? 15000),
+    aiPlatformBaseUrl: process.env.AI_PLATFORM_BASE_URL?.trim() ?? "",
+    aiPlatformInternalServiceKey: process.env.AI_PLATFORM_INTERNAL_SERVICE_KEY?.trim() ?? "",
     paymentConfigMasterKey: process.env.PAYMENT_CONFIG_MASTER_KEY?.trim() || undefined,
     paymentTrustedProxies: (process.env.PAYMENT_TRUSTED_PROXIES ?? "")
       .split(",")

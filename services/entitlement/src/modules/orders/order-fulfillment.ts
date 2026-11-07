@@ -1,4 +1,5 @@
 import { In, type EntityManager } from "typeorm";
+import { parseAiCreditPolicy, type AiCreditPolicy } from "../../common/ai-credit-policy";
 import {
   isBillingInterval,
   paidSubscriptionEndsAt,
@@ -17,11 +18,19 @@ import { OutboxEventEntity } from "../../database/entities/outbox-event.entity";
 import { ProductEntity } from "../../database/entities/product.entity";
 import { SubscriptionEntity } from "../../database/entities/subscription.entity";
 import { acquireTrialLifecycleLock, cancelTrialLifecycle } from "../trials/trial-lifecycle";
+import { enqueueAiCreditGrant } from "./ai-credit-outbox";
+
+type FulfilledLine = {
+  productCode: string;
+  planCode: PlanCode | null;
+  endsAt: Date | null;
+};
 
 export async function fulfillPaidOrderTx(
   manager: EntityManager,
   orderId: string,
   providerRef: string,
+  options?: { policy?: AiCreditPolicy },
 ): Promise<OrderEntity | null> {
   const locked = await manager.findOne(OrderEntity, {
     where: { id: orderId },
@@ -34,7 +43,7 @@ export async function fulfillPaidOrderTx(
   locked.providerRef = providerRef;
   await manager.save(locked);
 
-  let fulfilledProducts: Array<{ productCode: string; planCode: PlanCode | null }> = [];
+  let fulfilledProducts: FulfilledLine[] = [];
   let sku = resolveFulfilledSku(locked);
 
   if (locked.metadata?.kind === "quota_pack") {
@@ -66,7 +75,7 @@ export async function fulfillPaidOrderTx(
         revoked: false,
       }),
     );
-    fulfilledProducts = [{ productCode: pack.productCode, planCode: null }];
+    fulfilledProducts = [{ productCode: pack.productCode, planCode: null, endsAt }];
   } else {
     fulfilledProducts = await writeSubscriptionGrants(manager, locked);
   }
@@ -94,10 +103,19 @@ export async function fulfillPaidOrderTx(
         planCode: locked.planCode ?? primary.planCode,
         sku,
         paidAt,
-        products: fulfilledProducts,
+        products: fulfilledProducts.map((item) => ({
+          productCode: item.productCode,
+          planCode: item.planCode,
+        })),
       },
     }),
   );
+  await enqueueAiCreditGrant(manager, {
+    order: locked,
+    sku,
+    products: fulfilledProducts,
+    policy: options?.policy ?? parseAiCreditPolicy(process.env),
+  });
   return locked;
 }
 
@@ -115,10 +133,11 @@ function resolveFulfilledSku(locked: OrderEntity): string {
 async function writeSubscriptionGrants(
   manager: EntityManager,
   locked: OrderEntity,
-): Promise<Array<{ productCode: string; planCode: PlanCode }>> {
+): Promise<FulfilledLine[]> {
   const now = new Date();
   const interval: BillingInterval = isBillingInterval(locked.interval) ? locked.interval : "month";
   const items: Array<{ productCode: string; planCode: PlanCode }> = [];
+  const lines: FulfilledLine[] = [];
   if (locked.bundleSku) {
     const bundle = await manager.findOne(BundleEntity, {
       where: { sku: locked.bundleSku },
@@ -220,11 +239,12 @@ async function writeSubscriptionGrants(
       );
     }
 
+    lines.push({ productCode: item.productCode, planCode: item.planCode, endsAt });
     if (locked.subjectKind === "USER" && item.planCode !== "trial") {
       await cancelTrialLifecycle(manager, locked.subjectId, item.productCode);
     }
   }
-  return items;
+  return lines;
 }
 
 export async function revokeOrderEntitlements(

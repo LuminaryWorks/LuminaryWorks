@@ -1,67 +1,88 @@
-import { Body, Controller, Get, Post, Res } from "@nestjs/common";
+import { Body, Controller, Get, HttpException, Post, Req, Res, UnauthorizedException } from "@nestjs/common";
 import type { FastifyReply } from "fastify";
-import { AiGatewayService } from "./ai-gateway.service";
+import { AiGatewayService, type EphemeralSecret } from "./ai-gateway.service";
+import { AI_PRINCIPAL, type AiPrincipal, type AuthedRequest } from "./auth/auth.types";
 
 @Controller()
 export class AiGatewayController {
   constructor(private readonly ai: AiGatewayService) {}
 
-  @Get("v1/health")
-  health() {
-    return { ok: true, service: "luminary-ai-platform" };
-  }
-
   @Get("v1/providers")
-  providers() {
+  async providers(@Req() req: AuthedRequest) {
     return {
-      items: this.ai.listConnections(),
+      items: await this.ai.listConnections(principalOf(req)),
       types: ["deepseek", "doubao", "openai", "openai-compatible", "anthropic", "gemini"],
     };
   }
 
   @Post("v1/providers")
-  upsert(@Body() body: Parameters<AiGatewayService["upsertConnection"]>[0]) {
-    return this.ai.upsertConnection(body);
+  upsert(@Body() body: Parameters<AiGatewayService["upsertConnection"]>[0], @Req() req: AuthedRequest) {
+    return this.ai.upsertConnection(body, principalOf(req));
   }
 
   @Post("v1/providers/test")
-  async test(
+  test(
     @Body()
     body: {
-      ephemeral: { providerType: string; model: string; secret: string; baseUrl?: string };
+      ephemeral: EphemeralSecret;
+      subjectId?: string;
+      organizationId?: string | null;
+      productCode?: string;
     },
+    @Req() req: AuthedRequest,
   ) {
-    const result = await this.ai.complete({
-      ephemeral: body.ephemeral,
-      messages: [{ role: "user", content: "ping" }],
-      maxTokens: 8,
-    });
-    return { ok: true, model: result.model, providerType: result.providerType };
+    return this.ai.complete(
+      {
+        ephemeral: body.ephemeral,
+        messages: [{ role: "user", content: "ping" }],
+        maxTokens: 8,
+        subjectId: body.subjectId,
+        organizationId: body.organizationId,
+        productCode: body.productCode,
+      },
+      { allowEphemeral: true, surface: surfaceOf(req), principal: principalOf(req) },
+    );
   }
 
   @Post("v1/chat/complete")
-  complete(@Body() body: Parameters<AiGatewayService["complete"]>[0]) {
-    return this.ai.complete(body);
+  complete(
+    @Body() body: Parameters<AiGatewayService["complete"]>[0],
+    @Req() req: AuthedRequest,
+  ) {
+    return this.ai.complete(body, { surface: surfaceOf(req), principal: principalOf(req) });
   }
 
   @Post("v1/chat/stream")
   async stream(
-    @Body() body: Parameters<AiGatewayService["stream"]>[0],
+    @Body() body: Parameters<AiGatewayService["openStream"]>[0],
+    @Req() req: AuthedRequest,
     @Res() reply: FastifyReply,
   ) {
-    reply.raw.writeHead(200, {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    });
     try {
-      for await (const ev of this.ai.stream(body)) {
+      const events = await this.ai.openStream(body, { surface: surfaceOf(req), principal: principalOf(req) });
+      reply.raw.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      });
+      for await (const ev of events) {
         reply.raw.write(`data: ${JSON.stringify(ev)}\n\n`);
       }
     } catch (err) {
-      reply.raw.write(
-        `data: ${JSON.stringify({ type: "error", message: err instanceof Error ? err.message : String(err) })}\n\n`,
-      );
+      if (reply.raw.headersSent) {
+        reply.raw.write(
+          `data: ${JSON.stringify({ type: "error", message: err instanceof Error ? err.message : String(err) })}\n\n`,
+        );
+        reply.raw.end();
+        return;
+      }
+      const status = err instanceof HttpException ? err.getStatus() : 500;
+      const payload =
+        err instanceof HttpException
+          ? err.getResponse()
+          : { message: err instanceof Error ? err.message : String(err) };
+      reply.status(status).send(payload);
+      return;
     }
     reply.raw.end();
   }
@@ -74,41 +95,38 @@ export class AiGatewayController {
   @Post("v1/audio/transcribe")
   transcribe(
     @Body()
-    body: {
-      connectionUid?: string;
-      ephemeral?: { providerType: string; model: string; secret: string; baseUrl?: string };
-      audioBase64?: string;
-      mime?: string;
-      language?: string;
-      productCode?: string;
-      subjectId?: string;
-      routeTier?: string;
-      audioInputMs?: number;
-    },
+    body: Parameters<AiGatewayService["transcribe"]>[0],
+    @Req() req: AuthedRequest,
   ) {
-    return this.ai.transcribe(body);
+    return this.ai.transcribe(body, { surface: surfaceOf(req), principal: principalOf(req) });
   }
 
   @Post("v1/audio/synthesize")
   synthesize(
     @Body()
-    body: {
-      connectionUid?: string;
-      ephemeral?: { providerType: string; model: string; secret: string; baseUrl?: string };
-      text: string;
-      voice?: string;
-      locale?: string;
-      speed?: number;
-      productCode?: string;
-      subjectId?: string;
-      routeTier?: string;
-    },
+    body: Parameters<AiGatewayService["synthesize"]>[0],
+    @Req() req: AuthedRequest,
   ) {
-    return this.ai.synthesize(body);
+    return this.ai.synthesize(body, { surface: surfaceOf(req), principal: principalOf(req) });
   }
 
   @Get("v1/usage")
-  usage() {
-    return { items: this.ai.listUsage() };
+  usage(@Req() req: AuthedRequest) {
+    return this.ai.listUsage(principalOf(req)).then((items) => ({ items }));
   }
+}
+
+function principalOf(req: AuthedRequest): AiPrincipal {
+  const principal = req[AI_PRINCIPAL];
+  if (!principal) {
+    throw new UnauthorizedException({
+      error: { code: "AUTH_REQUIRED", message: "Authentication required" },
+    });
+  }
+  return principal;
+}
+
+function surfaceOf(req: AuthedRequest): "product" | "public" {
+  const principal = req[AI_PRINCIPAL] as AiPrincipal | undefined;
+  return principal?.surface === "public" ? "public" : "product";
 }

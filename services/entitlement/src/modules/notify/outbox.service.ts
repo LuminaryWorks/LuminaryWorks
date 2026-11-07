@@ -11,6 +11,7 @@ import type { NotifyAdapter, NotifyMessage } from "./notify-adapter";
 import { NOTIFY_ADAPTERS } from "./notify-adapter";
 import { leaseExpiresAt, nextStatusAfterFailure, OUTBOX_CLAIM_SQL } from "./outbox-claim";
 import { outboxBackoffSeconds } from "./outbox-policy";
+import { deliverAiCredit, type AiCreditFetch } from "./ai-credit-deliver";
 import { deliverOrderFulfilled, type OrderFulfilledFetch } from "./order-fulfilled";
 import { deliverTrialPurge, type TrialPurgeFetch } from "./trial-purge";
 import { trialNotifyCopy, TRIAL_LIFECYCLE_EVENT_TYPES } from "../trials/trial-lifecycle";
@@ -25,6 +26,10 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
     return { status: res.status, text: () => res.text() };
   };
   orderFulfilledFetch: OrderFulfilledFetch = async (url, init) => {
+    const res = await fetch(url, init);
+    return { status: res.status, text: () => res.text() };
+  };
+  aiCreditFetch: AiCreditFetch = async (url, init) => {
     const res = await fetch(url, init);
     return { status: res.status, text: () => res.text() };
   };
@@ -132,6 +137,15 @@ export class OutboxService implements OnModuleInit, OnModuleDestroy {
           timeoutMs: conf.trialPurgeTimeoutMs,
         });
         event.status = outcome === "canceled" ? "canceled" : "sent";
+      } else if (event.eventType === "ai.credit.grant" || event.eventType === "ai.credit.revoke") {
+        await deliverAiCredit({
+          event,
+          baseUrl: conf.aiPlatformBaseUrl,
+          serviceKey: conf.aiPlatformInternalServiceKey,
+          fetchImpl: this.aiCreditFetch,
+          warn: (message) => this.logger.warn(message),
+        });
+        event.status = "sent";
       } else if (event.eventType === "order.fulfilled") {
         await deliverOrderFulfilled({
           event,

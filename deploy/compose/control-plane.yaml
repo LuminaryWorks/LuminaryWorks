@@ -20,14 +20,15 @@
 #     ... -f deploy/compose/control-plane.object-storage.yaml --profile object-storage up -d
 #
 # Contract notes:
-#   * No `container_name`: this stack must be able to run next to product stacks
-#     and next to `identity/docker-compose.yml` / `services/entitlement/docker-compose.yml`,
-#     which stay independently runnable and own their own project name + volumes.
+#   * No `container_name`: this stack must be able to run next to product stacks.
 #   * No `host.docker.internal`: services address each other by Compose DNS name.
 #   * No committed passwords: every secret is a required variable (`${VAR:?...}`).
 #   * Databases and Redis have no host ports and live on an `internal` network.
 #   * Host publishing defaults to loopback; terminate TLS at a reverse proxy in
 #     pilot/production and set CONTROL_PLANE_BIND_ADDR accordingly.
+#   * One Postgres instance (`control-plane-db`) holds four logical databases
+#     (Identity / Entitlement / Notification / AI Platform) with separate roles.
+#     Service dirs do not ship their own Postgres Compose — host apps use env → :5433.
 
 name: ${CONTROL_PLANE_PROJECT:-luminary-control-plane}
 
@@ -45,30 +46,46 @@ networks:
     name: ${CONTROL_PLANE_EDGE_NETWORK:-luminary-control-edge}
 
 volumes:
-  identity-db-data:
-  entitlement-db-data:
-  notification-db-data:
+  control-plane-db-data:
   ai-platform-data:
 
 services:
-  identity-db:
+  # Shared data tier: one Postgres, four DBs + four app roles (see init/).
+  # Admin role is for bootstrap / ops only — apps use IDENTITY_DB_* /
+  # ENTITLEMENT_DB_* / NOTIFICATION_DB_* / AI_PLATFORM_DB_* against their own dbname.
+  control-plane-db:
     <<: *restart
     image: ${POSTGRES_IMAGE:-postgres:16-alpine}
     environment:
-      POSTGRES_USER: ${IDENTITY_DB_USER:-logto}
-      POSTGRES_DB: ${IDENTITY_DB_NAME:-logto}
-      POSTGRES_PASSWORD: ${IDENTITY_DB_PASSWORD:?set IDENTITY_DB_PASSWORD in deploy/env/control-plane.env}
+      POSTGRES_USER: ${CONTROL_PLANE_DB_ADMIN_USER:-lw_pg}
+      POSTGRES_PASSWORD: ${CONTROL_PLANE_DB_ADMIN_PASSWORD:?set CONTROL_PLANE_DB_ADMIN_PASSWORD in deploy/env/control-plane.env}
+      IDENTITY_DB_USER: ${IDENTITY_DB_USER:-logto}
+      IDENTITY_DB_NAME: ${IDENTITY_DB_NAME:-logto}
+      IDENTITY_DB_PASSWORD: ${IDENTITY_DB_PASSWORD:?set IDENTITY_DB_PASSWORD in deploy/env/control-plane.env}
+      ENTITLEMENT_DB_USER: ${ENTITLEMENT_DB_USER:-entitlement}
+      ENTITLEMENT_DB_NAME: ${ENTITLEMENT_DB_NAME:-entitlement}
+      ENTITLEMENT_DB_PASSWORD: ${ENTITLEMENT_DB_PASSWORD:?set ENTITLEMENT_DB_PASSWORD in deploy/env/control-plane.env}
+      NOTIFICATION_DB_USER: ${NOTIFICATION_DB_USER:-notification}
+      NOTIFICATION_DB_NAME: ${NOTIFICATION_DB_NAME:-notification}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?set NOTIFICATION_DB_PASSWORD in deploy/env/control-plane.env}
+      AI_PLATFORM_DB_USER: ${AI_PLATFORM_DB_USER:-ai_platform}
+      AI_PLATFORM_DB_NAME: ${AI_PLATFORM_DB_NAME:-ai_platform}
+      AI_PLATFORM_DB_PASSWORD: ${AI_PLATFORM_DB_PASSWORD:?set AI_PLATFORM_DB_PASSWORD in deploy/env/control-plane.env}
     volumes:
-      - identity-db-data:/var/lib/postgresql/data
+      - control-plane-db-data:/var/lib/postgresql/data
+      - ./init/control-plane-db.sh:/docker-entrypoint-initdb.d/01-control-plane-db.sh:ro
     networks:
       - control-data
     healthcheck:
       test:
-        ["CMD-SHELL", "pg_isready -U ${IDENTITY_DB_USER:-logto} -d ${IDENTITY_DB_NAME:-logto}"]
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${CONTROL_PLANE_DB_ADMIN_USER:-lw_pg} && psql -U ${CONTROL_PLANE_DB_ADMIN_USER:-lw_pg} -d ${IDENTITY_DB_NAME:-logto} -c 'select 1' >/dev/null && psql -U ${CONTROL_PLANE_DB_ADMIN_USER:-lw_pg} -d ${ENTITLEMENT_DB_NAME:-entitlement} -c 'select 1' >/dev/null && psql -U ${CONTROL_PLANE_DB_ADMIN_USER:-lw_pg} -d ${NOTIFICATION_DB_NAME:-notification} -c 'select 1' >/dev/null && psql -U ${CONTROL_PLANE_DB_ADMIN_USER:-lw_pg} -d ${AI_PLATFORM_DB_NAME:-ai_platform} -c 'select 1' >/dev/null",
+        ]
       interval: 5s
       timeout: 5s
-      retries: 10
-      start_period: 10s
+      retries: 12
+      start_period: 20s
 
   identity-redis:
     <<: *restart
@@ -95,13 +112,13 @@ services:
         LOGTO_VERSION: ${LOGTO_VERSION:-1.22.0}
     image: ${IDENTITY_IMAGE:-luminaryworks/identity:1.22.0-lw1}
     depends_on:
-      identity-db:
+      control-plane-db:
         condition: service_healthy
       identity-redis:
         condition: service_healthy
     environment:
       TRUST_PROXY_HEADER: "1"
-      DB_URL: postgres://${IDENTITY_DB_USER:-logto}:${IDENTITY_DB_PASSWORD:?set IDENTITY_DB_PASSWORD in deploy/env/control-plane.env}@identity-db:5432/${IDENTITY_DB_NAME:-logto}
+      DB_URL: postgres://${IDENTITY_DB_USER:-logto}:${IDENTITY_DB_PASSWORD:?set IDENTITY_DB_PASSWORD in deploy/env/control-plane.env}@control-plane-db:5432/${IDENTITY_DB_NAME:-logto}
       REDIS_URL: redis://identity-redis:6379
       ENDPOINT: ${IDENTITY_ENDPOINT:?set IDENTITY_ENDPOINT to the browser-reachable OIDC base URL}
       ADMIN_ENDPOINT: ${IDENTITY_ADMIN_ENDPOINT:?set IDENTITY_ADMIN_ENDPOINT to the browser-reachable admin URL}
@@ -169,28 +186,6 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  entitlement-db:
-    <<: *restart
-    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
-    environment:
-      POSTGRES_USER: ${ENTITLEMENT_DB_USER:-entitlement}
-      POSTGRES_DB: ${ENTITLEMENT_DB_NAME:-entitlement}
-      POSTGRES_PASSWORD: ${ENTITLEMENT_DB_PASSWORD:?set ENTITLEMENT_DB_PASSWORD in deploy/env/control-plane.env}
-    volumes:
-      - entitlement-db-data:/var/lib/postgresql/data
-    networks:
-      - control-data
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${ENTITLEMENT_DB_USER:-entitlement} -d ${ENTITLEMENT_DB_NAME:-entitlement}",
-        ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-
   entitlement:
     <<: *restart
     mem_limit: 768m
@@ -208,14 +203,14 @@ services:
         NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
     image: ${ENTITLEMENT_IMAGE:-luminaryworks/entitlement:local}
     depends_on:
-      entitlement-db:
+      control-plane-db:
         condition: service_healthy
       identity:
         condition: service_healthy
     environment:
       NODE_ENV: ${ENTITLEMENT_NODE_ENV:-production}
       ENTITLEMENT_PORT: "3040"
-      ENTITLEMENT_DATABASE_URL: postgres://${ENTITLEMENT_DB_USER:-entitlement}:${ENTITLEMENT_DB_PASSWORD:?set ENTITLEMENT_DB_PASSWORD in deploy/env/control-plane.env}@entitlement-db:5432/${ENTITLEMENT_DB_NAME:-entitlement}
+      ENTITLEMENT_DATABASE_URL: postgres://${ENTITLEMENT_DB_USER:-entitlement}:${ENTITLEMENT_DB_PASSWORD:?set ENTITLEMENT_DB_PASSWORD in deploy/env/control-plane.env}@control-plane-db:5432/${ENTITLEMENT_DB_NAME:-entitlement}
       ENTITLEMENT_MIGRATIONS_RUN: "true"
       ENTITLEMENT_SYNCHRONIZE: "false"
       # OIDC is the only auth mode that belongs in a shared control plane;
@@ -239,6 +234,11 @@ services:
       ENTITLEMENT_TRIAL_PURGE_TARGETS: ${ENTITLEMENT_TRIAL_PURGE_TARGETS:-}
       ENTITLEMENT_ORDER_FULFILLED_TARGETS: ${ENTITLEMENT_ORDER_FULFILLED_TARGETS:-}
       ENTITLEMENT_ORDER_FULFILLED_TIMEOUT_MS: ${ENTITLEMENT_ORDER_FULFILLED_TIMEOUT_MS:-15000}
+      # Empty base URL: credit outbox rows are marked sent. Set the in-network URL when --profile ai is on.
+      AI_PLATFORM_BASE_URL: ${AI_PLATFORM_BASE_URL:-}
+      AI_PLATFORM_INTERNAL_SERVICE_KEY: ${AI_PLATFORM_INTERNAL_SERVICE_KEY:-}
+      AI_CREDIT_GRANT_BY_SKU_JSON: ${AI_CREDIT_GRANT_BY_SKU_JSON:-}
+      AI_CREDIT_MICRO_PER_VOICE_SECOND: ${AI_CREDIT_MICRO_PER_VOICE_SECOND:-}
     ports:
       - "${CONTROL_PLANE_BIND_ADDR:-127.0.0.1}:${ENTITLEMENT_PORT:-3040}:3040"
     networks:
@@ -255,28 +255,6 @@ services:
   # Auth-mail delivery for Logto HTTP Email connector (not product report SMTP).
   # Maddy (or Resend/Brevo) is reached via SMTP_* / API keys in control-plane.env.
   # Port 3055 avoids colliding with control-console :3050.
-  notification-db:
-    <<: *restart
-    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
-    environment:
-      POSTGRES_USER: ${NOTIFICATION_DB_USER:-notification}
-      POSTGRES_DB: ${NOTIFICATION_DB_NAME:-notification}
-      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?set NOTIFICATION_DB_PASSWORD in deploy/env/control-plane.env}
-    volumes:
-      - notification-db-data:/var/lib/postgresql/data
-    networks:
-      - control-data
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${NOTIFICATION_DB_USER:-notification} -d ${NOTIFICATION_DB_NAME:-notification}",
-        ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-
   notification:
     <<: *restart
     build:
@@ -285,7 +263,7 @@ services:
         NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
     image: ${NOTIFICATION_IMAGE:-luminaryworks/notification:local}
     depends_on:
-      notification-db:
+      control-plane-db:
         condition: service_healthy
     extra_hosts:
       # Host-published Maddy (:587). Inter-service traffic still uses Compose DNS.
@@ -293,7 +271,7 @@ services:
     environment:
       NODE_ENV: production
       NOTIFICATION_PORT: "3055"
-      NOTIFICATION_DATABASE_URL: postgres://${NOTIFICATION_DB_USER:-notification}:${NOTIFICATION_DB_PASSWORD:?set NOTIFICATION_DB_PASSWORD in deploy/env/control-plane.env}@notification-db:5432/${NOTIFICATION_DB_NAME:-notification}
+      NOTIFICATION_DATABASE_URL: postgres://${NOTIFICATION_DB_USER:-notification}:${NOTIFICATION_DB_PASSWORD:?set NOTIFICATION_DB_PASSWORD in deploy/env/control-plane.env}@control-plane-db:5432/${NOTIFICATION_DB_NAME:-notification}
       NOTIFICATION_SERVICE_KEY: ${NOTIFICATION_SERVICE_KEY:?set NOTIFICATION_SERVICE_KEY in deploy/env/control-plane.env}
       NOTIFICATION_SECRET_KEY: ${NOTIFICATION_SECRET_KEY:?set NOTIFICATION_SECRET_KEY in deploy/env/control-plane.env}
       NOTIFICATION_MIGRATIONS_RUN: ${NOTIFICATION_MIGRATIONS_RUN:-true}
@@ -387,10 +365,14 @@ services:
   # ---------------------------------------------------------------------------
   # Optional profile: ai
   #
-  # NOT HARDENED. The AI Platform currently has no AuthN, no Entitlement
-  # enforcement and only in-memory metering, so `ai=central` is refused by
-  # preflight for pilot/production manifests. This profile exists for dev and
-  # lab work only; production deployments use ai=off or ai=local_byok.
+  # Lab only. The five hardening gates (authn, entitlement check, persistent
+  # metering, secret vault, /ready) are implemented, but ai=central stays lab:
+  # the wallet ledger is still being wired from Entitlement, and maturity is
+  # not pilot/production. Preflight still refuses ai=central for those stages.
+  # Use ai=off or ai=local_byok outside this lab profile.
+  #
+  # Postgres (database ai_platform) holds connections, metering, and the wallet.
+  # The volume is the TTS cache only.
   # ---------------------------------------------------------------------------
   ai-platform:
     <<: *restart
@@ -398,19 +380,39 @@ services:
     build:
       context: ../../services/ai-platform
     image: ${AI_PLATFORM_IMAGE:-luminaryworks/ai-platform:local}
+    depends_on:
+      control-plane-db:
+        condition: service_healthy
     environment:
+      NODE_ENV: ${AI_PLATFORM_NODE_ENV:-production}
       PORT: "13100"
+      AI_PLATFORM_MIGRATIONS_RUN: "true"
+      AI_PLATFORM_DATABASE_URL: postgres://${AI_PLATFORM_DB_USER:-ai_platform}:${AI_PLATFORM_DB_PASSWORD:?set AI_PLATFORM_DB_PASSWORD in deploy/env/control-plane.env}@control-plane-db:5432/${AI_PLATFORM_DB_NAME:-ai_platform}
       AI_VAULT_MASTER_KEY: ${AI_VAULT_MASTER_KEY:?set AI_VAULT_MASTER_KEY (32-byte hex/base64) in deploy/env/control-plane.env}
       AI_PLATFORM_DATA_DIR: /data
+      AI_PLATFORM_AUTH_MODE: oidc
+      # Issuer must match the JWT iss (upstream IdP). JWKS may be the gateway.
+      AI_PLATFORM_OIDC_ISSUER: ${AI_PLATFORM_OIDC_ISSUER:-http://identity:3001/oidc}
+      AI_PLATFORM_OIDC_AUDIENCE: ${AI_PLATFORM_OIDC_AUDIENCE:-https://ai.luminaryworks.dev}
+      AI_PLATFORM_JWKS_URI: ${AI_PLATFORM_JWKS_URI:-http://auth-gateway:3010/oidc/jwks}
+      AI_PLATFORM_SERVICE_API_KEY: ${AI_PLATFORM_SERVICE_API_KEY:?set AI_PLATFORM_SERVICE_API_KEY in deploy/env/control-plane.env}
+      AI_PLATFORM_SERVICE_PRODUCT_CODES: ${AI_PLATFORM_SERVICE_PRODUCT_CODES:-}
+      AI_PLATFORM_SERVICE_INTERNAL: ${AI_PLATFORM_SERVICE_INTERNAL:-true}
+      AI_PLATFORM_SERVICE_CREDENTIALS_JSON: ${AI_PLATFORM_SERVICE_CREDENTIALS_JSON:-}
+      ENTITLEMENT_BASE_URL: http://entitlement:3040
+      ENTITLEMENT_SERVICE_API_KEY: ${ENTITLEMENT_SERVICE_API_KEY:?set ENTITLEMENT_SERVICE_API_KEY in deploy/env/control-plane.env}
+      PUBLIC_API_ENABLED: "false"
+      AI_PLATFORM_WALLET_ENFORCE: ${AI_PLATFORM_WALLET_ENFORCE:-false}
     volumes:
       - ai-platform-data:/data
     ports:
       - "${CONTROL_PLANE_BIND_ADDR:-127.0.0.1}:${AI_PLATFORM_PORT:-13100}:13100"
     networks:
+      - control-data
       - control-edge
     healthcheck:
-      # Liveness only — this is not a hardened readiness contract.
-      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:13100/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      # Readiness probes Postgres and the vault. GET /v1/health stays liveness-only.
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:13100/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
       interval: 15s
       timeout: 5s
       retries: 6

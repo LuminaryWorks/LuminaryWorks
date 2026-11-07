@@ -7,15 +7,19 @@
 
 | # | 决策 |
 |---|------|
-| D-AI-1 | **中央 AI Platform 只做模型网关**：providers、vault、stream、metering、managed credits。不判断产品资源 ACL。 |
+| D-AI-1 | **中央 AI Platform 做模型网关 + 钱包账本 + 能力路由**：providers、vault、stream、metering、credits、routes。不判断产品资源 ACL。（2026-11 修订，原文「只做模型网关」；见 [ADR 2026-11](./decisions/2026-11-unified-ai-platform.md)） |
 | D-AI-2 | **产品保留领域智能**：DataInsight、教辅编排、录制摘要、IoT 规则、ChainSkill 均留在产品仓。 |
 | D-AI-3 | **三层顺序不变**：Logto AuthN → Entitlement（如 `ai.analysis`）→ 产品 Casbin。AI 不拥有 ACL。 |
-| D-AI-4 | **BYOK 与托管并存**：空间/组织可配置自有模型；BlockyEdu ToC 口语默认 **managed route**（平台托管 STT/LLM/TTS）。托管 credits 计量与学员分钟账本分离。 |
+| D-AI-4 | **托管为默认，BYOK 为可选**（2026-11 修订）：所有产品默认走平台 managed route；空间/组织可配置自有模型。学员口语分钟 = 限定 `voice.*` 的 credit grant，**不再是分离的账本**（见 [ai-wallet-and-billing.md](./ai-wallet-and-billing.md) §3）。 |
 | D-AI-5 | **密钥不进产品业务库明文**：Vault 由 AI Platform（或产品内兼容适配器）持有；聊天记录不回写密钥。 |
 | D-AI-6 | **LLM 禁止**：原始 SQL、HTML、自行计算关键数字、持有数据源密码。 |
 | D-AI-7 | **产品通过 `@luminaryworks/ai-client` 调用**；未部署中央服务时，产品可用本地 BYOK 适配器（同一契约）。 |
 | D-AI-8 | **`ai=central` 当前为 lab**：pilot/production Manifest 必须被 preflight 拒绝，直到 `AI_CENTRAL_HARDENING_GATES` 全部翻转 | [composable-deployment.md](./composable-deployment.md) §9.2 |
 | D-AI-9 | **初创期推理默认走云 API / BYOK**（DeepSeek、OpenAI 等）；**禁止**各产品服务端默认部署自托管大模型（Ollama / vLLM / 自建 GPU 池）。端侧 / 客户主机 **4B–21B** 允许。仅当生态（含 EntFunHub、OmniSellerAI 等）有可量化的庞大需求，并经运营授权后，才在 **LuminaryWorks 统一层**自托管 LLM，避免各产品重复烧 GPU/运维。Agent 门禁见 `.cursor/rules/ai-hosting-policy.mdc`。 |
+
+### 0.1 2026-11 增补（D-AI-10 ~ D-AI-18）
+
+统一 Provider / 能力路由 / 钱包账本 / 公共 API 可关闭设计，详见 [ADR 2026-11](./decisions/2026-11-unified-ai-platform.md)、[ai-capability-routing.md](./ai-capability-routing.md)、[ai-wallet-and-billing.md](./ai-wallet-and-billing.md)。D-AI-8 的五个 hardening gate 仍是任何托管计费上线的**前置条件**。
 
 ## 1. 定位
 
