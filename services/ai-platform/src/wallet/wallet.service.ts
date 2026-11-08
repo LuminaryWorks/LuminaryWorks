@@ -437,15 +437,28 @@ export class WalletService {
   }
 
   /**
-   * Recovers spendable remaining only. Pending holds on this grant are left
-   * alone so an in-flight call can still finish. When that hold is later
-   * settled, released, or expired, the unused portion is clawed back onto
-   * revoked_micro and does not return to spendable remaining.
+   * Recovers spendable remaining. Pending holds are left alone so an in-flight
+   * call can finish; unused hold returns later claw onto revoked_micro.
+   *
+   * - `seal: false` (partial refund): take up to `amountMicro` from remaining,
+   *   accumulate `revoked_micro`, leave the grant spendable for what is left.
+   * - `seal: true` (full refund): take remaining (or `amountMicro` if set), set
+   *   `revoked_at`, and refuse further spend.
    */
-  async revokeBySource(sourceType: GrantSourceType, sourceId: string, amountMicro?: bigint): Promise<RevokeResult> {
+  async revokeBySource(
+    sourceType: GrantSourceType,
+    sourceId: string,
+    amountMicro?: bigint,
+    opts?: { seal?: boolean },
+  ): Promise<RevokeResult> {
     if (!sourceId.trim()) throw new AiPlatformException("VALIDATION_ERROR", 400, "sourceId is required");
     if (amountMicro !== undefined && amountMicro < 0n) {
       throw new AiPlatformException("VALIDATION_ERROR", 400, "amountMicro must be >= 0");
+    }
+    const seal =
+      opts?.seal === true ? true : opts?.seal === false ? false : amountMicro === undefined;
+    if (!seal && amountMicro === undefined) {
+      throw new AiPlatformException("VALIDATION_ERROR", 400, "amountMicro is required for partial revoke");
     }
     return this.dataSource.transaction(async (manager) => {
       const found = (await manager.query(
@@ -467,41 +480,97 @@ export class WalletService {
           idempotent: true,
         };
       }
-      const requested = amountMicro ?? grant.amountMicro;
+      // Seal requests unrecovered face value (amount − already revoked) so shortfall
+      // matches holds/settled, not double-counts prior partial revokes.
+      const requested = seal
+        ? (amountMicro ?? grant.amountMicro - grant.revokedMicro)
+        : amountMicro!;
       const recovered = grant.remainingMicro < requested ? grant.remainingMicro : requested;
-      const shortfall = requested - recovered;
+      const callShortfall = requested > recovered ? requested - recovered : 0n;
       if (recovered > 0n) {
-        const updated = (await manager.query(
+        const touch = await manager.query(
           `UPDATE credit_grants
-           SET remaining_micro = remaining_micro - $2
-           WHERE grant_id = $1 AND remaining_micro >= $2
-           RETURNING remaining_micro`,
-          [grant.grantId, recovered.toString()],
-        )) as Array<{ remaining_micro: string }>;
-        if (!updated[0]) throw new AiPlatformException("VALIDATION_ERROR", 409, "grant remaining changed");
-      }
-      await manager.query(
-        `UPDATE credit_grants
-         SET revoked_micro = $2, revoke_shortfall_micro = $3, revoked_at = now()
-         WHERE grant_id = $1`,
-        [grant.grantId, recovered.toString(), shortfall.toString()],
-      );
-      if (recovered > 0n) {
+           SET remaining_micro = remaining_micro - $2::bigint,
+               revoked_micro = revoked_micro + $2::bigint,
+               revoke_shortfall_micro = revoke_shortfall_micro + $3::bigint
+           WHERE grant_id = $1 AND remaining_micro >= $2::bigint`,
+          [grant.grantId, recovered.toString(), callShortfall.toString()],
+        );
+        const affected = typeof touch === "number" ? touch : Number(touch?.[1] ?? touch?.rowCount ?? 0);
+        if (affected < 1) {
+          // Some drivers omit rowCount; confirm with a locked re-read.
+          const check = (await manager.query(
+            `SELECT remaining_micro FROM credit_grants WHERE grant_id = $1 FOR UPDATE`,
+            [grant.grantId],
+          )) as Array<Record<string, unknown>>;
+          const still = readMicro(firstQueryRow(check) ?? {}, "remaining_micro");
+          if (still < recovered) {
+            throw new AiPlatformException("VALIDATION_ERROR", 409, "grant remaining changed");
+          }
+          await manager.query(
+            `UPDATE credit_grants
+             SET remaining_micro = remaining_micro - $2::bigint,
+                 revoked_micro = revoked_micro + $2::bigint,
+                 revoke_shortfall_micro = revoke_shortfall_micro + $3::bigint
+             WHERE grant_id = $1 AND remaining_micro >= $2::bigint`,
+            [grant.grantId, recovered.toString(), callShortfall.toString()],
+          );
+        }
+        const afterRows = (await manager.query(
+          `SELECT remaining_micro FROM credit_grants WHERE grant_id = $1`,
+          [grant.grantId],
+        )) as Array<Record<string, unknown>>;
+        const remainingAfter = readMicro(firstQueryRow(afterRows) ?? {}, "remaining_micro");
+        if (seal) {
+          await manager.query(`UPDATE credit_grants SET revoked_at = now() WHERE grant_id = $1`, [
+            grant.grantId,
+          ]);
+        }
         await this.insertLedger(manager, {
           walletId: grant.walletId,
           grantId: grant.grantId,
           kind: "refund_reversal",
           amountMicro: recovered,
           requestId: sourceId,
-          meta: { sourceType, sourceId, shortfallMicro: shortfall.toString() },
+          meta: {
+            sourceType,
+            sourceId,
+            shortfallMicro: callShortfall.toString(),
+            seal,
+            partial: !seal,
+          },
         });
+        return {
+          grantId: grant.grantId,
+          walletId: grant.walletId,
+          recoveredMicro: recovered,
+          shortfallMicro: callShortfall,
+          remainingMicro: remainingAfter,
+          idempotent: false,
+        };
+      }
+      if (seal) {
+        await manager.query(
+          `UPDATE credit_grants
+           SET revoke_shortfall_micro = revoke_shortfall_micro + $2,
+               revoked_at = now()
+           WHERE grant_id = $1`,
+          [grant.grantId, callShortfall.toString()],
+        );
+      } else if (callShortfall > 0n) {
+        await manager.query(
+          `UPDATE credit_grants
+           SET revoke_shortfall_micro = revoke_shortfall_micro + $2
+           WHERE grant_id = $1`,
+          [grant.grantId, callShortfall.toString()],
+        );
       }
       return {
         grantId: grant.grantId,
         walletId: grant.walletId,
-        recoveredMicro: recovered,
-        shortfallMicro: shortfall,
-        remainingMicro: grant.remainingMicro - recovered,
+        recoveredMicro: 0n,
+        shortfallMicro: callShortfall,
+        remainingMicro: grant.remainingMicro,
         idempotent: false,
       };
     });
@@ -1017,6 +1086,35 @@ export function amountsToJson<T extends Record<string, unknown>>(row: T): Record
     out[key] = typeof value === "bigint" ? microToNumber(value) : value;
   }
   return out;
+}
+
+/** Normalize TypeORM/pg query shapes: rows[] | [rows, count] | Result. */
+function firstQueryRow(result: unknown): Record<string, unknown> | undefined {
+  if (result == null) return undefined;
+  if (Array.isArray(result)) {
+    const head = result[0];
+    if (Array.isArray(head)) {
+      const nested = head[0];
+      return nested && typeof nested === "object" ? (nested as Record<string, unknown>) : undefined;
+    }
+    if (head && typeof head === "object" && !Array.isArray(head)) {
+      return head as Record<string, unknown>;
+    }
+    return undefined;
+  }
+  if (typeof result === "object" && "rows" in (result as object)) {
+    return firstQueryRow((result as { rows: unknown }).rows);
+  }
+  return undefined;
+}
+
+function readMicro(row: Record<string, unknown>, key: string): bigint {
+  const camel = key.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+  const value = row[key] ?? row[camel] ?? (Array.isArray(row) ? (row as unknown[])[0] : undefined);
+  if (value === undefined || value === null || value === "") {
+    throw new AiPlatformException("VALIDATION_ERROR", 500, `missing ${key} after update`);
+  }
+  return BigInt(String(value));
 }
 
 function mapGrant(row: Record<string, unknown>): GrantRow {

@@ -1,0 +1,42 @@
+:root {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: #122033;
+  background: #f4f6f9;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  overflow: hidden;
+}
+.login-page {
+  max-width: 32rem;
+  margin: 3rem auto;
+  padding: 1rem;
+}
+.login-frame {
+  min-height: 100%;
+}
+.login-frame .LoginCanvas_module_lang {
+  display: none;
+}
+.login-lang {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 6;
+}
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.section-gap {
+  margin-top: 16px;
+}

@@ -1,0 +1,63 @@
+# Lead merges this into deploy/compose. Do not apply it from this file.
+# Build context is the LuminaryWorks repo root so link: shared packages resolve.
+#
+# On the ai-platform service set:
+#   AI_PLATFORM_CORS_ORIGINS=http://localhost:3060,http://127.0.0.1:3060
+# On entitlement set:
+#   ENTITLEMENT_CORS_ORIGINS=http://localhost:3060,http://127.0.0.1:3060
+# The browser calls those APIs with the user OIDC bearer token.
+# Audience for the SPA access token is https://ai.luminaryworks.dev.
+
+account-center:
+  restart: unless-stopped
+  build:
+    context: ../..
+    dockerfile: apps/account-center/Dockerfile
+    args:
+      NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
+  image: ${ACCOUNT_CENTER_IMAGE:-luminaryworks/account-center:local}
+  depends_on:
+    identity:
+      condition: service_healthy
+  environment:
+    NODE_ENV: production
+    ACCOUNT_CENTER_PORT: "3060"
+    ACCOUNT_CENTER_PUBLIC_URL: ${ACCOUNT_CENTER_PUBLIC_URL:-http://localhost:3060}
+    ACCOUNT_CENTER_IDP_ISSUER: ${ACCOUNT_CENTER_IDP_ISSUER:-http://localhost:3001/oidc}
+    ACCOUNT_CENTER_IDP_CLIENT_ID: ${ACCOUNT_CENTER_IDP_CLIENT_ID:-}
+    ACCOUNT_CENTER_IDP_AUDIENCE: ${ACCOUNT_CENTER_IDP_AUDIENCE:-https://ai.luminaryworks.dev}
+    ACCOUNT_CENTER_IDP_SCOPES: ${ACCOUNT_CENTER_IDP_SCOPES:-openid profile email offline_access}
+    ACCOUNT_CENTER_AI_BASE_URL: ${ACCOUNT_CENTER_AI_BASE_URL:-http://127.0.0.1:13100}
+    ACCOUNT_CENTER_ENTITLEMENT_BASE_URL: ${ACCOUNT_CENTER_ENTITLEMENT_BASE_URL:-http://127.0.0.1:3040}
+    ACCOUNT_CENTER_AUTH_EXPERIENCE_URL: ${ACCOUNT_CENTER_AUTH_EXPERIENCE_URL:-http://localhost:3060}
+    ACCOUNT_CENTER_IDP_ACCOUNT_URL: ${ACCOUNT_CENTER_IDP_ACCOUNT_URL:-http://localhost:3001}
+    ACCOUNT_CENTER_IDP_SECURITY_URL: ${ACCOUNT_CENTER_IDP_SECURITY_URL:-http://localhost:3001}
+    ACCOUNT_CENTER_APPS_JSON: ${ACCOUNT_CENTER_APPS_JSON:-[]}
+    ACCOUNT_CENTER_GIT_SHA: ${ACCOUNT_CENTER_GIT_SHA:-unknown}
+    PUBLIC_LEGAL_PLATFORM_TERMS_URL: ${PUBLIC_LEGAL_PLATFORM_TERMS_URL:-https://luminaryworks.dev/legal/terms}
+    PUBLIC_LEGAL_PLATFORM_PRIVACY_URL: ${PUBLIC_LEGAL_PLATFORM_PRIVACY_URL:-https://luminaryworks.dev/legal/privacy}
+    PUBLIC_LEGAL_PRODUCT_TERMS_URL: ${PUBLIC_LEGAL_PRODUCT_TERMS_URL:-/legal/terms}
+    PUBLIC_LEGAL_PRODUCT_PRIVACY_URL: ${PUBLIC_LEGAL_PRODUCT_PRIVACY_URL:-/legal/privacy}
+  ports:
+    - "${CONTROL_PLANE_BIND_ADDR:-127.0.0.1}:${ACCOUNT_CENTER_PORT:-3060}:3060"
+  networks:
+    - control-edge
+  healthcheck:
+    test:
+      [
+        "CMD-SHELL",
+        "node -e \"fetch('http://127.0.0.1:3060/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+      ]
+    interval: 10s
+    timeout: 5s
+    retries: 6
+    start_period: 20s
+  mem_limit: 256m
+  mem_reservation: 64m
+  cpus: "0.5"
+  pids_limit: 256
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"

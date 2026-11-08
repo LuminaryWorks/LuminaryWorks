@@ -98,6 +98,7 @@ export const INSTALL_KIT_PUBLIC_OVERLAYS = {
 
 export const INSTALL_PACK_TREES = [
   "deploy/compose/control-plane.yaml",
+  "deploy/compose/init/control-plane-db.sh",
   "deploy/env/control-plane.env.example",
   "services/auth-gateway",
   "services/entitlement",

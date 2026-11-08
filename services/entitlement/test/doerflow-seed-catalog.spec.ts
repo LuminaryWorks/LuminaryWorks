@@ -90,24 +90,19 @@ function memoryDataSource() {
 describe("DoerFlow integration entitlement catalog", () => {
   const doerflow = CATALOG.find((product) => product.code === "doerflow");
 
-  it("grants a 7-day Pro trial with lifetime task and API pools", () => {
+  it("ships sellable DoerFlow without a trial plan", () => {
     expect(doerflow).toBeDefined();
-    expect(doerflow?.trialPolicy).toBe("standard_7d");
+    expect(doerflow?.trialPolicy).toBe("disabled");
     expect(doerflow?.sellable).toBe(true);
-    expect(doerflow?.plans.map((plan) => plan.code)).toEqual([
-      "trial",
-      "pro",
-      "ultra",
-      "enterprise",
-    ]);
-    const trial = doerflow?.plans.find((plan) => plan.code === "trial");
-    expect(trial?.features.find((row) => row.code === "task.publish.monthly")).toBeUndefined();
-    expect(trial?.features.find((row) => row.code === "api.request.monthly")).toBeUndefined();
-    expect(trial?.features.find((row) => row.code === "task.publish.trial")?.limitValue).toBe(
-      DOERFLOW_PLAN_LIMITS.trial.taskPublish,
+    expect(doerflow?.plans.map((plan) => plan.code)).toEqual(["pro", "ultra", "enterprise"]);
+    expect(doerflow?.features.some((row) => row.code === "task.publish.trial")).toBe(false);
+    expect(doerflow?.features.some((row) => row.code === "api.request.trial")).toBe(false);
+    const pro = doerflow?.plans.find((plan) => plan.code === "pro");
+    expect(pro?.features.find((row) => row.code === "task.publish.monthly")?.limitValue).toBe(
+      DOERFLOW_PLAN_LIMITS.pro.taskPublishMonthly,
     );
-    expect(trial?.features.find((row) => row.code === "api.request.trial")?.limitValue).toBe(
-      DOERFLOW_PLAN_LIMITS.trial.apiRequest,
+    expect(pro?.features.find((row) => row.code === "api.request.monthly")?.limitValue).toBe(
+      DOERFLOW_PLAN_LIMITS.pro.apiRequestMonthly,
     );
   });
 
@@ -221,9 +216,10 @@ describe("DoerFlow integration entitlement catalog", () => {
       "syncrobrain",
     ]);
     const vistacast = CATALOG.find((row) => row.code === "vistacast");
-    expect(vistacast?.trialPolicy).toBe("standard_7d");
+    expect(vistacast?.trialPolicy).toBe("disabled");
     expect(vistacast?.sellable).toBe(false);
-    expect(vistacast?.plans.some((plan) => plan.code === "trial")).toBe(true);
+    expect(vistacast?.plans.some((plan) => plan.code === "trial")).toBe(false);
+    expect(vistacast?.plans.map((plan) => plan.code)).toEqual(["pro", "ultra", "enterprise"]);
     const syncrobrain = CATALOG.find((row) => row.code === "syncrobrain");
     expect(syncrobrain?.trialPolicy).toBe("disabled");
     expect(syncrobrain?.sellable).toBe(false);
@@ -278,7 +274,7 @@ describe("applyCatalog idempotency", () => {
 
     const products = ds.repos.get(ProductEntity)?.items ?? [];
     const doerflow = products.find((product) => product.code === "doerflow");
-    expect(doerflow?.trialPolicy).toBe("standard_7d");
+    expect(doerflow?.trialPolicy).toBe("disabled");
     expect(doerflow?.sellable).toBe(true);
     expect(products.find((product) => product.code === "vistacast")?.sellable).toBe(false);
     expect(products.find((product) => product.code === "syncrobrain")?.sellable).toBe(false);

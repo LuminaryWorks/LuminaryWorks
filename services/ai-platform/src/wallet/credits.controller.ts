@@ -44,6 +44,7 @@ export class CreditsController {
       "order",
       input.orderId,
       input.amountMicro === undefined ? undefined : BigInt(input.amountMicro),
+      { seal: input.seal },
     );
     return amountsToJson({ orderId: input.orderId, ...result });
   }
@@ -92,11 +93,12 @@ function parseGrant(body: unknown): {
   return { orderId, walletOwner, amountMicro, currency, expiresAt, restrictTo, kind };
 }
 
-function parseRevoke(body: unknown): { orderId: string; amountMicro?: number } {
+function parseRevoke(body: unknown): { orderId: string; amountMicro?: number; seal?: boolean } {
   const row = record(body);
   const orderId = requiredString(row, "orderId");
-  if (row.amountMicro === undefined) return { orderId };
-  return { orderId, amountMicro: nonNegativeInt(row.amountMicro, "amountMicro") };
+  const seal = row.seal === undefined ? undefined : Boolean(row.seal);
+  if (row.amountMicro === undefined) return { orderId, seal };
+  return { orderId, amountMicro: nonNegativeInt(row.amountMicro, "amountMicro"), seal };
 }
 
 function parseRateCard(body: unknown): {

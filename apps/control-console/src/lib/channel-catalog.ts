@@ -52,6 +52,7 @@ export type CatalogConfig = ChannelRow & {
   marketScopes?: string[];
   currencies?: string[];
   merchantId?: string | null;
+  merchantAccountId?: string | null;
   credentialLastFour?: string | null;
   metadata?: Record<string, unknown>;
   lastTestIssues?: string[];

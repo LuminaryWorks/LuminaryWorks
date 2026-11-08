@@ -1,10 +1,12 @@
 # Trial and Data Deletion Policy (engineering template)
 
-**NOT LEGAL ADVICE.** Engineering template (`lw-legal-v2026-10-03`) describing how LuminaryWorks Hosted SaaS runs Trials. Chinese: [Trial 与数据删除政策](../zh/trial-data-deletion.md).
+**NOT LEGAL ADVICE.** Engineering template (`lw-legal-v2026-11-07`) describing how LuminaryWorks Hosted SaaS runs Trials. Chinese: [Trial 与数据删除政策](../zh/trial-data-deletion.md).
 
 Related: [Terms](./terms.md) · [Privacy](./privacy.md) · [subscription-and-entitlement.md](../../subscription-and-entitlement.md)
 
 **Activating a Trial requires an explicit, versioned acceptance of this policy.** If you do not accept the current `policyVersion`, the platform will not create a Trial.
+
+Trials described here are platform Trials. The partner operator remains responsible for the partner product and its content. LuminaryWorks runs the platform clock, entitlement, and the deletion steps in this policy for hosted Trials.
 
 ## 1. No permanent Free plan
 
@@ -71,4 +73,4 @@ Trial media and files sit on **single-node** object storage **without SLA**. Sha
 
 ## 9. Version
 
-Effective date: 2026-10-03. Version: `lw-legal-v2026-10-03`.
+Effective date: 2026-11-07. Version: `lw-legal-v2026-11-07`.

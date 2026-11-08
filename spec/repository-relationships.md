@@ -104,5 +104,6 @@ LuminaryWorks/shared (@luminary/*)
 | 各产品域规格 | 各产品 `spec/` |
 | AI 网关 / Vault / 计量 | **LuminaryWorks/LuminaryWorks** `spec/ai-*.md`；实现仓后期独立服务 |
 | 产品领域智能（DataInsight / 教辅 / 录制摘要） | 各产品仓，见 [ai-product-integration.md](./ai-product-integration.md) |
+| 合作产品注册与伙伴权限 | **LuminaryWorks/LuminaryWorks** [`contracts/partners.manifest.json`](../contracts/partners.manifest.json) · [partners.md](./partners.md) |
 
-详见 [migration-matrix.md](./migration-matrix.md)。
+详见 [migration-matrix.md](./migration-matrix.md)。接入下一家合作产品时以 [partners.md](./partners.md) 和 `pnpm partner:onboard` 为准。`@luminaryworks/control-manifest` 只描述部署形态，不登记合作方。

@@ -337,7 +337,14 @@ function ensureRemoteControlPlaneEnv(options) {
     rmSync(tmp, { recursive: true, force: true });
   }
   const env = parseDotEnv(rendered);
-  if (!env.IDENTITY_DB_PASSWORD) throw new Error("control-plane.env missing IDENTITY_DB_PASSWORD");
+  for (const key of [
+    "CONTROL_PLANE_DB_ADMIN_PASSWORD",
+    "IDENTITY_DB_PASSWORD",
+    "ENTITLEMENT_DB_PASSWORD",
+    "NOTIFICATION_DB_PASSWORD",
+  ]) {
+    if (!env[key]) throw new Error(`control-plane.env missing ${key}`);
+  }
   assertObjectStorageRemotePreflight(env);
   return env;
 }

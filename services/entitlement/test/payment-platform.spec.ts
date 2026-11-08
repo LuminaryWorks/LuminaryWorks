@@ -534,7 +534,7 @@ describe("checkout, reconciliation, and refunds", () => {
     const svc = new PaymentsService(
       { getOrThrow: () => ({ nodeEnv: "test" }) } as never,
       { transaction: jest.fn() } as never,
-      { findOne: jest.fn().mockResolvedValue(order) } as never,
+      { findOne: jest.fn().mockResolvedValue(order), save: jest.fn(async (row: unknown) => row) } as never,
       { findOne: jest.fn().mockResolvedValue(attempt), save: jest.fn() } as never,
       { find: jest.fn() } as never,
       {

@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { initConsoleI18n } from "./i18n";
+import "@luminaryworks/ui/shell.css";
 import "./styles.css";
 import { loadRuntimeConfig, type RuntimeConfig } from "./lib/runtime-config";
 

@@ -83,6 +83,7 @@ LuminaryWorks/                  # 本仓：叙事 + 标准 + 编排脚本
 | [shared](https://github.com/LuminaryWorks/shared)     | `@luminaryworks/auth-core`、`auth-react`、`pal`、`notification`、`entitlement-client`、`tooling`      |
 | `services/entitlement`                                | 中央订阅/权益服务（NestJS + PostgreSQL；见 `pnpm ent:*`）                                                    |
 | `apps/control-console`                                | 业务超管控制台（非 Logto Admin；见 `pnpm console:dev` → `:3050`，线上 `console.luminaryworks.dev`）             |
+| `apps/account-center`                                 | 终端用户账户中心（资料、订阅、AI 钱包、BYOK；见 `pnpm acc:dev` → `:3060`）                                          |
 | `@luminaryworks/entitlement-client`                   | 产品侧客户端；测试/CI 用 npmjs 公开包（`^0.2.0`）。改 shared 源码后先发版，或本机 `pnpm.overrides` + `pnpm ent:client:sync` |
 
 
@@ -122,6 +123,7 @@ pnpm websie:dev       # 本地预览官网（site:* 是部署站点意图，勿�
 pnpm ent:dev       # 权益服务开发态
 pnpm auth:gateway  # Auth Gateway :3010（需 identity 已起）
 pnpm console:dev   # 控制台 :3050（线上 console.luminaryworks.dev；需 id + ent，见 apps/control-console/README.md）
+pnpm acc:dev       # 账户中心 :3060（终端用户；需 id，见 apps/account-center/README.md）
 ```
 
 
@@ -181,7 +183,7 @@ Nest 共享库（如 `@luminaryworks/entitlement-client`）**源码是 ES import
 | 资产                                                                 | 现状 → 目标                                                                                  |
 | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
 | `@luminaryworks/auth-core` / `auth-react` / `pal` / `notification` | DataLuminary `packages/` → `LuminaryWorks/shared`                                        |
-| 中央 Entitlement 服务 + `@luminaryworks/entitlement-client`            | `services/entitlement` + `shared/packages/entitlement-client`（`pnpm ent:up` / `ent:dev`） |
+| 中央 Entitlement 服务 + `@luminaryworks/entitlement-client`            | `services/entitlement` + `shared/packages/entitlement-client`（`pnpm ent:up` 起共享 `control-plane-db`，再 `ent:dev`） |
 | Biome tooling preset                                               | 各仓 `tooling/` → `shared/packages/tooling`                                                |
 | Logto 部署                                                           | DataLuminary `scripts/` → `LuminaryWorks/identity`                                       |
 

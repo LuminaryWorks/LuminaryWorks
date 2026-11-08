@@ -16,6 +16,8 @@ import {
   aiCreditRevokeDedupeKey,
   enqueueAiCreditGrant,
   enqueueAiCreditRevoke,
+  enqueueAiCreditRevokePartial,
+  aiCreditRevokePartialDedupeKey,
 } from "../src/modules/orders/ai-credit-outbox";
 import { fulfillPaidOrderTx } from "../src/modules/orders/order-fulfillment";
 
@@ -59,7 +61,11 @@ function harness(order: OrderEntity) {
       }
       return null;
     },
-    async find() {
+    async find(entity: unknown, opts?: { where?: { eventType?: string } }) {
+      if (entity === OutboxEventEntity) {
+        const type = opts?.where?.eventType;
+        return type ? saved.filter((row) => row.eventType === type) : [...saved];
+      }
       return [];
     },
     async query() {
@@ -278,7 +284,62 @@ describe("fulfillPaidOrderTx ai.credit.grant", () => {
     const revokes = ofType(saved, "ai.credit.revoke");
     expect(revokes).toHaveLength(1);
     expect(revokes[0]?.dedupeKey).toBe(aiCreditRevokeDedupeKey("ord-1"));
-    expect(revokes[0]?.payload).toEqual({ orderId: "ord-1", amountMicro: 1_800_000 });
+    expect(revokes[0]?.payload).toEqual({
+      orderId: "ord-1",
+      amountMicro: 1_800_000,
+      seal: true,
+    });
+  });
+
+  it("enqueues proportional partial revokes and seals on a full refund", async () => {
+    const order = baseOrder({ amountCents: 10_000 });
+    const { saved, manager } = harness(order);
+    const policy = parseAiCreditPolicy({
+      AI_CREDIT_MICRO_PER_VOICE_SECOND: "1000",
+    });
+    await fulfillPaidOrderTx(manager, order.id, "pay_partial", { policy });
+    expect((ofType(saved, "ai.credit.grant")[0]?.payload as { amountMicro: number }).amountMicro).toBe(
+      1_800_000,
+    );
+
+    await enqueueAiCreditRevokePartial(manager, {
+      orderId: order.id,
+      netRefundedCents: 4_000,
+      orderAmountCents: 10_000,
+    });
+    let revokes = ofType(saved, "ai.credit.revoke");
+    expect(revokes).toHaveLength(1);
+    expect(revokes[0]?.dedupeKey).toBe(aiCreditRevokePartialDedupeKey(order.id, 720_000));
+    expect(revokes[0]?.payload).toMatchObject({
+      amountMicro: 720_000,
+      seal: false,
+      targetMicro: 720_000,
+    });
+
+    await enqueueAiCreditRevokePartial(manager, {
+      orderId: order.id,
+      netRefundedCents: 4_000,
+      orderAmountCents: 10_000,
+    });
+    expect(ofType(saved, "ai.credit.revoke")).toHaveLength(1);
+
+    await enqueueAiCreditRevokePartial(manager, {
+      orderId: order.id,
+      netRefundedCents: 7_000,
+      orderAmountCents: 10_000,
+    });
+    revokes = ofType(saved, "ai.credit.revoke");
+    expect(revokes).toHaveLength(2);
+    expect(revokes[1]?.payload).toMatchObject({ amountMicro: 540_000, seal: false });
+
+    await enqueueAiCreditRevokePartial(manager, {
+      orderId: order.id,
+      netRefundedCents: 10_000,
+      orderAmountCents: 10_000,
+    });
+    expect(ofType(saved, "ai.credit.revoke").some((row) => (row.payload as { seal?: boolean })?.seal === true)).toBe(
+      true,
+    );
   });
 });
 
@@ -363,6 +424,8 @@ describe("entitlement AI platform config", () => {
     "AI_PLATFORM_INTERNAL_SERVICE_KEY",
     "AI_CREDIT_GRANT_BY_SKU_JSON",
     "AI_CREDIT_MICRO_PER_VOICE_SECOND",
+    // Shell/control-plane.env can leave a non-JSON stub that breaks entitlementConfig().
+    "ENTITLEMENT_LICENSE_PUBLIC_KEYS",
   ] as const;
   const previous = new Map<string, string | undefined>();
 
@@ -383,6 +446,7 @@ describe("entitlement AI platform config", () => {
     delete process.env.AI_PLATFORM_INTERNAL_SERVICE_KEY;
     delete process.env.AI_CREDIT_GRANT_BY_SKU_JSON;
     delete process.env.AI_CREDIT_MICRO_PER_VOICE_SECOND;
+    delete process.env.ENTITLEMENT_LICENSE_PUBLIC_KEYS;
     const empty = entitlementConfig() as EntitlementConfig;
     expect(empty.aiPlatformBaseUrl).toBe("");
     expect(empty.aiPlatformInternalServiceKey).toBe("");

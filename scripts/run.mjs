@@ -16,15 +16,14 @@ const [repo, action] = process.argv.slice(2);
 const map = {
   identity: {
     bootstrap: isWin ? "powershell -ExecutionPolicy Bypass -File ./bootstrap.ps1" : "bash ./bootstrap.sh",
-    // stop 保留容器 → Docker Desktop 下次启动仍会 unless-stopped 自启
-    down: "docker compose stop",
-    stop: "docker compose stop",
-    // 真正拆掉栈（需再次 id:up 才恢复自启）
-    destroy: "docker compose down",
+    // Prefer shared luminary-works stack when control-plane.env exists.
+    down: "bash ../scripts/identity-compose.sh stop",
+    stop: "bash ../scripts/identity-compose.sh stop",
+    destroy: "bash ../scripts/identity-compose.sh down",
     register: "node scripts/register-apps.mjs",
     sync: "node scripts/sync-client-ids.mjs",
     "seed-user": "node scripts/seed-dev-user.mjs",
-    ps: "docker compose ps",
+    ps: "bash ../scripts/identity-compose.sh ps",
   },
 };
 

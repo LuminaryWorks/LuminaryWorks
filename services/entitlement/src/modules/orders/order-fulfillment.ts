@@ -7,6 +7,7 @@ import {
 } from "../../common/catalog-pricing";
 import type { PlanCode } from "../../common/constants";
 import { EntitlementException } from "../../common/errors";
+import { assertCommerceOpen } from "../../common/product-lifecycle";
 import { isPaidLikeOrderStatus } from "../../common/payment-providers";
 import { assertTrialPlanAllowed } from "../../common/trial-policy";
 import { getQuotaPack } from "../../common/voice-packs";
@@ -38,6 +39,8 @@ export async function fulfillPaidOrderTx(
   });
   if (!locked) return null;
   if (isPaidLikeOrderStatus(locked.status)) return locked;
+
+  await refuseClosedProducts(manager, await productCodesForFulfillment(manager, locked));
 
   locked.status = "paid";
   locked.providerRef = providerRef;
@@ -288,6 +291,36 @@ async function lockBillingProfile(manager: EntityManager, order: OrderEntity): P
   profile.lockedAt = new Date();
   profile.lockedReason = `order:${order.id}`;
   await manager.save(profile);
+}
+
+async function productCodesForFulfillment(
+  manager: EntityManager,
+  order: OrderEntity,
+): Promise<string[]> {
+  if (order.metadata?.kind === "quota_pack") {
+    const pack = getQuotaPack(String(order.metadata.packSku ?? ""));
+    return pack ? [pack.productCode] : [];
+  }
+  const codes: string[] = [];
+  if (order.productCode) codes.push(order.productCode);
+  if (order.bundleSku) {
+    const bundle = await manager.findOne(BundleEntity, {
+      where: { sku: order.bundleSku },
+      relations: { items: true },
+    });
+    for (const item of bundle?.items ?? []) codes.push(item.productCode);
+  }
+  return codes;
+}
+
+/** Suspended and retired products cannot be granted or renewed. Already-paid rows return earlier. */
+async function refuseClosedProducts(manager: EntityManager, productCodes: string[]): Promise<void> {
+  const unique = [...new Set(productCodes.map((code) => code.trim()).filter(Boolean))];
+  if (unique.length === 0) return;
+  const found = await manager.getRepository(ProductEntity).find({
+    where: { code: In(unique) },
+  });
+  for (const product of found) assertCommerceOpen(product);
 }
 
 async function assertDeclaredBundleProducts(

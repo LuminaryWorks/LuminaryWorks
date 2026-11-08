@@ -1,6 +1,7 @@
 import type {
   MeteringMode,
   PlanCode,
+  ProductLifecycleStatus,
   QuotaMerge,
   QuotaPeriod,
   SubjectKind,
@@ -47,6 +48,8 @@ export interface EntitlementSnapshotDto {
   effectivePlan: PlanCode | "none";
   trial: TrialSnapshot;
   sellable: boolean;
+  /** `active` keeps selling. `suspended` and `retired` refuse new commerce; existing grants still resolve. */
+  lifecycleStatus: ProductLifecycleStatus;
   features: Record<string, FeatureSnapshot>;
   quotas: Record<string, QuotaSnapshot>;
   asOf: string;

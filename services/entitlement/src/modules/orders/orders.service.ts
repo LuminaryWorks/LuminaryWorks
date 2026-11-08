@@ -7,6 +7,7 @@ import { EntitlementException } from "../../common/errors";
 import { assertPaymentsAvailable, assertPaymentsEnabled } from "../../common/payments-enabled";
 import { isDevManualProvider, isPaidLikeOrderStatus } from "../../common/payment-providers";
 import type { GeoContext } from "../../common/payment-geo";
+import { assertCommerceOpen } from "../../common/product-lifecycle";
 import { assertTrialPlanAllowed } from "../../common/trial-policy";
 import { getQuotaPack } from "../../common/voice-packs";
 import { BundleEntity } from "../../database/entities/bundle.entity";
@@ -80,6 +81,7 @@ export class OrdersService {
     if (pack) {
       await this.assertDeclaredBundleProducts([pack.productCode]);
       const product = await this.requireProduct(pack.productCode);
+      this.assertProductCommerceOpen(product);
       this.assertProductSellable(product);
       return this.persistOrder({
         subjectKind: input.subjectKind,
@@ -153,6 +155,7 @@ export class OrdersService {
       );
     }
     const product = await this.requireProduct(offering.productCode);
+    this.assertProductCommerceOpen(product);
     this.assertProductSellable(product);
     await assertTrialPlanAllowed(this.products, offering.productCode, offering.planCode);
 
@@ -168,6 +171,7 @@ export class OrdersService {
       for (const item of bundle.items) {
         await assertTrialPlanAllowed(this.products, item.productCode, item.planCode);
         const itemProduct = await this.requireProduct(item.productCode);
+        this.assertProductCommerceOpen(itemProduct);
         this.assertProductSellable(itemProduct);
       }
     }
@@ -443,6 +447,10 @@ export class OrdersService {
       });
     }
     return product;
+  }
+
+  private assertProductCommerceOpen(product: ProductEntity): void {
+    assertCommerceOpen(product);
   }
 
   private assertProductSellable(product: ProductEntity): void {

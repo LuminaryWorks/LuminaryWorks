@@ -17,6 +17,14 @@ Cheat sheet for idle-safe local Compose across LuminaryWorks products. Normative
 | `docker compose down` | Removes containers; volumes may remain |
 | `docker compose down -v` | Also removes named volumes (data loss) |
 
+## Platform stack (`luminary-works`)
+
+Early stage: **one** Compose project `luminary-works` (`CONTROL_PLANE_PROJECT`), **one** Postgres (`control-plane-db` → fixed volume `luminary_works_pg`), **one** Redis (`identity-redis`). Logical DBs: `logto`, `entitlement`, `notification`, `ai_platform`. Local loopback `5433` / Redis `6381` via `control-plane.dev-ports.yaml` (`pnpm ent:up` / `pnpm id:up`).
+
+Product Postgres containers stay on their own ports. Do not merge six product planes into this project.
+
+`identity/docker-compose.yml` is **standalone-only** (`--profile standalone-db`). Default `pnpm id:up` starts Identity from the control-plane compose. See `deploy/OPERATOR.md` §5.4–§5.5.
+
 ## Product pointers
 
 | Product | Core compose | Optional AI / heavy |
@@ -24,7 +32,7 @@ Cheat sheet for idle-safe local Compose across LuminaryWorks products. Normative
 | LuminaryWorks control plane | `deploy/compose/control-plane.yaml` | `--profile ai` / `observability` — AI profile is the **gateway**, not an Ollama GPU host |
 | VistaRemote | `deploy/compose/docker-compose.dev.yml` (postgres/redis) | `--profile ai` → lab `ollama` + qdrant + python-worker (**lab-only**; host Ollama port often `11435`) |
 | VistaCast | `deploy/docker-compose.yml` | Demo RTSP/RTMP publishers on separate profiles; edge infer on client, not server GPU |
-| Identity | See `identity/LOCAL_DEV_DOCKER.md` | — |
+| Identity / control plane | `deploy/compose/control-plane.yaml` (project `luminary-works`) | Identity alone: `identity/` + `--profile standalone-db` |
 
 ## VistaRemote lab AI (optional)
 

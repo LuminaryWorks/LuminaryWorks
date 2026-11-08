@@ -18,7 +18,7 @@ test("accepts a composable control-plane shaped config", () => {
   const { issues, serviceNames } = checkComposeConfig(
     config(
       {
-        "identity-db": {
+        "control-plane-db": {
           image: "postgres:16-alpine",
           environment: { POSTGRES_PASSWORD: "8f2c1d9e77a4b0c3" },
           networks: { "control-data": {} },
@@ -37,7 +37,7 @@ test("accepts a composable control-plane shaped config", () => {
     issues.filter((issue) => issue.severity === "error"),
     [],
   );
-  assert.deepEqual(serviceNames, ["identity-db", "identity"]);
+  assert.deepEqual(serviceNames, ["control-plane-db", "identity"]);
 });
 
 test("rejects fixed container_name", () => {
@@ -115,10 +115,10 @@ test("empty secrets are a warning in dev and an error in production", () => {
 
 test("published datastore ports are a warning in dev and an error in production", () => {
   const input = config({
-    "entitlement-db": {
+    "control-plane-db": {
       image: "postgres:16-alpine",
       environment: { POSTGRES_PASSWORD: "8f2c1d9e77a4b0c3" },
-      ports: ["127.0.0.1:5434:5432"],
+      ports: ["127.0.0.1:5433:5432"],
     },
   });
   const dev = checkComposeConfig(input, { stage: "dev" }).issues.find(

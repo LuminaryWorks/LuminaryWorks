@@ -5,6 +5,7 @@ import {
   defaultCurrencies,
   defaultMarketScopes,
   providerCnRestriction,
+  readMerchantAccountInput,
 } from "./payment-providers";
 
 describe("payment-providers", () => {
@@ -24,6 +25,14 @@ describe("payment-providers", () => {
     expect(defaultMarketScopes("wechat_pay_v3")).toEqual(["CN"]);
     expect(defaultCurrencies("alipay_f2f")).toEqual(["CNY"]);
     expect(defaultCurrencies("paypal")).toEqual(["USD"]);
+  });
+
+  it("treats a blank merchant account id as the LuminaryWorks MoR account", () => {
+    expect(readMerchantAccountInput("  acct_connect_9  ")).toBe(
+      "acct_connect_9",
+    );
+    expect(readMerchantAccountInput("   ")).toBeNull();
+    expect(readMerchantAccountInput("")).toBeNull();
   });
 
   it("builds structured credential maps without empty optional fields", () => {

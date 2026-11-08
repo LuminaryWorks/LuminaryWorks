@@ -629,3 +629,22 @@ DoerFlow Credit：`providerId=doerflow_credit`，`baseUrl` + `serviceKey` + `web
 - 私有交付用 `PAYMENTS_ENABLED=false` + `ENTITLEMENT_MODE=offline_license`，不要留 LuminaryWorks 运营中的 provider 配置行。
 - 不要跑对本文件的 live smoke；联调在沙箱用真实商户工具，不在 CI 打真实网关。
 - 本文不声称已对上述渠道做 live 商户验证。
+
+## 商户账户预留（MoR 阶段）
+
+当前收款仍是 LuminaryWorks 作为 merchant of record。支付配置行增加可空字段 `merchantAccountId`：
+
+- 不填、`null` 或空白：使用 LuminaryWorks 自己的 MoR 账户。
+- 填了字符串：只写入 `payment_provider_configs.merchant_account_id`，并出现在管理接口与 adapter 配置对象上。
+- Adapter **不会**拿这个字段去调用 Stripe Connect 或其它分账 API。合作伙伴以后若改为独立商户，再接 Connect。
+
+这和渠道凭证里的 `merchantId`（PSP 商户号，用来核对回调）不是同一个字段。
+
+订单、退款（含渠道 chargeback，记在 `refunds`）和支付尝试都带 `productCode`。管理列表：
+
+- `GET /v1/admin/payments/orders?productCode=`
+- `GET /v1/admin/payments/attempts?productCode=`
+- `GET /v1/admin/payments/refunds?productCode=`
+- `POST /v1/admin/payments/reconcile?productCode=`
+
+迁移只从父订单复制 `product_code`。父订单本身没有产品码时保持空，不写假的默认产品。没有单独的 settlement 表；对账行就是 `payment_attempts`。

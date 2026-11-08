@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "$comment": "Fixture only. Northwind is not a LuminaryWorks partner.",
+  "partners": [
+    {
+      "code": "northwind",
+      "displayName": "Northwind",
+      "operatorLabel": "Northwind",
+      "domains": ["northwind.example"],
+      "githubOrg": "Northwind",
+      "oidcApps": [
+        {
+          "name": "Northwind Web",
+          "type": "SPA",
+          "redirectUris": ["https://northwind.example/auth/callback"],
+          "postLogoutRedirectUris": ["https://northwind.example/"],
+          "clientId": "PUBLIC_CLIENT_ID_PLACEHOLDER"
+        }
+      ],
+      "entitlementProductCodes": ["northwind"],
+      "aiServiceCredentialHint": {
+        "productCodes": ["northwind"],
+        "internal": false,
+        "note": "Bind the service credential to this product code. The key stays outside git."
+      },
+      "legalTermsUrl": "https://northwind.example/legal/terms",
+      "legalPrivacyUrl": "https://northwind.example/legal/privacy",
+      "supportEmail": null,
+      "statusPageUrl": null,
+      "sellable": false,
+      "status": "active"
+    }
+  ]
+}

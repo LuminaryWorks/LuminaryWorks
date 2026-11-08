@@ -18,7 +18,7 @@
 # `mc ready local` (documented Compose healthcheck). The init service uses the
 # official `quay.io/minio/aistor/mc` image with `/bin/sh` to run bootstrap.sh.
 
-name: ${CONTROL_PLANE_PROJECT:-luminary-control-plane}
+name: ${CONTROL_PLANE_PROJECT:-luminary-works}
 
 x-restart: &restart
   restart: unless-stopped

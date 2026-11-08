@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { ALL_ENTITIES } from "./entities";
+import { AiPlatformConnectionAudit1762600000000 } from "./migrations/1762600000000-AiPlatformConnectionAudit";
 import { AiPlatformInitial1762406400000 } from "./migrations/1762406400000-AiPlatformInitial";
 import { AiPlatformWallet1762500000000 } from "./migrations/1762500000000-AiPlatformWallet";
 
@@ -12,6 +13,10 @@ export default new DataSource({
   type: "postgres",
   url,
   entities: ALL_ENTITIES,
-  migrations: [AiPlatformInitial1762406400000, AiPlatformWallet1762500000000],
+  migrations: [
+    AiPlatformInitial1762406400000,
+    AiPlatformWallet1762500000000,
+    AiPlatformConnectionAudit1762600000000,
+  ],
   synchronize: false,
 });

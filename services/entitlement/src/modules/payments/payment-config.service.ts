@@ -32,6 +32,7 @@ import {
 } from "../../common/payment-providers";
 import type { EntitlementConfig } from "../../config/entitlement.config";
 import { EntitlementException } from "../../common/errors";
+import { readMerchantAccountId } from "../../common/merchant-account";
 import { PaymentCatalogOrderEntity } from "../../database/entities/payment-catalog-order.entity";
 import { PaymentProviderConfigEntity } from "../../database/entities/payment-provider-config.entity";
 import { AuditService } from "../audit/audit.service";
@@ -48,6 +49,8 @@ export interface PaymentConfigPublicView {
   priority: number;
   capabilities: ProviderCapabilities;
   merchantId: string | null;
+  /** Null means the LuminaryWorks merchant-of-record account. Not sent to Connect. */
+  merchantAccountId: string | null;
   credentialFingerprint: string;
   credentialLastFour: string;
   keyFingerprint: string;
@@ -142,6 +145,7 @@ export class PaymentConfigService implements OnModuleInit {
       priority: row.priority,
       capabilities: row.capabilities,
       merchantId: row.merchantId,
+      merchantAccountId: readMerchantAccountId(row.merchantAccountId),
       credentialFingerprint: row.credentialFingerprint,
       credentialLastFour: row.credentialLastFour,
       keyFingerprint: row.keyFingerprint,
@@ -265,6 +269,7 @@ export class PaymentConfigService implements OnModuleInit {
     priority?: number;
     capabilities?: Partial<ProviderCapabilities>;
     merchantId?: string | null;
+    merchantAccountId?: string | null;
     credentials?: unknown;
     metadata?: Record<string, unknown>;
     enabled?: boolean;
@@ -303,6 +308,7 @@ export class PaymentConfigService implements OnModuleInit {
         priority: input.priority ?? 100,
         capabilities,
         merchantId: input.merchantId ?? null,
+        merchantAccountId: readMerchantAccountId(input.merchantAccountId),
         credentialsCiphertext: encrypted.ciphertext,
         credentialFingerprint: encrypted.fingerprint,
         credentialLastFour: encrypted.lastFour,
@@ -341,6 +347,7 @@ export class PaymentConfigService implements OnModuleInit {
       priority?: number;
       capabilities?: Partial<ProviderCapabilities>;
       merchantId?: string | null;
+      merchantAccountId?: string | null;
       metadata?: Record<string, unknown>;
       environment?: PaymentEnvironment;
       actor: string;
@@ -364,6 +371,9 @@ export class PaymentConfigService implements OnModuleInit {
     if (patch.priority != null) row.priority = patch.priority;
     if (patch.capabilities) row.capabilities = { ...row.capabilities, ...patch.capabilities };
     if (patch.merchantId !== undefined) row.merchantId = patch.merchantId;
+    if (patch.merchantAccountId !== undefined) {
+      row.merchantAccountId = readMerchantAccountId(patch.merchantAccountId);
+    }
     if (patch.metadata) row.metadata = redactPaymentSecrets({ ...row.metadata, ...patch.metadata });
     if (patch.environment && patch.environment !== row.environment) {
       row.environment = patch.environment;
@@ -518,6 +528,7 @@ export class PaymentConfigService implements OnModuleInit {
       priority: row.priority,
       capabilities: row.capabilities,
       merchantId: row.merchantId,
+      merchantAccountId: readMerchantAccountId(row.merchantAccountId),
       credentials,
       metadata: row.metadata ?? {},
     };

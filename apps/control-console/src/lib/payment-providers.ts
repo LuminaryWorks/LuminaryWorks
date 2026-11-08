@@ -578,6 +578,12 @@ export function collectCreemAmounts(detail: {
   return merged;
 }
 
+/** Blank means the LuminaryWorks merchant-of-record account. */
+export function readMerchantAccountInput(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed || null;
+}
+
 export function buildCredentialsObject(
   providerId: ProviderId,
   values: Record<string, string>,

@@ -22,8 +22,8 @@ function stubConfig(version = DEFAULT_LEGAL_POLICY_VERSION) {
 }
 
 describe("legal policy version and documents", () => {
-  it("defaults to lw-legal-v2026-09-07 with terms/privacy/trial-deletion URLs", () => {
-    expect(DEFAULT_LEGAL_POLICY_VERSION).toBe("lw-legal-v2026-09-07");
+  it("defaults to lw-legal-v2026-11-07 with terms/privacy/trial-deletion URLs", () => {
+    expect(DEFAULT_LEGAL_POLICY_VERSION).toBe("lw-legal-v2026-11-07");
     expect(LEGAL_DOCUMENT_KEYS).toEqual(["terms", "privacy", "trial-deletion"]);
     const docs = legalDocumentsForVersion(
       DEFAULT_LEGAL_POLICY_VERSION,

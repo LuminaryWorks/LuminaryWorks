@@ -30,7 +30,9 @@
 #     (Identity / Entitlement / Notification / AI Platform) with separate roles.
 #     Service dirs do not ship their own Postgres Compose — host apps use env → :5433.
 
-name: ${CONTROL_PLANE_PROJECT:-luminary-control-plane}
+# Early-stage lab: one Compose project for platform Postgres + Redis + Identity
+# + Entitlement + Notification (+ optional AI). Product planes stay separate.
+name: ${CONTROL_PLANE_PROJECT:-luminary-works}
 
 x-restart: &restart
   restart: unless-stopped
@@ -38,6 +40,7 @@ x-restart: &restart
 networks:
   # Data tier: no egress, reachable only by control-plane services.
   control-data:
+    name: ${CONTROL_PLANE_DATA_NETWORK:-luminary-works_control-data}
     internal: true
   # Edge tier: control-plane services + product stacks that opt in.
   # Product Compose projects join it with:
@@ -46,8 +49,14 @@ networks:
     name: ${CONTROL_PLANE_EDGE_NETWORK:-luminary-control-edge}
 
 volumes:
+  # Fixed absolute names so renaming CONTROL_PLANE_PROJECT does not orphan data.
+  # Create once: `docker volume create luminary_works_pg` (ent:up / id:up also ensure it).
   control-plane-db-data:
+    name: luminary_works_pg
+    external: true
   ai-platform-data:
+    name: luminary_works_ai_platform_data
+    external: true
 
 services:
   # Shared data tier: one Postgres, four DBs + four app roles (see init/).
@@ -86,7 +95,31 @@ services:
       timeout: 5s
       retries: 12
       start_period: 20s
+    # 24 GB shared host. This process is cgroup-capped at 2g so Identity, Entitlement,
+    # and the rest of the budget in deploy/OPERATOR.md still fit.
+    # shared_buffers=512MB is ~25% of the 2g limit (it is allocated, not a hint).
+    # effective_cache_size=1536MB is a planner hint only. Page cache counts against the
+    # same 2g cgroup, so the hint must not be a fraction of the 24 GB host.
+    # max_connections=100 leaves headroom for four roles; the split trigger is 70%.
+    # work_mem=4MB bounds sorts (100 * 4MB = 400MB) beside 512MB shared_buffers.
+    # log_min_duration_statement=500 logs statements slower than 500ms.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - effective_cache_size=1536MB
+      - -c
+      - max_connections=100
+      - -c
+      - work_mem=4MB
+      - -c
+      - log_min_duration_statement=500
+    mem_limit: 2g
+    mem_reservation: 512m
 
+  # Shared platform Redis (Identity session cache today; other control-plane
+  # services may reuse this host later). Service DNS name stays identity-redis.
   identity-redis:
     <<: *restart
     image: ${REDIS_IMAGE:-redis:7-alpine}
@@ -109,8 +142,8 @@ services:
     build:
       context: ../../identity/branding
       args:
-        LOGTO_VERSION: ${LOGTO_VERSION:-1.22.0}
-    image: ${IDENTITY_IMAGE:-luminaryworks/identity:1.22.0-lw1}
+        LOGTO_VERSION: ${LOGTO_VERSION:-1.42.0}
+    image: ${IDENTITY_IMAGE:-luminaryworks/identity:1.42.0-lw1}
     depends_on:
       control-plane-db:
         condition: service_healthy
@@ -316,10 +349,13 @@ services:
         max-file: "3"
 
   # Business superadmin SPA (catalog / payments / legal). Not Logto Admin (:3002).
+  # Build context is the LuminaryWorks repo root so the image can see
+  # shared/packages/ui (and auth-react dist). Dockerfile: apps/control-console/Dockerfile.
   control-console:
     <<: *restart
     build:
-      context: ../../apps/control-console
+      context: ../..
+      dockerfile: apps/control-console/Dockerfile
       args:
         NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
     image: ${CONTROL_CONSOLE_IMAGE:-luminaryworks/control-console:local}
@@ -348,6 +384,62 @@ services:
       - control-edge
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3050/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    mem_limit: 256m
+    mem_reservation: 64m
+    cpus: "0.5"
+    pids_limit: 256
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # End-user Account Center (profile, billing, AI wallet, BYOK, partner apps).
+  # Counterpart of control-console. Build context is the repo root for shared/ui.
+  account-center:
+    <<: *restart
+    build:
+      context: ../..
+      dockerfile: apps/account-center/Dockerfile
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
+    image: ${ACCOUNT_CENTER_IMAGE:-luminaryworks/account-center:local}
+    depends_on:
+      identity:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      ACCOUNT_CENTER_PORT: "3060"
+      ACCOUNT_CENTER_PUBLIC_URL: ${ACCOUNT_CENTER_PUBLIC_URL:-http://localhost:3060}
+      ACCOUNT_CENTER_IDP_ISSUER: ${ACCOUNT_CENTER_IDP_ISSUER:-http://localhost:3001/oidc}
+      ACCOUNT_CENTER_IDP_CLIENT_ID: ${ACCOUNT_CENTER_IDP_CLIENT_ID:-}
+      ACCOUNT_CENTER_IDP_AUDIENCE: ${ACCOUNT_CENTER_IDP_AUDIENCE:-https://ai.luminaryworks.dev}
+      ACCOUNT_CENTER_IDP_SCOPES: ${ACCOUNT_CENTER_IDP_SCOPES:-openid profile email offline_access}
+      ACCOUNT_CENTER_AI_BASE_URL: ${ACCOUNT_CENTER_AI_BASE_URL:-http://127.0.0.1:13100}
+      ACCOUNT_CENTER_ENTITLEMENT_BASE_URL: ${ACCOUNT_CENTER_ENTITLEMENT_BASE_URL:-http://127.0.0.1:3040}
+      ACCOUNT_CENTER_AUTH_EXPERIENCE_URL: ${ACCOUNT_CENTER_AUTH_EXPERIENCE_URL:-http://localhost:3060}
+      ACCOUNT_CENTER_IDP_ACCOUNT_URL: ${ACCOUNT_CENTER_IDP_ACCOUNT_URL:-http://localhost:3001}
+      ACCOUNT_CENTER_IDP_SECURITY_URL: ${ACCOUNT_CENTER_IDP_SECURITY_URL:-http://localhost:3001}
+      ACCOUNT_CENTER_APPS_JSON: ${ACCOUNT_CENTER_APPS_JSON:-[]}
+      ACCOUNT_CENTER_GIT_SHA: ${ACCOUNT_CENTER_GIT_SHA:-unknown}
+      PUBLIC_LEGAL_PLATFORM_TERMS_URL: ${PUBLIC_LEGAL_PLATFORM_TERMS_URL:-https://luminaryworks.dev/legal/terms}
+      PUBLIC_LEGAL_PLATFORM_PRIVACY_URL: ${PUBLIC_LEGAL_PLATFORM_PRIVACY_URL:-https://luminaryworks.dev/legal/privacy}
+      PUBLIC_LEGAL_PRODUCT_TERMS_URL: ${PUBLIC_LEGAL_PRODUCT_TERMS_URL:-/legal/terms}
+      PUBLIC_LEGAL_PRODUCT_PRIVACY_URL: ${PUBLIC_LEGAL_PRODUCT_PRIVACY_URL:-/legal/privacy}
+    ports:
+      - "${CONTROL_PLANE_BIND_ADDR:-127.0.0.1}:${ACCOUNT_CENTER_PORT:-3060}:3060"
+    networks:
+      - control-edge
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:3060/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\"",
+        ]
       interval: 10s
       timeout: 5s
       retries: 6
@@ -403,6 +495,8 @@ services:
       ENTITLEMENT_SERVICE_API_KEY: ${ENTITLEMENT_SERVICE_API_KEY:?set ENTITLEMENT_SERVICE_API_KEY in deploy/env/control-plane.env}
       PUBLIC_API_ENABLED: "false"
       AI_PLATFORM_WALLET_ENFORCE: ${AI_PLATFORM_WALLET_ENFORCE:-false}
+      # Browser SPA origins (Account Center / Console). Empty = no CORS headers.
+      AI_PLATFORM_CORS_ORIGINS: ${AI_PLATFORM_CORS_ORIGINS:-}
     volumes:
       - ai-platform-data:/data
     ports:

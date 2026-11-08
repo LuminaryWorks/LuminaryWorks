@@ -16,8 +16,9 @@ const thisDir = dirname(fileURLToPath(import.meta.url));
 const adminInContainer = join(thisDir, "logto-admin-in-container.cjs");
 
 export const DEFAULT_IDENTITY_CONTAINERS = {
-  identity: "luminary-control-plane-identity-1",
-  identityDb: "luminary-control-plane-identity-db-1",
+  identity: "luminary-works-identity-1",
+  // Shared control-plane Postgres (dbname=logto for Identity SQL).
+  identityDb: "luminary-works-control-plane-db-1",
 };
 
 export function parsePsqlScalar(out) {

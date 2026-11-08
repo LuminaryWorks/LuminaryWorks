@@ -8,11 +8,13 @@ import {
   decryptSecret,
   encryptSecret,
   fingerprintSecret,
+  listProviderModels,
   streamLocal,
   synthesizeLocal,
   transcribeLocal,
   ttsCacheKey,
   type AiCompleteMessage,
+  type AiProviderModelList,
   type AiUsageEvent,
 } from "@luminaryworks/ai-client";
 import type { AiPrincipal } from "./auth/auth.types";
@@ -25,10 +27,22 @@ import {
   canManageConnection,
 } from "./authz";
 import { AiPlatformException } from "./common/errors";
-import { AiUsageEventEntity, ProviderConnectionEntity } from "./database/entities";
+import { AiUsageEventEntity, ConnectionAuditEventEntity, ProviderConnectionEntity } from "./database/entities";
+import type { ConnectionAuditAction } from "./database/entities/connection-audit-event.entity";
 import type { ConnectionOwnerKind } from "./database/entities/provider-connection.entity";
+import { probeRateKey, probeRateLimiter } from "./probe-rate-limit";
+import { probeProviderConnection } from "./provider-probe";
+import { logProviderFailure, redactText } from "./redact";
+import { assertSafeBaseUrl, iterateWithPin, pinProviderEndpoint, runWithPin, type PinnedTarget } from "./ssrf";
 import { EntitlementGate } from "./entitlement-gate";
 import { ephemeralSecretAllowed, isByokPath, isProductionEnv, readWalletEnforce } from "./policy";
+import {
+  enforceHostedProductRpm,
+  hostedLimitApplies,
+  productLimitFor,
+  releaseHostedDailyCharge,
+  reserveHostedDailyCharge,
+} from "./product-limits";
 import { readTtsCache, writeTtsCache } from "./tts-cache";
 import { microToNumber } from "./wallet/money";
 import type { UsageQuantities } from "./wallet/rate-card";
@@ -47,6 +61,7 @@ export interface ProviderConnectionPublic {
   purpose?: string | null;
   extra?: Record<string, string> | null;
   secretFingerprint?: string;
+  hasSecret: boolean;
 }
 
 export interface EphemeralSecret {
@@ -73,11 +88,16 @@ interface ResolvedCall {
   byok: boolean;
   caller: { subjectId: string; organizationId: string | null };
   productCode: string;
+  pin: PinnedTarget | null;
 }
 
 interface ManagedReservation {
   requestId: string;
   capability: string;
+  productCode: string;
+  estimateMicro: bigint;
+  /** False when the wallet is off and the reservation only tracks a product ceiling. */
+  wallet: boolean;
 }
 
 @Injectable()
@@ -87,6 +107,8 @@ export class AiGatewayService {
     private readonly connections: Repository<ProviderConnectionEntity>,
     @InjectRepository(AiUsageEventEntity)
     private readonly usage: Repository<AiUsageEventEntity>,
+    @InjectRepository(ConnectionAuditEventEntity)
+    private readonly audits: Repository<ConnectionAuditEventEntity>,
     private readonly entitlement: EntitlementGate,
     private readonly wallet: WalletService,
   ) {}
@@ -104,7 +126,7 @@ export class AiGatewayService {
     ownerUid: string;
     providerType: string;
     displayName: string;
-    baseUrl?: string;
+    baseUrl?: string | null;
     model: string;
     secret?: string;
     enabled?: boolean;
@@ -118,15 +140,18 @@ export class AiGatewayService {
     const prev = await this.connections.findOne({ where: { uid } });
     if (prev) assertCanManageConnection(principal, prev);
     assertCanManageConnection(principal, { ownerKind: input.ownerKind, ownerUid: input.ownerUid });
+    const baseUrl = normalizeBaseUrl(input.baseUrl);
+    if (baseUrl) await assertSafeBaseUrl(baseUrl);
     let ciphertext = prev?.ciphertext ?? null;
     let secretFingerprint = prev?.secretFingerprint ?? null;
-    if (input.secret) {
+    const secret = input.secret?.trim();
+    if (secret) {
       const masterKey = process.env.AI_VAULT_MASTER_KEY?.trim() ?? "";
       if (!masterKey) {
         throw new AiPlatformException("VAULT_UNAVAILABLE", 503, "AI_VAULT_MASTER_KEY missing");
       }
-      ciphertext = encryptSecret(masterKey, input.secret);
-      secretFingerprint = fingerprintSecret(input.secret);
+      ciphertext = encryptSecret(masterKey, secret);
+      secretFingerprint = fingerprintSecret(secret);
     }
     const row = this.connections.create({
       uid,
@@ -134,17 +159,191 @@ export class AiGatewayService {
       ownerUid: input.ownerUid,
       providerType: input.providerType,
       displayName: input.displayName,
-      baseUrl: input.baseUrl ?? null,
+      baseUrl,
       model: input.model,
-      enabled: input.enabled ?? true,
+      enabled: input.enabled ?? prev?.enabled ?? true,
       isDefault: input.isDefault ?? prev?.isDefault ?? false,
       purpose: input.purpose ?? prev?.purpose ?? "chat",
-      extra: input.extra ?? prev?.extra ?? null,
+      extra: sanitizeExtra(input.extra === undefined ? prev?.extra : input.extra),
       secretFingerprint,
       ciphertext,
     });
     const saved = await this.connections.save(row);
+    await this.audit({
+      action: prev ? "update" : "create",
+      principal,
+      ownerKind: saved.ownerKind,
+      ownerUid: saved.ownerUid,
+      connectionUid: saved.uid,
+      ok: true,
+    });
     return toPublic(saved);
+  }
+
+  async updateConnection(
+    uid: string,
+    input: {
+      ownerKind?: ConnectionOwnerKind;
+      ownerUid?: string;
+      providerType?: string;
+      displayName?: string;
+      baseUrl?: string | null;
+      model?: string;
+      secret?: string;
+      enabled?: boolean;
+      isDefault?: boolean;
+      purpose?: string | null;
+      extra?: Record<string, string> | null;
+    },
+    principal: AiPrincipal,
+  ): Promise<ProviderConnectionPublic> {
+    const prev = await this.requireManaged(uid, principal);
+    if (
+      (input.ownerKind !== undefined && input.ownerKind !== prev.ownerKind) ||
+      (input.ownerUid !== undefined && input.ownerUid !== prev.ownerUid)
+    ) {
+      throw new AiPlatformException("VALIDATION_ERROR", 400, "owner cannot be changed");
+    }
+    return this.upsertConnection(
+      {
+        uid,
+        ownerKind: prev.ownerKind,
+        ownerUid: prev.ownerUid,
+        providerType: input.providerType ?? prev.providerType,
+        displayName: input.displayName ?? prev.displayName,
+        baseUrl: input.baseUrl === undefined ? prev.baseUrl : input.baseUrl,
+        model: input.model ?? prev.model,
+        secret: input.secret,
+        enabled: input.enabled ?? prev.enabled,
+        isDefault: input.isDefault ?? prev.isDefault,
+        purpose: input.purpose === undefined ? prev.purpose : input.purpose,
+        extra: input.extra === undefined ? prev.extra : input.extra,
+      },
+      principal,
+    );
+  }
+
+  async deleteConnection(uid: string, principal: AiPrincipal): Promise<{ deleted: true; uid: string }> {
+    const prev = await this.requireManaged(uid, principal);
+    await this.audit({
+      action: "delete",
+      principal,
+      ownerKind: prev.ownerKind,
+      ownerUid: prev.ownerUid,
+      connectionUid: prev.uid,
+      ok: true,
+    });
+    await this.connections.delete({ uid: prev.uid });
+    return { deleted: true, uid: prev.uid };
+  }
+
+  async testConnection(
+    body: {
+      connectionUid?: string;
+      ephemeral?: EphemeralSecret;
+    },
+    principal: AiPrincipal,
+  ): Promise<{
+    ok: boolean;
+    model?: string;
+    latencyMs: number;
+    hasSecret: boolean;
+    secretFingerprint?: string;
+    error?: { code: string; message: string };
+  }> {
+    this.consumeProbe(principal);
+    const supplied = body.ephemeral?.secret?.trim() ?? "";
+    this.assertEphemeral(Boolean(supplied), true);
+    const target = await this.resolveProbeTarget(body, principal, supplied);
+    const started = Date.now();
+    const fingerprint = fingerprintSecret(target.secret);
+    try {
+      const probed = await probeProviderConnection({
+        providerType: target.providerType,
+        baseUrl: target.baseUrl,
+        secret: target.secret,
+        model: target.model,
+      });
+      await this.audit({
+        action: "test",
+        principal,
+        ownerKind: target.ownerKind,
+        ownerUid: target.ownerUid,
+        connectionUid: target.connectionUid,
+        ok: true,
+      });
+      return {
+        ok: true,
+        model: probed.model,
+        latencyMs: Date.now() - started,
+        hasSecret: true,
+        secretFingerprint: fingerprint,
+      };
+    } catch (error) {
+      if (error instanceof AiPlatformException) throw error;
+      logProviderFailure("test-connection", error, [target.secret]);
+      await this.audit({
+        action: "test",
+        principal,
+        ownerKind: target.ownerKind,
+        ownerUid: target.ownerUid,
+        connectionUid: target.connectionUid,
+        ok: false,
+      });
+      return {
+        ok: false,
+        latencyMs: Date.now() - started,
+        hasSecret: true,
+        secretFingerprint: fingerprint,
+        error: {
+          code: "PROVIDER_ERROR",
+          message: redactText(error instanceof Error ? error.message : "connection test failed", [target.secret]),
+        },
+      };
+    }
+  }
+
+  async listModels(
+    body: {
+      providerType?: string;
+      baseUrl?: string;
+      secret?: string;
+      connectionUid?: string;
+      purpose?: "chat" | "stt" | "tts";
+    },
+    principal: AiPrincipal,
+  ): Promise<AiProviderModelList> {
+    this.consumeProbe(principal);
+    const supplied = body.secret?.trim() ?? "";
+    this.assertEphemeral(Boolean(supplied), true);
+    const requested = `${body.purpose ?? "chat"}`;
+    if (requested !== "chat" && requested !== "stt" && requested !== "tts") {
+      throw new AiPlatformException("VALIDATION_ERROR", 400, "purpose is invalid");
+    }
+    const purpose = requested;
+    let providerType = body.providerType?.trim() ?? "";
+    let baseUrl = body.baseUrl;
+    let secret = supplied;
+    if (body.connectionUid) {
+      const row = await this.requireUsable(body.connectionUid, principal);
+      providerType = providerType || row.providerType;
+      if (baseUrl === undefined) baseUrl = row.baseUrl ?? undefined;
+      if (!secret && row.ciphertext) secret = this.decrypt(row.ciphertext);
+    }
+    if (!providerType) {
+      throw new AiPlatformException("VALIDATION_ERROR", 400, "providerType is required");
+    }
+    if (baseUrl?.trim()) await assertSafeBaseUrl(baseUrl);
+    const pin = secret ? await pinProviderEndpoint(providerType, baseUrl, "models") : null;
+    const listed = await runWithPin(pin, () =>
+      listProviderModels({
+        providerType,
+        baseUrl,
+        secret: secret || undefined,
+        purpose: purpose as "chat" | "stt" | "tts",
+      }),
+    );
+    return { source: listed.source, models: listed.models };
   }
 
   async recordUsage(event: AiUsageEvent): Promise<void> {
@@ -183,15 +382,17 @@ export class AiGatewayService {
     const reservation = await this.beginManagedBill(creds, "chat", body);
     let result;
     try {
-      result = await completeLocal({
-        providerType: creds.providerType,
-        baseUrl: creds.baseUrl,
-        model: creds.model,
-        secret: creds.secret,
-        messages: body.messages,
-        jsonMode: Boolean(body.jsonSchema),
-        maxTokens: body.maxTokens,
-      });
+      result = await runWithPin(creds.pin, () =>
+        completeLocal({
+          providerType: creds.providerType,
+          baseUrl: creds.baseUrl,
+          model: creds.model,
+          secret: creds.secret,
+          messages: body.messages,
+          jsonMode: Boolean(body.jsonSchema),
+          maxTokens: body.maxTokens,
+        }),
+      );
     } catch (error) {
       await this.abortManagedBill(reservation);
       throw error;
@@ -258,7 +459,10 @@ export class AiGatewayService {
       await this.abortManagedBill(reservation);
       throw error;
     }
-    return this.finishStream(events, reservation, creds, body, opts.surface ?? "product");
+    return iterateWithPin(
+      creds.pin,
+      this.finishStream(events, reservation, creds, body, opts.surface ?? "product"),
+    );
   }
 
   embed(texts: string[]) {
@@ -303,15 +507,17 @@ export class AiGatewayService {
     const reservation = await this.beginManagedBill(creds, "stt", { ...body, audioInputMs });
     let result;
     try {
-      result = await transcribeLocal({
-        providerType: creds.providerType,
-        baseUrl: creds.baseUrl,
-        model: creds.model,
-        secret: creds.secret,
-        audio,
-        mime: body.mime,
-        language: body.language,
-      });
+      result = await runWithPin(creds.pin, () =>
+        transcribeLocal({
+          providerType: creds.providerType,
+          baseUrl: creds.baseUrl,
+          model: creds.model,
+          secret: creds.secret,
+          audio,
+          mime: body.mime,
+          language: body.language,
+        }),
+      );
     } catch (error) {
       await this.abortManagedBill(reservation);
       throw error;
@@ -407,14 +613,16 @@ export class AiGatewayService {
     const reservation = await this.beginManagedBill(creds, "tts", { ...body, audioOutputMs });
     let result;
     try {
-      result = await synthesizeLocal({
-        providerType: creds.providerType,
-        baseUrl: creds.baseUrl,
-        model: creds.model,
-        secret: creds.secret,
-        text: body.text,
-        voice: body.voice,
-      });
+      result = await runWithPin(creds.pin, () =>
+        synthesizeLocal({
+          providerType: creds.providerType,
+          baseUrl: creds.baseUrl,
+          model: creds.model,
+          secret: creds.secret,
+          text: body.text,
+          voice: body.voice,
+        }),
+      );
     } catch (error) {
       await this.abortManagedBill(reservation);
       throw error;
@@ -470,7 +678,7 @@ export class AiGatewayService {
       throw new AiPlatformException(
         "EPHEMERAL_NOT_ALLOWED",
         400,
-        "ephemeral secrets are only allowed on POST /v1/providers/test in production",
+        "ephemeral secrets are only allowed on POST /v1/providers/test and POST /v1/providers/models in production",
       );
     }
 
@@ -494,7 +702,9 @@ export class AiGatewayService {
     });
     if (!byok) assertHostedCaller(opts.principal);
     const productCode = assertInferenceProduct(opts.principal, body.productCode);
-    if (!byok) {
+    const pin = await pinProviderEndpoint(creds.providerType, creds.baseUrl, "chat");
+    if (hostedLimitApplies(byok)) {
+      enforceHostedProductRpm(productCode);
       await this.entitlement.assertManaged({
         productCode,
         subjectId: caller.subjectId,
@@ -511,6 +721,7 @@ export class AiGatewayService {
       byok,
       caller,
       productCode,
+      pin,
     };
   }
 
@@ -528,9 +739,14 @@ export class AiGatewayService {
       audioOutputMs?: number;
     },
   ): Promise<ManagedReservation | null> {
-    if (!readWalletEnforce() || creds.byok) return null;
+    if (creds.byok) return null;
+    const ceiling = productLimitFor(creds.productCode);
+    const walletOn = readWalletEnforce();
+    if (!walletOn && !ceiling) return null;
     const requestId = body.idempotencyKey?.trim() ?? "";
-    if (!requestId) throw new AiPlatformException("VALIDATION_ERROR", 400, "idempotencyKey is required");
+    if (walletOn && !requestId) {
+      throw new AiPlatformException("VALIDATION_ERROR", 400, "idempotencyKey is required");
+    }
     const capability = body.capability?.trim() || defaultCapability(purpose);
     const usage = estimateQuantities(purpose, body);
     const quote = await this.wallet.quote({
@@ -542,16 +758,37 @@ export class AiGatewayService {
     if (quote.chargedMicro <= 0n) {
       throw new AiPlatformException("VALIDATION_ERROR", 400, "rate card priced the request at zero");
     }
-    const owner = walletOwner(creds.caller);
-    const wallet = await this.wallet.ensureWallet(owner.kind, owner.id);
-    await this.wallet.reserve({
+    reserveHostedDailyCharge(creds.productCode, quote.chargedMicro);
+    if (!walletOn) {
+      return {
+        requestId: requestId || `ceiling:${creds.productCode}`,
+        capability,
+        productCode: creds.productCode,
+        estimateMicro: quote.chargedMicro,
+        wallet: false,
+      };
+    }
+    try {
+      const owner = walletOwner(creds.caller);
+      const wallet = await this.wallet.ensureWallet(owner.kind, owner.id);
+      await this.wallet.reserve({
+        requestId,
+        walletId: wallet.walletId,
+        estimateMicro: quote.chargedMicro,
+        productCode: creds.productCode,
+        capability,
+      });
+    } catch (error) {
+      releaseHostedDailyCharge(creds.productCode, quote.chargedMicro);
+      throw error;
+    }
+    return {
       requestId,
-      walletId: wallet.walletId,
-      estimateMicro: quote.chargedMicro,
-      productCode: creds.productCode,
       capability,
-    });
-    return { requestId, capability };
+      productCode: creds.productCode,
+      estimateMicro: quote.chargedMicro,
+      wallet: true,
+    };
   }
 
   private async finishManagedBill(
@@ -559,7 +796,7 @@ export class AiGatewayService {
     creds: ResolvedCall,
     usage: UsageQuantities,
   ): Promise<Settlement | null> {
-    if (!reservation) return null;
+    if (!reservation?.wallet) return null;
     return this.wallet.settle({
       requestId: reservation.requestId,
       capability: reservation.capability,
@@ -571,6 +808,8 @@ export class AiGatewayService {
 
   private async abortManagedBill(reservation: ManagedReservation | null): Promise<void> {
     if (!reservation) return;
+    releaseHostedDailyCharge(reservation.productCode, reservation.estimateMicro);
+    if (!reservation.wallet) return;
     await this.wallet.release(reservation.requestId).catch(() => undefined);
   }
 
@@ -613,7 +852,7 @@ export class AiGatewayService {
         model,
         promptTokens: doneUsage.promptTokens,
         completionTokens: doneUsage.completionTokens,
-        billed: "managed",
+        billed: creds.byok ? "byok" : "managed",
         latencyMs: Date.now() - started,
         routeTier: creds.routeTier,
         estimatedCostMinor: estimateCost({
@@ -639,17 +878,15 @@ export class AiGatewayService {
     principal: AiPrincipal,
   ) {
     const row = await this.pickConnection(connectionUid, purpose, routeTier, principal);
-    if (!row?.ciphertext) throw new Error("connection not found");
+    if (!row) throw new Error("connection not found");
     assertCanUseConnection(principal, row);
-    const masterKey = process.env.AI_VAULT_MASTER_KEY?.trim() ?? "";
-    if (!masterKey) {
-      throw new AiPlatformException("VAULT_UNAVAILABLE", 503, "AI_VAULT_MASTER_KEY missing");
-    }
+    if (!row.enabled) throw new AiPlatformException("VALIDATION_ERROR", 400, "connection is disabled");
+    if (!row.ciphertext) throw new Error("connection not found");
     return {
       providerType: row.providerType,
       model: row.model,
       baseUrl: row.baseUrl ?? undefined,
-      secret: decryptSecret(masterKey, row.ciphertext),
+      secret: this.decrypt(row.ciphertext),
       routeTier: row.extra?.routeTier ?? routeTier ?? "standard",
       connectionUid: row.uid,
       ownerKind: row.ownerKind,
@@ -676,6 +913,114 @@ export class AiGatewayService {
     const ranked = (byTier.length > 0 ? byTier : pool).sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
     return ranked[0] ?? null;
   }
+
+  private consumeProbe(principal: AiPrincipal): void {
+    if (!probeRateLimiter().take(probeRateKey(principal))) {
+      throw new AiPlatformException("RATE_LIMITED", 429, "too many provider probes");
+    }
+  }
+
+  private assertEphemeral(hasSecret: boolean, allowEphemeral: boolean): void {
+    if (
+      !ephemeralSecretAllowed({
+        production: isProductionEnv(),
+        allowEphemeral,
+        hasSecret,
+      })
+    ) {
+      throw new AiPlatformException(
+        "EPHEMERAL_NOT_ALLOWED",
+        400,
+        "ephemeral secrets are only allowed on POST /v1/providers/test and POST /v1/providers/models in production",
+      );
+    }
+  }
+
+  private decrypt(ciphertext: string): string {
+    const masterKey = process.env.AI_VAULT_MASTER_KEY?.trim() ?? "";
+    if (!masterKey) {
+      throw new AiPlatformException("VAULT_UNAVAILABLE", 503, "AI_VAULT_MASTER_KEY missing");
+    }
+    return decryptSecret(masterKey, ciphertext);
+  }
+
+  private async requireManaged(uid: string, principal: AiPrincipal): Promise<ProviderConnectionEntity> {
+    const row = await this.connections.findOne({ where: { uid } });
+    if (!row) throw new AiPlatformException("VALIDATION_ERROR", 404, "connection not found");
+    assertCanManageConnection(principal, row);
+    return row;
+  }
+
+  private async requireUsable(uid: string, principal: AiPrincipal): Promise<ProviderConnectionEntity> {
+    const row = await this.connections.findOne({ where: { uid } });
+    if (!row) throw new AiPlatformException("VALIDATION_ERROR", 404, "connection not found");
+    assertCanUseConnection(principal, row);
+    return row;
+  }
+
+  private async resolveProbeTarget(
+    body: { connectionUid?: string; ephemeral?: EphemeralSecret },
+    principal: AiPrincipal,
+    supplied: string,
+  ): Promise<{
+    providerType: string;
+    model: string;
+    baseUrl?: string;
+    secret: string;
+    ownerKind: string;
+    ownerUid: string;
+    connectionUid: string;
+  }> {
+    if (body.connectionUid && !supplied) {
+      const row = await this.requireManaged(body.connectionUid, principal);
+      if (!row.ciphertext) {
+        throw new AiPlatformException("VALIDATION_ERROR", 400, "connection has no secret");
+      }
+      return {
+        providerType: row.providerType,
+        model: row.model,
+        baseUrl: row.baseUrl ?? undefined,
+        secret: this.decrypt(row.ciphertext),
+        ownerKind: row.ownerKind,
+        ownerUid: row.ownerUid,
+        connectionUid: row.uid,
+      };
+    }
+    if (!supplied || !body.ephemeral?.providerType?.trim()) {
+      throw new AiPlatformException("VALIDATION_ERROR", 400, "connectionUid or secret is required");
+    }
+    return {
+      providerType: body.ephemeral.providerType,
+      model: body.ephemeral.model,
+      baseUrl: body.ephemeral.baseUrl,
+      secret: supplied,
+      ownerKind: principal.kind === "user" ? "user" : "deployment",
+      ownerUid: principal.subjectId,
+      connectionUid: "ephemeral",
+    };
+  }
+
+  private async audit(input: {
+    action: ConnectionAuditAction;
+    principal: AiPrincipal;
+    ownerKind: string;
+    ownerUid: string;
+    connectionUid: string;
+    ok?: boolean | null;
+  }): Promise<void> {
+    await this.audits.save(
+      this.audits.create({
+        id: randomUUID(),
+        action: input.action,
+        actorSub: input.principal.subjectId,
+        actorKind: input.principal.kind,
+        ownerKind: input.ownerKind,
+        ownerUid: input.ownerUid,
+        connectionUid: input.connectionUid,
+        ok: input.ok ?? null,
+      }),
+    );
+  }
 }
 
 function toPublic(row: ProviderConnectionEntity): ProviderConnectionPublic {
@@ -690,9 +1035,27 @@ function toPublic(row: ProviderConnectionEntity): ProviderConnectionPublic {
     enabled: row.enabled,
     isDefault: row.isDefault,
     purpose: row.purpose,
-    extra: row.extra,
+    extra: sanitizeExtra(row.extra),
     secretFingerprint: row.secretFingerprint ?? undefined,
+    hasSecret: Boolean(row.ciphertext),
   };
+}
+
+function normalizeBaseUrl(value: string | null | undefined): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed || null;
+}
+
+function sanitizeExtra(extra: Record<string, string> | null | undefined): Record<string, string> | null {
+  if (!extra) return null;
+  const out: Record<string, string> = {};
+  for (const [key, value] of Object.entries(extra)) {
+    if (typeof value !== "string") continue;
+    if (/secret|api[_-]?key|token|password|authorization/i.test(key)) continue;
+    out[key] = value;
+  }
+  return Object.keys(out).length > 0 ? out : null;
 }
 
 function toUsageRow(event: AiUsageEvent): AiUsageEventEntity {

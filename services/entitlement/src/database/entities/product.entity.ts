@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-import type { TrialPolicy } from "../../common/constants";
+import type { ProductLifecycleStatus, TrialPolicy } from "../../common/constants";
 import { FeatureEntity } from "./feature.entity";
 import { PlanEntity } from "./plan.entity";
 
@@ -36,6 +36,10 @@ export class ProductEntity {
 
   @Column({ type: "boolean", default: true })
   sellable!: boolean;
+
+  /** Commercial kill-switch. Independent of `active` and `sellable`. */
+  @Column({ type: "varchar", length: 16, default: "active" })
+  status!: ProductLifecycleStatus;
 
   @OneToMany(
     () => FeatureEntity,

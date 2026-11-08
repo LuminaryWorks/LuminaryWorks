@@ -45,6 +45,7 @@ export class PaymentAdminController {
     @Query("status") status?: string,
     @Query("orderId") orderId?: string,
     @Query("provider") provider?: string,
+    @Query("productCode") productCode?: string,
     @Query("page") page?: string,
     @Query("pageSize") pageSize?: string,
   ) {
@@ -52,6 +53,7 @@ export class PaymentAdminController {
       status,
       orderId,
       provider,
+      productCode,
       page: page ? Number(page) : undefined,
       pageSize: pageSize ? Number(pageSize) : undefined,
     });
@@ -66,12 +68,14 @@ export class PaymentAdminController {
   listRefunds(
     @Query("status") status?: string,
     @Query("orderId") orderId?: string,
+    @Query("productCode") productCode?: string,
     @Query("page") page?: string,
     @Query("pageSize") pageSize?: string,
   ) {
     return this.payments.listRefundsAdmin({
       status,
       orderId,
+      productCode,
       page: page ? Number(page) : undefined,
       pageSize: pageSize ? Number(pageSize) : undefined,
     });
@@ -127,10 +131,12 @@ export class PaymentAdminController {
   reconcilePending(
     @CurrentPrincipal() principal: AuthPrincipal,
     @Req() req: { [REQUEST_ID_KEY]?: string },
+    @Query("productCode") productCode?: string,
   ) {
     return this.payments.reconcilePending({
       actor: principal.subjectId,
       requestId: req[REQUEST_ID_KEY],
+      productCode,
     });
   }
 

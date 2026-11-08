@@ -176,6 +176,11 @@ function main() {
     join(metaRoot, "deploy", "compose", "control-plane.yaml"),
     join(kitDir, "deploy", "compose", "control-plane.yaml"),
   );
+  mkdirSync(join(kitDir, "deploy", "compose", "init"), { recursive: true });
+  cpSync(
+    join(metaRoot, "deploy", "compose", "init", "control-plane-db.sh"),
+    join(kitDir, "deploy", "compose", "init", "control-plane-db.sh"),
+  );
   cpSync(
     join(metaRoot, "deploy", "env", "control-plane.env.example"),
     join(kitDir, "deploy", "env", "control-plane.env.example"),

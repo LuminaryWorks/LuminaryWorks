@@ -156,6 +156,15 @@ flowchart LR
 
 DoerFlow 既有权威规范冻结为无 Trial；**本修订不改变**该政策。VistaCast / SyncroBrain 在产品就绪并另有书面决策之前保持 `sellable=false` 且 `trialPolicy=disabled`。
 
+`products.status`（API 为 `status`）只允许 `active | suspended | retired`，默认 `active`。它与 `sellable`、`active` 布尔独立：
+
+- `suspended`：拒绝该 `productCode` 的新订单、续费履约、Trial ensure 与新的合作伙伴兑换，稳定错误码 `PRODUCT_SUSPENDED`（HTTP 402）。已付费权益保留到当前 `endsAt`，不自动撤销。
+- `retired`：同样拒绝新商业写入，错误码 `PRODUCT_RETIRED`。
+- 公开 `GET /v1/catalog/offerings` 只返回 `status=active` 且 `sellable=true` 的 SKU。`GET /v1/catalog/plans` 仍返回该产品并带上 `status`，供控制台显示熔断状态。
+- 权益解析不因 `suspended` 提前失效。需要立即切断时调用 force-revoke。
+
+重新灌入种子目录不得把已熔断的 `status` 改回 `active`。
+
 实现种子目录在代码工作包同步前可能仍只含四码；契约以本表为准，测试与种子滞后视为已知缺口（见 ADR 后果）。
 
 ### 3.3 Plan tiers
@@ -352,12 +361,15 @@ Base path（SaaS）：`/v1`。管理端与 Partner 端使用独立 audience / sc
 | `POST` | `/v1/trials/ensure` | 幂等发放 ToC Trial；缺少当前政策接受则拒绝 |
 | `GET` | `/v1/policies/current` | 当前必接受政策版本、文档 URL 与是否已接受 |
 | `POST` | `/v1/policies/accept` | 记录版本化条款 / 隐私 / Trial 删除政策接受 |
-| `GET` | `/v1/catalog/plans` | 产品套餐目录；每个产品返回 `trialPolicy`、`sellable` |
+| `GET` | `/v1/catalog/plans` | 产品套餐目录；每个产品返回 `trialPolicy`、`sellable`、`status` |
 | `GET` | `/v1/catalog/features` | feature 定义 |
 | `POST` | `/v1/orders` | 创建订单；**仅** `offeringId` 等；拒绝客户端权威 `amountCents` |
 | `POST` | `/v1/payments/webhooks/:provider/:configId` | 公开回调：原始 body 验签 → 幂等 → 履约 |
 | `POST` | `/v1/orders/{id}/pay` | 内部/适配器确认入口（服务端）；不得作为未验签的浏览器支付完成口 |
-| `POST` | `/v1/admin/grants` | 人工合同发放（admin scope） |
+| `GET` | `/v1/admin/products/{productCode}` | 平台管理员读取目录生命周期。控制台以后接这个路径 |
+| `PUT` | `/v1/admin/products/{productCode}/status` | Body `{ status, reason? }`。`status` 为 `active \| suspended \| retired`。仅 `entitlement:admin`（平台管理员 / 服务凭证）。写 `product.lifecycle` 审计 |
+| `POST` | `/v1/admin/products/{productCode}/force-revoke` | Body `{ reason }`。对应该产品的订单调用既有 `revokeOrderEntitlements`，立即切断已付费权益。写 `product.force_revoke` 审计 |
+| `POST` | `/v1/admin/grants` | 人工合同发放（admin scope）。熔断后此入口仍可用，不代替 force-revoke |
 | `POST` | `/v1/admin/usage/reconcile` | 从 allocations 重建 gauge `usage_counters` |
 | `GET` | `/v1/admin/cleanup-jobs` | Trial 清理任务列表 |
 | `POST` | `/v1/admin/cleanup-jobs/{id}/retry` | 重试失败的 `trial.purge` |
@@ -419,6 +431,8 @@ Base path（SaaS）：`/v1`。管理端与 Partner 端使用独立 audience / sc
 | `ENTITLEMENT_SERVICE_UNAVAILABLE` | 503 | 中央服务不可达且无合法离线缓存（关键路径 fail closed） |
 | `PRODUCT_TRIAL_DISABLED` | 402 | 产品策略禁止 Trial；调用方不得重试创建或改走其他发放入口 |
 | `PRODUCT_NOT_SELLABLE` | 402 | 目录可配置但不可售（如就绪前的 VistaCast / SyncroBrain） |
+| `PRODUCT_SUSPENDED` | 402 | 产品已熔断：拒绝新购、续费履约、Trial ensure、新的合作伙伴兑换 |
+| `PRODUCT_RETIRED` | 402 | 产品已退役：同样拒绝新的商业写入 |
 | `TRIAL_POLICY_NOT_ACCEPTED` | 400 | 缺少当前版本 Trial 删除政策的显式接受 |
 | `DORIS_WARMING` | 202 | 共享 Doris 正在按需启动（业务码可放 body） |
 | `DORIS_DEMO_BUSY` | 503 | 共享演示排队满 / 超时 / OOM / 限流 |
@@ -461,7 +475,7 @@ PostgreSQL。表名稳定；列可增不可静默改语义。
 
 | 表 | 用途 |
 |----|------|
-| `products` | `code` 唯一；`trial_policy = standard_7d | disabled`；`sellable` 布尔 |
+| `products` | `code` 唯一；`trial_policy = standard_7d | disabled`；`sellable` 布尔；`status = active | suspended | retired`（默认 `active`） |
 | `features` | `product_id` + `code`；类型 bool/quota；quota 可带 `metering_mode=counter|gauge`（默认 counter） |
 | `plans` | `product_id` + `code`（trial/pro/ultra/enterprise；**无 free**） |
 | `plan_features` | plan↔feature；limit / effect / quota_merge |

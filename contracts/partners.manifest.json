@@ -1,0 +1,424 @@
+{
+  "$comment": "Partner registry for the six current products. operatorLabel is the brand until a legal entity is supplied. supportEmail and statusPageUrl stay null until that partner publishes them. Do not copy admin@luminaryworks.dev onto a partner row. client secrets are forbidden. Legal URLs use the product-login default /legal/terms and /legal/privacy paths.",
+  "schemaVersion": 1,
+  "partners": [
+    {
+      "code": "dataluminary",
+      "displayName": "DataLuminary",
+      "operatorLabel": "DataLuminary",
+      "domains": [
+        "dataluminary.dev",
+        "app.dataluminary.dev",
+        "demo.dataluminary.dev"
+      ],
+      "githubOrg": "DataLuminary",
+      "oidcApps": [
+        {
+          "name": "DataView (DataLuminary)",
+          "type": "SPA",
+          "clientId": null,
+          "redirectUris": [
+            "http://localhost:3003/auth/callback",
+            "http://localhost:3013/auth/callback",
+            "https://app.dataluminary.dev/auth/callback",
+            "https://demo.dataluminary.dev/auth/callback"
+          ],
+          "postLogoutRedirectUris": [
+            "http://localhost:3003/",
+            "http://localhost:3013/",
+            "https://app.dataluminary.dev/",
+            "https://demo.dataluminary.dev/"
+          ]
+        },
+        {
+          "name": "DataTalk API",
+          "type": "API",
+          "clientId": null,
+          "resourceIndicator": "https://api.dataluminary.local"
+        }
+      ],
+      "entitlementProductCodes": [
+        "dataluminary"
+      ],
+      "aiServiceCredentialHint": {
+        "productCodes": [
+          "dataluminary"
+        ],
+        "internal": false,
+        "note": "Bind the service credential to these product codes. Do not store the key in this manifest."
+      },
+      "legalTermsUrl": "https://dataluminary.dev/legal/terms",
+      "legalPrivacyUrl": "https://dataluminary.dev/legal/privacy",
+      "supportEmail": null,
+      "statusPageUrl": null,
+      "sellable": true,
+      "status": "active"
+    },
+    {
+      "code": "blockyedu",
+      "displayName": "BlockyEdu",
+      "operatorLabel": "BlockyEdu",
+      "domains": [
+        "blockyedu.com",
+        "k12.blockyedu.com",
+        "postgrad.blockyedu.com",
+        "code.blockyedu.com"
+      ],
+      "githubOrg": "BlockyEdu",
+      "oidcApps": [
+        {
+          "name": "VibeEdu edu-app-web",
+          "type": "SPA",
+          "clientId": null,
+          "redirectUris": [
+            "http://localhost:18082/auth/callback",
+            "https://localhost:18082/auth/callback",
+            "http://localhost:18083/auth/callback",
+            "https://localhost:18083/auth/callback",
+            "http://localhost:18084/auth/callback",
+            "https://localhost:18084/auth/callback",
+            "https://blockyedu.com/auth/callback",
+            "https://k12.blockyedu.com/auth/callback",
+            "https://postgrad.blockyedu.com/auth/callback"
+          ],
+          "postLogoutRedirectUris": [
+            "http://localhost:18082/login",
+            "https://localhost:18082/login",
+            "http://localhost:18083/login",
+            "https://localhost:18083/login",
+            "http://localhost:18084/login",
+            "https://localhost:18084/login",
+            "https://blockyedu.com/login",
+            "https://k12.blockyedu.com/login",
+            "https://postgrad.blockyedu.com/login"
+          ]
+        },
+        {
+          "name": "VibeEdu code-app-web",
+          "type": "SPA",
+          "clientId": null,
+          "redirectUris": [
+            "http://localhost:18081/auth/callback",
+            "https://code.blockyedu.com/auth/callback"
+          ],
+          "postLogoutRedirectUris": [
+            "http://localhost:18081/login",
+            "https://code.blockyedu.com/login"
+          ]
+        },
+        {
+          "name": "VibeEdu API",
+          "type": "API",
+          "clientId": null,
+          "resourceIndicator": "https://api.vibeedu.local"
+        }
+      ],
+      "entitlementProductCodes": [
+        "blockyedu"
+      ],
+      "aiServiceCredentialHint": {
+        "productCodes": [
+          "blockyedu"
+        ],
+        "internal": false,
+        "note": "Bind the service credential to these product codes. Do not store the key in this manifest."
+      },
+      "legalTermsUrl": "https://blockyedu.com/legal/terms",
+      "legalPrivacyUrl": "https://blockyedu.com/legal/privacy",
+      "supportEmail": null,
+      "statusPageUrl": null,
+      "sellable": true,
+      "status": "active"
+    },
+    {
+      "code": "doerflow",
+      "displayName": "DoerFlow",
+      "operatorLabel": "DoerFlow",
+      "domains": [
+        "doerflow.dev",
+        "app.doerflow.dev",
+        "admin.doerflow.dev"
+      ],
+      "githubOrg": "DoerFlow",
+      "oidcApps": [
+        {
+          "name": "VibeAgent Web",
+          "type": "SPA",
+          "clientId": null,
+          "redirectUris": [
+            "http://localhost:5174/auth/callback",
+            "https://app.doerflow.dev/auth/callback"
+          ],
+          "postLogoutRedirectUris": [
+            "http://localhost:5174/login",
+            "https://app.doerflow.dev/login"
+          ]
+        },
+        {
+          "name": "DoerFlow Admin",
+          "type": "SPA",
+          "clientId": null,
+          "redirectUris": [
+            "http://localhost:13011/auth/callback",
+            "https://admin.doerflow.dev/auth/callback"
+          ],
+          "postLogoutRedirectUris": [
+            "http://localhost:13011/login",
+            "https://admin.doerflow.dev/login"
+          ]
+        },
+        {
+          "name": "VibeAgent API",
+          "type": "API",
+          "clientId": null,
+          "resourceIndicator": "https://api.vibeagent.local"
+        },
+        {
+          "name": "DoerFlow API",
+          "type": "API",
+          "clientId": null,
+          "resourceIndicator": "https://api.doerflow.local",
+          "scopes": [
+            {
+              "name": "integration.provider.register",
+              "description": "Register or update DoerFlow integration provider offerings"
+            },
+            {
+              "name": "integration.event.submit",
+              "description": "Submit integration events that may create DoerFlow tasks"
+            },
+            {
+              "name": "integration.callback.read",
+              "description": "Read signed job/task lifecycle callbacks and correlation status"
+            }
+          ]
+        }
+      ],
+      "entitlementProductCodes": [
+        "doerflow"
+      ],
+      "aiServiceCredentialHint": {
+        "productCodes": [
+          "doerflow"
+        ],
+        "internal": false,
+        "note": "Bind the service credential to these product codes. Do not store the key in this manifest."
+      },
+      "legalTermsUrl": "https://doerflow.dev/legal/terms",
+      "legalPrivacyUrl": "https://doerflow.dev/legal/privacy",
+      "supportEmail": null,
+      "statusPageUrl": null,
+      "sellable": true,
+      "status": "active"
+    },
+    {
+      "code": "vistacast",
+      "displayName": "VistaCast",
+      "operatorLabel": "VistaCast",
+      "domains": [
+        "vistacast.dev",
+        "app.vistacast.dev",
+        "admin.vistacast.dev"
+      ],
+      "githubOrg": "VistaCast",
+      "oidcApps": [
+        {
+          "name": "VistaCast Admin",
+          "type": "SPA",
+          "clientId": null,
+          "redirectUris": [
+            "http://127.0.0.1:13101/auth/callback",
+            "http://localhost:13101/auth/callback",
+            "http://localhost:5176/auth/callback",
+            "https://app.vistacast.dev/auth/callback",
+            "https://admin.vistacast.dev/auth/callback"
+          ],
+          "postLogoutRedirectUris": [
+            "http://127.0.0.1:13101/",
+            "http://localhost:13101/",
+            "http://localhost:5176/login",
+            "https://app.vistacast.dev/",
+            "https://admin.vistacast.dev/"
+          ]
+        },
+        {
+          "name": "VistaCast Service",
+          "type": "MachineToMachine",
+          "clientId": null,
+          "resourceIndicator": "https://api.doerflow.local",
+          "scopes": [
+            "integration.provider.register",
+            "integration.event.submit",
+            "integration.callback.read"
+          ]
+        },
+        {
+          "name": "VistaCast API",
+          "type": "API",
+          "clientId": null,
+          "resourceIndicator": "https://api.vistacast.local"
+        }
+      ],
+      "entitlementProductCodes": [
+        "vistacast"
+      ],
+      "aiServiceCredentialHint": {
+        "productCodes": [
+          "vistacast"
+        ],
+        "internal": false,
+        "note": "Bind the service credential to these product codes. Do not store the key in this manifest."
+      },
+      "legalTermsUrl": "https://vistacast.dev/legal/terms",
+      "legalPrivacyUrl": "https://vistacast.dev/legal/privacy",
+      "supportEmail": null,
+      "statusPageUrl": null,
+      "sellable": false,
+      "status": "active"
+    },
+    {
+      "code": "vistaremote",
+      "displayName": "VistaRemote",
+      "operatorLabel": "VistaRemote",
+      "domains": [
+        "remote.vistacast.dev",
+        "remote-app.vistacast.dev",
+        "remote-admin.vistacast.dev",
+        "app.remote.vistacast.dev",
+        "admin.remote.vistacast.dev"
+      ],
+      "githubOrg": "VistaRemote",
+      "oidcApps": [
+        {
+          "name": "VistaRemote Admin",
+          "type": "SPA",
+          "clientId": null,
+          "redirectUris": [
+            "http://localhost:5175/auth/callback",
+            "http://127.0.0.1:5175/auth/callback",
+            "https://admin.remote.vistacast.dev/auth/callback",
+            "https://remote-admin.vistacast.dev/auth/callback"
+          ],
+          "postLogoutRedirectUris": [
+            "http://localhost:5175/login",
+            "http://127.0.0.1:5175/login",
+            "https://admin.remote.vistacast.dev/login",
+            "https://remote-admin.vistacast.dev/login"
+          ]
+        },
+        {
+          "name": "VistaRemote Client",
+          "type": "SPA",
+          "clientId": null,
+          "redirectUris": [
+            "http://localhost:5173/auth/callback",
+            "http://127.0.0.1:5173/auth/callback",
+            "http://localhost:17890/auth/callback",
+            "http://127.0.0.1:17890/auth/callback",
+            "http://127.0.0.1:17891/auth/callback",
+            "http://localhost:17891/auth/callback",
+            "http://127.0.0.1:17892/auth/callback",
+            "http://localhost:17892/auth/callback",
+            "https://app.remote.vistacast.dev/auth/callback",
+            "https://remote-app.vistacast.dev/auth/callback"
+          ],
+          "postLogoutRedirectUris": [
+            "http://localhost:5173/login",
+            "http://127.0.0.1:5173/login",
+            "http://localhost:17890/login",
+            "http://127.0.0.1:17890/login",
+            "http://127.0.0.1:17891/login",
+            "http://localhost:17891/login",
+            "http://127.0.0.1:17892/login",
+            "http://localhost:17892/login",
+            "https://app.remote.vistacast.dev/login",
+            "https://remote-app.vistacast.dev/login"
+          ]
+        },
+        {
+          "name": "VistaRemote API",
+          "type": "API",
+          "clientId": null,
+          "resourceIndicator": "https://api.vistaremote.local"
+        }
+      ],
+      "entitlementProductCodes": [
+        "vistaremote"
+      ],
+      "aiServiceCredentialHint": {
+        "productCodes": [
+          "vistaremote"
+        ],
+        "internal": false,
+        "note": "Bind the service credential to these product codes. Do not store the key in this manifest."
+      },
+      "legalTermsUrl": "https://remote.vistacast.dev/legal/terms",
+      "legalPrivacyUrl": "https://remote.vistacast.dev/legal/privacy",
+      "supportEmail": null,
+      "statusPageUrl": null,
+      "sellable": true,
+      "status": "active"
+    },
+    {
+      "code": "syncrobrain",
+      "displayName": "SyncroBrain",
+      "operatorLabel": "SyncroBrain",
+      "domains": [
+        "syncrobrain.com",
+        "app.syncrobrain.com",
+        "admin.syncrobrain.com"
+      ],
+      "githubOrg": "SyncroBrain",
+      "oidcApps": [
+        {
+          "name": "LuminaryIoTChain iot-console-web",
+          "type": "SPA",
+          "clientId": null,
+          "redirectUris": [
+            "http://localhost:15180/auth/callback",
+            "https://app.syncrobrain.com/auth/callback",
+            "https://admin.syncrobrain.com/auth/callback"
+          ],
+          "postLogoutRedirectUris": [
+            "http://localhost:15180/login",
+            "https://app.syncrobrain.com/login",
+            "https://admin.syncrobrain.com/login"
+          ]
+        },
+        {
+          "name": "SyncroBrain Gateway",
+          "type": "MachineToMachine",
+          "clientId": null,
+          "resourceIndicator": "https://api.doerflow.local",
+          "scopes": [
+            "integration.provider.register",
+            "integration.event.submit",
+            "integration.callback.read"
+          ]
+        },
+        {
+          "name": "IoT Gateway API",
+          "type": "API",
+          "clientId": null,
+          "resourceIndicator": "https://api.iotchain.local"
+        }
+      ],
+      "entitlementProductCodes": [
+        "syncrobrain"
+      ],
+      "aiServiceCredentialHint": {
+        "productCodes": [
+          "syncrobrain"
+        ],
+        "internal": false,
+        "note": "Bind the service credential to these product codes. Do not store the key in this manifest."
+      },
+      "legalTermsUrl": "https://syncrobrain.com/legal/terms",
+      "legalPrivacyUrl": "https://syncrobrain.com/legal/privacy",
+      "supportEmail": null,
+      "statusPageUrl": null,
+      "sellable": false,
+      "status": "active"
+    }
+  ]
+}

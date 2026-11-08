@@ -347,7 +347,8 @@ def public_url_plan(kit: Path) -> dict:
 
 
 OUR_COMPOSE_PROJECTS = {
-    "luminary-control-plane",
+    "luminary-works",
+    "luminary-control-plane",  # legacy project name before 2026-11 rename
     "lw-ingress",
     "lw-vistacast",
     "lw-syncrobrain",
@@ -364,7 +365,11 @@ def compose_project_ours(name: str) -> bool:
         return False
     if value in OUR_COMPOSE_PROJECTS:
         return True
-    return value.startswith("lw-") or value.startswith("luminary-control-plane")
+    return (
+        value.startswith("lw-")
+        or value.startswith("luminary-works")
+        or value.startswith("luminary-control-plane")
+    )
 
 
 def required_listen_ports(kit: Path) -> list[tuple[int, str]]:
@@ -1139,7 +1144,7 @@ def bootstrap_identity(kit: Path) -> dict:
     print(f"[identity] wait for {discovery}", flush=True)
     if not wait_http_ok(discovery, 240):
         raise RuntimeError("Identity OIDC discovery did not become ready")
-    identity_db = find_container("identity-db")
+    identity_db = find_container("control-plane-db")
     patch_apps_redirects(kit, protocol, host, load_site_hosts(kit))
     create_management_m2m(kit, identity_db)
     print("[identity] register-apps", flush=True)

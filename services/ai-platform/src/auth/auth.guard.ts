@@ -10,7 +10,7 @@ import { ConfigService } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import { credentialsFromConfig, type AiPlatformConfig, type ServiceCredential } from "../config/ai-platform.config";
-import { readPublicApiEnabled, resolveIngress } from "../policy";
+import { readPublicApiEnabled, refreshPublicApiEnabled, resolveIngress } from "../policy";
 import { IS_PUBLIC_KEY } from "./decorators";
 import { safeEqualString } from "./safe-equal";
 import { AI_PRINCIPAL, type AiPrincipal, type AuthedRequest } from "./auth.types";
@@ -30,6 +30,7 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+    await refreshPublicApiEnabled();
     const ingress = resolveIngress(requestPath(req), readPublicApiEnabled());
     if (isPublic || ingress === "open") return true;
     if (ingress === "public-disabled") throw new NotFoundException();

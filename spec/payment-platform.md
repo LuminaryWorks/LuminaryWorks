@@ -146,6 +146,7 @@ PaymentAttempt:
 - 零价、负价、未知 currency、未发布 revision：**拒绝下单**（防零价订单）。
 - Trial 不是 SKU，不经支付创建；`trialPolicy=disabled` 的产品任何入口都不得生成 `planCode=trial`。
 - 不可售产品（`sellable=false`，如就绪前的 VistaCast / SyncroBrain）：`POST /v1/orders` 返回 `PRODUCT_NOT_SELLABLE`。
+- 目录 `status=suspended`：`POST /v1/orders`、未完成订单的履约（含续费延长 `endsAt`）返回 `PRODUCT_SUSPENDED`。`status=retired` 返回 `PRODUCT_RETIRED`。已履约权益保留到当前周期结束，除非调用 `POST /v1/admin/products/{productCode}/force-revoke`。
 - 不存在永久 Free offering。
 
 ## 5. 原始 body 验签与幂等
@@ -163,7 +164,8 @@ PaymentAttempt:
 | 作业 | 行为 |
 |------|------|
 | 主动查询 | `pending` attempt 超过阈值（建议 2–15 分钟，按渠道）调用 `queryPayment` |
-| 对账 | 按日拉取渠道已成功支付，与 `orders` / `payment_attempts` 比对；差异入审计，不自动改价 |
+| 对账 | 按日拉取渠道已成功支付，与 `orders` / `payment_attempts` 比对；差异入审计，不自动改价。管理列表与 `POST /v1/admin/payments/reconcile` 均可带 `productCode` |
+| 按产品过滤 | `GET /v1/admin/payments/orders|attempts|refunds` 的 `productCode` 查询参数。退款行含 chargeback（inbound）。没有独立 settlement 表；对账行是 `payment_attempts` |
 | BitPay | IPN 只触发查询；invoice 到 `complete` 才履约 |
 | 退款 | 仅 `paid` / `fulfilled`；金额不超过净支付；成功后撤销权益并写 audit |
 | 失败降级 | 渠道 5xx：attempt 保持 pending 并重试查询；用户侧不显示「已开通」 |
@@ -263,6 +265,8 @@ IP 只控制 UI / 渠道路由，**不是** KYC、制裁或加密支付合规的
 | `PAYMENT_PRICE_MISMATCH` | 400 | 客户端试图提交金额 / 币种 |
 | `PAYMENT_OFFERING_INVALID` | 400 | offering 未发布或与产品不匹配 |
 | `PRODUCT_NOT_SELLABLE` | 402 | 产品目录存在但不可售 |
+| `PRODUCT_SUSPENDED` | 402 | 产品熔断，拒绝新购与续费履约 |
+| `PRODUCT_RETIRED` | 402 | 产品退役，拒绝新的商业写入 |
 | `PAYMENT_WEBHOOK_INVALID` | 400 | 验签失败 / 时间戳过期 |
 | `PAYMENT_AMOUNT_MISMATCH` | 409 | 渠道金额 / 币种 / 商户与订单快照不符 |
 | `PAYMENT_REFUND_UNSUPPORTED` | 409 | 渠道或订单状态不允许退款 |
@@ -278,11 +282,11 @@ IP 只控制 UI / 渠道路由，**不是** KYC、制裁或加密支付合规的
 |----|------|
 | `catalog_revisions` | 目录版本；发布 / 回滚 |
 | `offerings` | 可售 SKU 快照源 |
-| `orders` | 锁定价格的订单 |
-| `payment_attempts` | 一次渠道尝试 |
-| `payment_provider_configs` | 启用、市场、加密凭证 |
+| `orders` | 锁定价格的订单；`product_code` 可空（仅历史或无法归到单一产品的行） |
+| `payment_attempts` | 一次渠道尝试；`product_code` 从订单复制，供对账按产品过滤 |
+| `payment_provider_configs` | 启用、市场、加密凭证；`merchant_id` 是 PSP 商户号；`merchant_account_id` 可空，空值表示 LuminaryWorks MoR 账户，预留给日后 Connect / 按产品分账，adapter 尚未调用 Connect |
 | `provider_webhook_events` | 原始事件幂等与审计 |
-| `refunds` | 退款单与渠道引用 |
+| `refunds` | 退款单与渠道引用。提供商 chargeback 走同一张表（inbound refund）。`product_code` 从订单复制 |
 | `billing_profiles` | 付款方类型、税号、地址（见 §11.1） |
 
 实现列可增，不得静默改变「服务端定价、先验签后履约、密钥不回显」语义。

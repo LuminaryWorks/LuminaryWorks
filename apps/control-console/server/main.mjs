@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
+import { registerAiBff } from "./ai-bff.mjs";
 import {
   buildHealthPayload,
   buildRuntimeConfig,
@@ -36,6 +37,8 @@ export function createServer(env = process.env) {
     return result.payload;
   });
 
+  registerAiBff(app, env);
+
   app.get("/config.json", async (_req, reply) => {
     try {
       return buildRuntimeConfig(env);
@@ -62,7 +65,8 @@ export function createServer(env = process.env) {
         url.startsWith("/health") ||
         url.startsWith("/ready") ||
         url.startsWith("/version") ||
-        url.startsWith("/config.json")
+        url.startsWith("/config.json") ||
+        url.startsWith("/bff/")
       ) {
         reply.code(404);
         return reply.send({ error: { code: "NOT_FOUND", message: url } });

@@ -3,9 +3,10 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createIdpDevProxyMap } from "@luminaryworks/auth-dev-proxy";
-import { registerCodeCooldownMiddleware } from "../../services/auth-gateway/src/register-abuse.mjs";
 import { defineConfig, loadEnv } from "@rsbuild/core";
 import { pluginReact } from "@rsbuild/plugin-react";
+import { registerCodeCooldownMiddleware } from "../../services/auth-gateway/src/register-abuse.mjs";
+import { dispatchAiBff } from "./server/ai-bff.mjs";
 import { buildRuntimeConfig } from "./server/config.mjs";
 
 const root = dirname(fileURLToPath(import.meta.url));
@@ -14,7 +15,7 @@ const mode =
 const { parsed } = loadEnv({
   cwd: root,
   mode,
-  prefixes: ["CONTROL_CONSOLE_", "PUBLIC_"],
+  prefixes: ["CONTROL_CONSOLE_", "PUBLIC_", "AI_PLATFORM_"],
 });
 const env: Record<string, string> = {
   ...Object.fromEntries(
@@ -96,6 +97,15 @@ export default defineConfig({
         root,
         "../../shared/packages/auth-react/dist/index.js",
       ),
+      // link: dependency; exact alias so the bundler uses the workspace dist.
+      "@luminaryworks/ui/shell.css": resolve(
+        root,
+        "../../shared/packages/ui/shell.css",
+      ),
+      "@luminaryworks/ui$": resolve(
+        root,
+        "../../shared/packages/ui/dist/index.js",
+      ),
     },
   },
   html: {
@@ -111,9 +121,49 @@ export default defineConfig({
     // Register before built-in SPA fallback so /config.json is not rewritten to index.html.
     // See https://rsbuild.rs/config/server/setup
     setup: ({ server }) => {
-      server.middlewares.use(registerCodeCooldownMiddleware({ cooldownSec: 120 }));
+      server.middlewares.use(
+        registerCodeCooldownMiddleware({ cooldownSec: 120 }),
+      );
       server.middlewares.use((req, res, next) => {
         const path = req.url?.split("?")[0] ?? "";
+        if (path === "/bff/ai" || path.startsWith("/bff/ai/")) {
+          const chunks: Buffer[] = [];
+          req.on("data", (chunk: Buffer) => {
+            chunks.push(Buffer.from(chunk));
+          });
+          req.on("end", () => {
+            const bodyText = Buffer.concat(chunks).toString("utf8");
+            void dispatchAiBff({
+              method: req.method,
+              url: req.url,
+              headers: req.headers,
+              bodyText,
+              env,
+            })
+              .then((result) => {
+                res.statusCode = result.status;
+                res.setHeader(
+                  "content-type",
+                  "application/json; charset=utf-8",
+                );
+                res.setHeader("cache-control", "no-store");
+                res.end(JSON.stringify(result.body ?? null));
+              })
+              .catch(() => {
+                res.statusCode = 500;
+                res.setHeader(
+                  "content-type",
+                  "application/json; charset=utf-8",
+                );
+                res.end(
+                  JSON.stringify({
+                    error: { code: "REQUEST_FAILED", message: "AI BFF failed" },
+                  }),
+                );
+              });
+          });
+          return;
+        }
         if (path === "/config.json") {
           sendConfigJson(req, res);
           return;

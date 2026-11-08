@@ -57,7 +57,7 @@ export function loadNotificationConfig(
     port: integer(env.NOTIFICATION_PORT, 3050),
     databaseUrl:
       env.NOTIFICATION_DATABASE_URL?.trim() ||
-      "postgres://notification:notification_dev@localhost:5435/notification",
+      "postgres://notification:CHANGE_ME@127.0.0.1:5433/notification",
     serviceKey: env.NOTIFICATION_SERVICE_KEY?.trim() ?? "",
     secretKey: env.NOTIFICATION_SECRET_KEY?.trim() ?? "",
     emailAuthEnabled: flag(env.EMAIL_AUTH_ENABLED, true),

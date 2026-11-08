@@ -26,7 +26,10 @@ import { PaymentAttemptEntity } from "../../database/entities/payment-attempt.en
 import { PaymentProviderConfigEntity } from "../../database/entities/payment-provider-config.entity";
 import { RefundEntity } from "../../database/entities/refund.entity";
 import { AuditService } from "../audit/audit.service";
-import { enqueueAiCreditRevoke } from "../orders/ai-credit-outbox";
+import {
+  enqueueAiCreditRevoke,
+  enqueueAiCreditRevokePartial,
+} from "../orders/ai-credit-outbox";
 import { fulfillPaidOrderTx, revokeOrderEntitlements } from "../orders/order-fulfillment";
 import { BillingProfileService } from "./billing-profile.service";
 import { PaymentConfigService } from "./payment-config.service";
@@ -170,6 +173,7 @@ export class PaymentsService {
           amountCents: locked.amountCents,
           currency: locked.currency,
           merchantId: configRow.merchantId,
+          productCode: locked.productCode,
           metadata: {
             geoCountry: input.geo.country,
             billingCountry: profile?.country ?? null,
@@ -510,11 +514,14 @@ export class PaymentsService {
     return { attempt, query, fulfilled: true };
   }
 
-  async reconcilePending(opts: { actor: string; requestId?: string }) {
+  async reconcilePending(opts: { actor: string; requestId?: string; productCode?: string }) {
     const minutes = this.conf().paymentReconcilePendingMinutes;
     const cutoff = new Date(Date.now() - minutes * 60 * 1000);
     const pending = await this.attempts.find({
-      where: { status: "pending" },
+      where: {
+        status: "pending",
+        ...(opts.productCode ? { productCode: opts.productCode } : {}),
+      },
       order: { createdAt: "ASC" },
       take: 50,
     });
@@ -601,6 +608,7 @@ export class PaymentsService {
         actor: input.actor,
         reason: input.reason,
         ticket: input.ticket ?? null,
+        productCode: order.productCode,
       }),
     );
     order.status = "refund_pending";
@@ -693,6 +701,7 @@ export class PaymentsService {
           providerRef: input.providerRef,
           actor: input.actor,
           reason: input.reason,
+          productCode: order.productCode,
         }),
         order,
         idempotent: true,
@@ -710,6 +719,7 @@ export class PaymentsService {
         providerRef: input.providerRef,
         actor: input.actor,
         reason: input.reason,
+        productCode: order.productCode,
       }),
     );
     await this.finalizeSucceededRefund(order, already + amountCents);
@@ -743,10 +753,16 @@ export class PaymentsService {
       if (netRefundedCents >= locked.amountCents) {
         locked.status = "refunded";
         await revokeOrderEntitlements(manager, locked, new Date());
-        // Full refund only. A partial refund does not invent a cents→micro clawback.
         await enqueueAiCreditRevoke(manager, locked.id);
       } else {
         locked.status = "partially_refunded";
+        // Proportional clawback: floor(grantMicro * netRefunded / orderAmount).
+        // Closes refund→keep-credits arbitrage on partial refunds.
+        await enqueueAiCreditRevokePartial(manager, {
+          orderId: locked.id,
+          netRefundedCents,
+          orderAmountCents: locked.amountCents,
+        });
       }
       await manager.save(locked);
       Object.assign(order, locked);
@@ -776,6 +792,7 @@ export class PaymentsService {
     status?: string;
     orderId?: string;
     provider?: string;
+    productCode?: string;
     page?: number;
     pageSize?: number;
   }) {
@@ -784,6 +801,12 @@ export class PaymentsService {
     if (filter.status) qb.andWhere("a.status = :status", { status: filter.status });
     if (filter.orderId) qb.andWhere("a.orderId = :orderId", { orderId: filter.orderId });
     if (filter.provider) qb.andWhere("a.provider = :provider", { provider: filter.provider });
+    if (filter.productCode) {
+      qb.leftJoin("a.order", "attemptOrder").andWhere(
+        "(a.productCode = :productCode OR attemptOrder.productCode = :productCode)",
+        { productCode: filter.productCode },
+      );
+    }
     const total = await qb.getCount();
     const rows = await qb.skip(skip).take(pageSize).getMany();
     return { items: rows.map(adminJson), page, pageSize, total };
@@ -792,6 +815,7 @@ export class PaymentsService {
   async listRefundsAdmin(filter: {
     status?: string;
     orderId?: string;
+    productCode?: string;
     page?: number;
     pageSize?: number;
   }) {
@@ -799,6 +823,12 @@ export class PaymentsService {
     const qb = this.refunds.createQueryBuilder("r").orderBy("r.createdAt", "DESC");
     if (filter.status) qb.andWhere("r.status = :status", { status: filter.status });
     if (filter.orderId) qb.andWhere("r.orderId = :orderId", { orderId: filter.orderId });
+    if (filter.productCode) {
+      qb.leftJoin("r.order", "refundOrder").andWhere(
+        "(r.productCode = :productCode OR refundOrder.productCode = :productCode)",
+        { productCode: filter.productCode },
+      );
+    }
     const total = await qb.getCount();
     const rows = await qb.skip(skip).take(pageSize).getMany();
     return { items: rows.map(adminJson), page, pageSize, total };

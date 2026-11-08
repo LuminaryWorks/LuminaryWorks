@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Param, Post, Query, Req } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Put, Query, Req } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type { AuthPrincipal } from "../../auth/auth.types";
 import { REQUEST_ID_KEY } from "../../auth/auth.types";
 import { CurrentPrincipal, RequireAdmin } from "../../auth/decorators";
-import { AdminGrantDto, ReconcileGaugeUsageDto } from "../../common/dto";
+import { AdminGrantDto, ForceRevokeProductDto, ReconcileGaugeUsageDto, SetProductLifecycleStatusDto } from "../../common/dto";
+import { ProductLifecycleService } from "../catalog/product-lifecycle.service";
 import { AdminService } from "./admin.service";
 
 @ApiTags("admin")
@@ -11,7 +12,44 @@ import { AdminService } from "./admin.service";
 @RequireAdmin()
 @Controller("v1/admin")
 export class AdminController {
-  constructor(private readonly admin: AdminService) {}
+  constructor(
+    private readonly admin: AdminService,
+    private readonly lifecycle: ProductLifecycleService,
+  ) {}
+
+  /** Platform admin (`entitlement:admin`). Product-scoped catalog tokens cannot call this. */
+  @Get("products/:productCode")
+  getProduct(@Param("productCode") productCode: string) {
+    return this.lifecycle.get(productCode);
+  }
+
+  @Put("products/:productCode/status")
+  setProductStatus(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Param("productCode") productCode: string,
+    @Body() body: SetProductLifecycleStatusDto,
+    @Req() req: { [REQUEST_ID_KEY]?: string },
+  ) {
+    return this.lifecycle.setStatus(productCode, body.status, {
+      actor: principal.subjectId,
+      requestId: req[REQUEST_ID_KEY],
+      reason: body.reason,
+    });
+  }
+
+  @Post("products/:productCode/force-revoke")
+  forceRevokeProduct(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Param("productCode") productCode: string,
+    @Body() body: ForceRevokeProductDto,
+    @Req() req: { [REQUEST_ID_KEY]?: string },
+  ) {
+    return this.lifecycle.forceRevoke(productCode, {
+      actor: principal.subjectId,
+      requestId: req[REQUEST_ID_KEY],
+      reason: body.reason,
+    });
+  }
 
   @Post("grants")
   createGrant(

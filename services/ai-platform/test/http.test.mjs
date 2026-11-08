@@ -89,6 +89,8 @@ before(async () => {
   process.env.AI_PLATFORM_JWKS_URI = `http://127.0.0.1:${jwksPort}/jwks`;
   process.env.AI_VAULT_MASTER_KEY = MASTER_KEY;
   process.env.PUBLIC_API_ENABLED = "false";
+  delete process.env.AI_PLATFORM_ALLOW_PRIVATE_BASE_URLS;
+  delete process.env.AI_PLATFORM_CORS_ORIGINS;
   process.env.ENTITLEMENT_BASE_URL = `http://127.0.0.1:${entPort}`;
   process.env.ENTITLEMENT_SERVICE_API_KEY = "ent-service-key-012345";
   process.env.AI_PRODUCT_POLICIES_JSON = JSON.stringify([
@@ -244,7 +246,12 @@ test("production stores vault ciphertext and rejects body secrets off the test r
   const probed = await hit("POST", "/v1/providers/test", {
     headers: auth(),
     body: {
-      ephemeral: { providerType: "openai", model: "gpt-test", secret: "sk-body-secret" },
+      ephemeral: {
+        providerType: "openai",
+        model: "gpt-test",
+        baseUrl: "http://127.0.0.1:9/v1",
+        secret: "sk-body-secret",
+      },
       subjectId: "subj-1",
       organizationId: "org-1",
     },
@@ -622,6 +629,326 @@ test("user JWT cannot impersonate subjectId, manage deployment connections, or r
   assert.equal(serviceWrite.status, 201);
 });
 
+test("BYOK connections are owner-scoped, masked, SSRF-checked, and testable", async () => {
+  const secret = "sk-test-fixture-key";
+  const rotated = "sk-rotated-fixture-zzz9";
+  const blocked = [
+    "http://127.0.0.1:9/v1",
+    "http://10.1.2.3/v1",
+    "http://192.168.1.5/v1",
+    "http://172.16.4.4/v1",
+    "http://169.254.169.254/latest/meta-data",
+    "http://localhost:9/v1",
+    "http://[::1]/v1",
+    "http://2130706433/v1",
+    "http://metadata.google.internal/computeMetadata/v1/",
+    "http://user:sk-embedded-secret@example.com/v1",
+    "file:///etc/passwd",
+  ];
+  for (const baseUrl of blocked) {
+    const denied = await hit("POST", "/v1/providers", {
+      headers: auth(),
+      body: {
+        ownerKind: "user",
+        ownerUid: "user-ssrf",
+        providerType: "openai-compatible",
+        displayName: "blocked",
+        model: "gpt-fixture",
+        baseUrl,
+        secret,
+      },
+    });
+    assert.equal(denied.status, 400, `${baseUrl} -> ${denied.text}`);
+    assert.equal(denied.json.error.code, "VALIDATION_ERROR");
+    assert.equal(denied.text.includes(secret), false);
+    assert.equal(denied.text.includes("sk-embedded-secret"), false);
+  }
+
+  const fixture = createServer((req, res) => {
+    const authz = req.headers.authorization || "";
+    if ((req.url || "").includes("sk-leak-secret-value") || authz.includes("sk-leak-secret-value")) {
+      res.statusCode = 401;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ error: { message: `bad key ${authz}` } }));
+      return;
+    }
+    res.setHeader("content-type", "application/json");
+    res.end(JSON.stringify({ data: [{ id: "gpt-fixture" }, { id: "text-embedding-3-small" }] }));
+  });
+  await new Promise((resolve) => fixture.listen(0, "127.0.0.1", resolve));
+  const fixturePort = fixture.address().port;
+  const baseUrl = `http://127.0.0.1:${fixturePort}/v1`;
+  const warnings = [];
+  const previousWarn = console.warn;
+  console.warn = (...args) => warnings.push(args.map(String).join(" "));
+  process.env.AI_PLATFORM_ALLOW_PRIVATE_BASE_URLS = "true";
+  try {
+    const headersA = { authorization: `Bearer ${await userToken("user-own-a", "org-own-a")}` };
+    const headersB = { authorization: `Bearer ${await userToken("user-own-b", "org-own-b")}` };
+    const created = await hit("POST", "/v1/providers", {
+      headers: headersA,
+      body: {
+        ownerKind: "user",
+        ownerUid: "user-own-a",
+        providerType: "openai",
+        displayName: "mine",
+        model: "gpt-fixture",
+        baseUrl,
+        secret,
+        purpose: "chat",
+      },
+    });
+    assert.equal(created.status, 201, created.text);
+    assert.equal(created.json.hasSecret, true);
+    assert.equal(created.json.secretFingerprint, secret.slice(-4));
+    assert.equal(created.json.ciphertext, undefined);
+    assert.equal(created.text.includes(secret), false);
+
+    const other = await hit("POST", "/v1/providers", {
+      headers: headersB,
+      body: {
+        ownerKind: "user",
+        ownerUid: "user-own-b",
+        providerType: "openai",
+        displayName: "theirs",
+        model: "gpt-fixture",
+        baseUrl,
+        secret: "sk-user-b-fixture-secret",
+      },
+    });
+    assert.equal(other.status, 201, other.text);
+
+    const listed = await hit("GET", "/v1/providers", { headers: headersA });
+    const ids = listed.json.items.map((item) => item.uid);
+    assert.ok(ids.includes(created.json.uid));
+    assert.equal(ids.includes(other.json.uid), false);
+    assert.equal(listed.text.includes(secret), false);
+    assert.equal(listed.text.includes("sk-user-b-fixture-secret"), false);
+
+    for (const method of ["PATCH", "DELETE"]) {
+      const forbidden = await hit(method, `/v1/providers/${other.json.uid}`, {
+        headers: headersA,
+        body: method === "PATCH" ? { displayName: "stolen" } : undefined,
+      });
+      assert.equal(forbidden.status, 403, forbidden.text);
+      assert.equal(forbidden.json.error.code, "FORBIDDEN");
+    }
+    const stolenUpsert = await hit("POST", "/v1/providers", {
+      headers: headersA,
+      body: {
+        uid: other.json.uid,
+        ownerKind: "user",
+        ownerUid: "user-own-a",
+        providerType: "openai",
+        displayName: "stolen",
+        model: "gpt-fixture",
+        secret: "sk-should-not-replace",
+      },
+    });
+    assert.equal(stolenUpsert.status, 403);
+
+    const stolenUse = await hit("POST", "/v1/chat/complete", {
+      headers: headersA,
+      body: {
+        connectionUid: other.json.uid,
+        messages: [{ role: "user", content: "hi" }],
+        productCode: "blockyedu",
+        maxTokens: 8,
+      },
+    });
+    assert.equal(stolenUse.status, 403);
+    assert.equal(stolenUse.json.error.code, "FORBIDDEN");
+
+    const stolenTest = await hit("POST", "/v1/providers/test", {
+      headers: headersA,
+      body: { connectionUid: other.json.uid },
+    });
+    assert.equal(stolenTest.status, 403);
+    const stolenModels = await hit("POST", "/v1/providers/models", {
+      headers: headersA,
+      body: { connectionUid: other.json.uid, purpose: "chat" },
+    });
+    assert.equal(stolenModels.status, 403);
+
+    const deployment = await hit("POST", "/v1/providers", {
+      headers: auth(),
+      body: {
+        ownerKind: "deployment",
+        ownerUid: "platform",
+        providerType: "openai",
+        displayName: "hosted-byok-guard",
+        model: "gpt-fixture",
+        secret: "sk-deployment-guard",
+      },
+    });
+    assert.equal(deployment.status, 201, deployment.text);
+    const touchHosted = await hit("PATCH", `/v1/providers/${deployment.json.uid}`, {
+      headers: headersA,
+      body: { enabled: false },
+    });
+    assert.equal(touchHosted.status, 403);
+
+    const spun = await hit("PATCH", `/v1/providers/${created.json.uid}`, {
+      headers: headersA,
+      body: { secret: rotated, enabled: true },
+    });
+    assert.equal(spun.status, 200, spun.text);
+    assert.equal(spun.json.secretFingerprint, rotated.slice(-4));
+    assert.equal(spun.json.hasSecret, true);
+    assert.equal(spun.text.includes(rotated), false);
+
+    const tested = await hit("POST", "/v1/providers/test", {
+      headers: headersA,
+      body: { connectionUid: created.json.uid },
+    });
+    assert.equal(tested.status, 200, tested.text);
+    assert.equal(tested.json.ok, true);
+    assert.equal(tested.json.model, "gpt-fixture");
+    assert.equal(typeof tested.json.latencyMs, "number");
+    assert.equal(tested.json.hasSecret, true);
+    assert.equal(tested.json.secretFingerprint, rotated.slice(-4));
+    assert.equal(tested.text.includes(rotated), false);
+    assert.equal(tested.text.includes(secret), false);
+
+    const models = await hit("POST", "/v1/providers/models", {
+      headers: headersA,
+      body: { connectionUid: created.json.uid, purpose: "chat" },
+    });
+    assert.equal(models.status, 200, models.text);
+    assert.equal(models.json.source, "live");
+    assert.ok(models.json.models.includes("gpt-fixture"));
+    assert.equal(models.json.models.includes("text-embedding-3-small"), false);
+    assert.equal(models.text.includes(rotated), false);
+
+    const unsaved = await hit("POST", "/v1/providers/models", {
+      headers: headersA,
+      body: { providerType: "openai", baseUrl, secret: rotated, purpose: "chat" },
+    });
+    assert.equal(unsaved.status, 200, unsaved.text);
+    assert.equal(unsaved.json.source, "live");
+    assert.ok(unsaved.json.models.includes("gpt-fixture"));
+    assert.equal(unsaved.text.includes(rotated), false);
+
+    const disabled = await hit("PATCH", `/v1/providers/${created.json.uid}`, {
+      headers: headersA,
+      body: { enabled: false },
+    });
+    assert.equal(disabled.status, 200, disabled.text);
+    assert.equal(disabled.json.enabled, false);
+    const blockedChat = await hit("POST", "/v1/chat/complete", {
+      headers: headersA,
+      body: {
+        connectionUid: created.json.uid,
+        messages: [{ role: "user", content: "hi" }],
+        productCode: "blockyedu",
+        maxTokens: 8,
+      },
+    });
+    assert.equal(blockedChat.status, 400, blockedChat.text);
+    assert.match(blockedChat.json.error.message, /disabled/);
+    const enabled = await hit("PATCH", `/v1/providers/${created.json.uid}`, {
+      headers: headersA,
+      body: { enabled: true },
+    });
+    assert.equal(enabled.json.enabled, true);
+
+    process.env.AI_PLATFORM_ALLOW_PRIVATE_BASE_URLS = "false";
+    const rejected = await hit("POST", "/v1/providers/test", {
+      headers: headersA,
+      body: { connectionUid: created.json.uid },
+    });
+    assert.equal(rejected.status, 400, rejected.text);
+    assert.equal(rejected.json.error.code, "VALIDATION_ERROR");
+    assert.equal(rejected.text.includes(rotated), false);
+
+    const leakWarnings = [];
+    console.warn = (...args) => leakWarnings.push(args.map(String).join(" "));
+    process.env.AI_PLATFORM_ALLOW_PRIVATE_BASE_URLS = "true";
+    const leakSecret = "sk-leak-secret-value";
+    const leaked = await hit("POST", "/v1/providers/test", {
+      headers: headersA,
+      body: {
+        ephemeral: { providerType: "openai", baseUrl, model: "gpt-fixture", secret: leakSecret },
+      },
+    });
+    assert.equal(leaked.status, 200, leaked.text);
+    assert.equal(leaked.json.ok, false);
+    assert.equal(leaked.json.error.code, "PROVIDER_ERROR");
+    assert.equal(leaked.text.includes(leakSecret), false);
+    assert.equal(leakWarnings.join("\n").includes(leakSecret), false);
+    assert.equal(leaked.json.secretFingerprint, leakSecret.slice(-4));
+
+    const { DataSource } = await import("typeorm");
+    const rows = await app.get(DataSource).query(
+      `SELECT action, actor_sub, owner_kind, owner_uid, connection_uid, ok
+       FROM connection_audit_events WHERE connection_uid = $1 ORDER BY created_at ASC`,
+      [created.json.uid],
+    );
+    const actions = rows.map((row) => row.action);
+    assert.ok(actions.includes("create"));
+    assert.ok(actions.includes("update"));
+    assert.ok(actions.includes("test"));
+    assert.ok(rows.every((row) => row.actor_sub === "user-own-a"));
+    assert.equal(JSON.stringify(rows).includes(secret), false);
+    assert.equal(JSON.stringify(rows).includes(rotated), false);
+    assert.equal(JSON.stringify(rows).includes(leakSecret), false);
+
+    const removed = await hit("DELETE", `/v1/providers/${created.json.uid}`, { headers: headersA });
+    assert.equal(removed.status, 200, removed.text);
+    assert.equal(removed.json.deleted, true);
+    const missing = await hit("DELETE", `/v1/providers/${created.json.uid}`, { headers: headersA });
+    assert.equal(missing.status, 404);
+    assert.equal(missing.json.error.code, "VALIDATION_ERROR");
+  } finally {
+    console.warn = previousWarn;
+    delete process.env.AI_PLATFORM_ALLOW_PRIVATE_BASE_URLS;
+    await new Promise((resolve) => fixture.close(resolve));
+  }
+});
+
+test("provider probes are rate limited per principal", async () => {
+  const { probeRateLimiter, probeRateKey } = await import("../dist/probe-rate-limit.js");
+  const headers = { authorization: `Bearer ${await userToken("user-rate-limit", "org-rate")}` };
+  const key = probeRateKey({ kind: "user", subjectId: "user-rate-limit" });
+  const limiter = probeRateLimiter();
+  for (let i = 0; i < 50 && limiter.take(key); i += 1) {
+    /* drain */
+  }
+  const limited = await hit("POST", "/v1/providers/models", {
+    headers,
+    body: { providerType: "openai", purpose: "chat" },
+  });
+  assert.equal(limited.status, 429);
+  assert.equal(limited.json.error.code, "RATE_LIMITED");
+});
+
+test("CORS allows a configured SPA origin and a bearer preflight", async () => {
+  process.env.AI_PLATFORM_CORS_ORIGINS = "http://localhost:3050";
+  try {
+    const open = await hit("OPTIONS", "/v1/providers", {
+      headers: { origin: "http://localhost:3050", "access-control-request-method": "GET" },
+    });
+    assert.equal(open.status, 204, open.text);
+    assert.equal(open.headers["access-control-allow-origin"], "http://localhost:3050");
+    assert.match(String(open.headers["access-control-allow-headers"]).toLowerCase(), /authorization/);
+
+    const denied = await hit("OPTIONS", "/v1/providers", {
+      headers: { origin: "https://evil.example", "access-control-request-method": "POST" },
+    });
+    assert.equal(denied.status, 403);
+    assert.equal(denied.headers["access-control-allow-origin"], undefined);
+
+    const token = await userToken("user-cors", "org-cors");
+    const listed = await hit("GET", "/v1/providers", {
+      headers: { origin: "http://localhost:3050", authorization: `Bearer ${token}` },
+    });
+    assert.equal(listed.status, 200, listed.text);
+    assert.equal(listed.headers["access-control-allow-origin"], "http://localhost:3050");
+  } finally {
+    delete process.env.AI_PLATFORM_CORS_ORIGINS;
+  }
+});
+
 function auth() {
   return { "x-service-key": SERVICE_KEY };
 }
@@ -663,7 +990,7 @@ async function hit(method, url, { headers = {}, body } = {}) {
   } catch {
     json = null;
   }
-  return { status: res.statusCode, json, text: res.body };
+  return { status: res.statusCode, json, text: res.body, headers: res.headers };
 }
 
 function docker(args) {

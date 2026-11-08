@@ -39,6 +39,7 @@ export async function applyCatalog(
           active: true,
           trialPolicy: productSeed.trialPolicy,
           sellable: productSeed.sellable,
+          status: "active",
         }),
       );
     } else {
@@ -46,6 +47,7 @@ export async function applyCatalog(
       product.active = true;
       product.trialPolicy = productSeed.trialPolicy;
       product.sellable = productSeed.sellable;
+      // Leave lifecycle status alone so a re-seed cannot clear a kill-switch.
       product = await products.save(product);
     }
 

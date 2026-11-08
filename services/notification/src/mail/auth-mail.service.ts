@@ -67,8 +67,10 @@ export class AuthMailService {
     if (!from && !settings.from) {
       throw new ServiceUnavailableException("mail_from_not_configured");
     }
+    // Organization / deployment profiles (e.g. EntFunHub): profile first (usually Resend),
+    // then platform API providers, then self-hosted SMTP last. Platform Logto path keeps SMTP-first.
     const providers = from
-      ? await this.byoChain(from, settings)
+      ? await this.byoChainWithFallbacks(from, settings)
       : await this.platformChain(settings, rows);
     const rendered = renderAuthMail(parsed);
     const idempotencyKey = buildAuthMailIdempotencyKey({
@@ -113,54 +115,48 @@ export class AuthMailService {
     }
   }
 
-  private async byoChain(profile: MailProfileEntity, settings: NotificationConfig): Promise<ChainProvider[]> {
+  /** Single profile provider (no env fallbacks). */
+  private async profileProvider(
+    profile: MailProfileEntity,
+    settings: NotificationConfig,
+  ): Promise<ChainProvider> {
     const credentials = openJson<StoredCredentials>(profile.credentialsCipher, settings.secretKey);
     const counts = await this.quota.counts(`profile:${profile.id}`);
-    return [
-      {
-        provider: providerFrom(`profile:${profile.id}`, credentials),
-        usage: "auth",
-        enabled: true,
-        priority: profile.priority,
-        dailyQuota: profile.dailyQuota,
-        monthlyQuota: profile.monthlyQuota,
-        ...counts,
-      },
-    ];
+    return {
+      provider: providerFrom(`profile:${profile.id}`, credentials),
+      usage: "auth",
+      enabled: true,
+      priority: profile.priority,
+      dailyQuota: profile.dailyQuota,
+      monthlyQuota: profile.monthlyQuota,
+      ...counts,
+    };
   }
 
-  private async platformChain(
+  /**
+   * EntFunHub / BYO path: profile (Resend…) → platform Resend/Brevo/Mailgun → self-hosted SMTP last.
+   * Keeps profile fromAddress (e.g. notify@EntFunHub.com) on the message; SMTP must be authorized in SPF.
+   */
+  private async byoChainWithFallbacks(
+    profile: MailProfileEntity,
     settings: NotificationConfig,
-    rows: MailProfileEntity[],
+  ): Promise<ChainProvider[]> {
+    const primary = await this.profileProvider(profile, settings);
+    const apis = await this.platformApiProviders(settings, primary.priority + 10);
+    const smtp = await this.platformSmtpProvider(settings, primary.priority + 100);
+    return [primary, ...apis, ...smtp];
+  }
+
+  private async platformApiProviders(
+    settings: NotificationConfig,
+    startPriority: number,
   ): Promise<ChainProvider[]> {
     const providers: ChainProvider[] = [];
-    // Self-hosted SMTP (Maddy) is first when configured. API providers stay as fallback.
-    // Private deploys that leave SMTP_HOST empty keep the Resend → Brevo → Mailgun order.
-    if (settings.smtp) {
-      providers.push(
-        await this.envProvider(
-          createSmtpProvider({
-            id: "platform:smtp",
-            host: settings.smtp.host,
-            port: settings.smtp.port,
-            user: settings.smtp.user,
-            pass: settings.smtp.pass,
-            secure: settings.smtp.secure,
-            requireTLS: settings.smtp.requireTLS,
-            rejectUnauthorized: settings.smtp.rejectUnauthorized,
-            tlsServername: settings.smtp.tlsServername,
-          }),
-          0,
-          settings.smtp.dailyQuota,
-          settings.smtp.monthlyQuota,
-        ),
-      );
-    }
     if (settings.resendApiKey) {
       providers.push(
         await this.envProvider(
           createResendProvider({ id: "platform:resend", apiKey: settings.resendApiKey }),
-          1,
+          startPriority,
           settings.resendDailyQuota,
           settings.resendMonthlyQuota,
         ),
@@ -170,7 +166,7 @@ export class AuthMailService {
       providers.push(
         await this.envProvider(
           createBrevoProvider({ id: "platform:brevo", apiKey: settings.brevoApiKey }),
-          2,
+          startPriority + 1,
           settings.brevoDailyQuota,
           settings.brevoMonthlyQuota,
         ),
@@ -184,15 +180,51 @@ export class AuthMailService {
             apiKey: settings.mailgunApiKey,
             domain: settings.mailgunDomain,
           }),
-          3,
+          startPriority + 2,
           settings.mailgunDailyQuota,
           settings.mailgunMonthlyQuota,
         ),
       );
     }
+    return providers;
+  }
+
+  private async platformSmtpProvider(
+    settings: NotificationConfig,
+    priority: number,
+  ): Promise<ChainProvider[]> {
+    if (!settings.smtp) return [];
+    return [
+      await this.envProvider(
+        createSmtpProvider({
+          id: "platform:smtp",
+          host: settings.smtp.host,
+          port: settings.smtp.port,
+          user: settings.smtp.user,
+          pass: settings.smtp.pass,
+          secure: settings.smtp.secure,
+          requireTLS: settings.smtp.requireTLS,
+          rejectUnauthorized: settings.smtp.rejectUnauthorized,
+          tlsServername: settings.smtp.tlsServername,
+        }),
+        priority,
+        settings.smtp.dailyQuota,
+        settings.smtp.monthlyQuota,
+      ),
+    ];
+  }
+
+  private async platformChain(
+    settings: NotificationConfig,
+    rows: MailProfileEntity[],
+  ): Promise<ChainProvider[]> {
+    const providers: ChainProvider[] = [];
+    // Self-hosted SMTP (Maddy) is first when configured. API providers stay as fallback.
+    // Private deploys that leave SMTP_HOST empty keep the Resend → Brevo → Mailgun order.
+    providers.push(...(await this.platformSmtpProvider(settings, 0)));
+    providers.push(...(await this.platformApiProviders(settings, 1)));
     for (const row of rows.filter((item) => item.scope === "platform" && item.verified)) {
-      const [chain] = await this.byoChain(row, settings);
-      if (chain) providers.push(chain);
+      providers.push(await this.profileProvider(row, settings));
     }
     return providers;
   }

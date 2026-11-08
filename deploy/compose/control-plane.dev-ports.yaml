@@ -12,9 +12,19 @@
 
 services:
   control-plane-db:
+    # This database otherwise sits only on the internal `control-data` network.
+    # Docker does not publish host ports from a container that has no non-internal
+    # network, so the dev overlay also joins `control-edge` (not used in production).
     ports:
       - "127.0.0.1:${CONTROL_PLANE_DB_PORT:-5433}:5432"
+    networks:
+      - control-data
+      - control-edge
 
   identity-redis:
+    # Same as control-plane-db: host ports need a non-internal network.
     ports:
       - "127.0.0.1:${IDENTITY_REDIS_PORT:-6381}:6379"
+    networks:
+      - control-data
+      - control-edge

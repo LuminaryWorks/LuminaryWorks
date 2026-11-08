@@ -294,7 +294,7 @@ HMAC、M2M 密钥 **按产品复制**，见场景包 `peers.secrets.env`（不�
 
 - 所有密码自行生成，**禁止**使用实验室串 `LuminaryDev!234`
 - `ACCOUNTS.product.env` 或 CI Secrets 注入；留空 / `CHANGE_ME` 时初始化必须失败
-- 控制面 `IDENTITY_DB_PASSWORD`、`ENTITLEMENT_*` 密钥由安装脚本生成后放入 **仅 root/deploy 可读** 的 env（模式 `600`）
+- 控制面 `CONTROL_PLANE_DB_ADMIN_PASSWORD`、三库角色口令与 `ENTITLEMENT_*` 密钥由安装脚本生成后放入 **仅 root/deploy 可读** 的 env（模式 `600`）
 
 平台用户变量（私有化 / SaaS 自建 Identity 时要填）：
 
@@ -338,7 +338,7 @@ HMAC、M2M 密钥 **按产品复制**，见场景包 `peers.secrets.env`（不�
 
 必改 URL 见 §5.3。安装脚本会生成：
 
-`IDENTITY_DB_PASSWORD`、`ENTITLEMENT_DB_PASSWORD`、`ENTITLEMENT_SERVICE_API_KEY`、`ENTITLEMENT_PARTNER_SECRET_PEPPER`、`ENTITLEMENT_PARTNER_TOKEN_SECRET`、`AI_VAULT_MASTER_KEY`（即使不上 AI 也需非空，否则 Compose 解析失败）。
+`CONTROL_PLANE_DB_ADMIN_PASSWORD`、`IDENTITY_DB_PASSWORD`、`ENTITLEMENT_DB_PASSWORD`、`NOTIFICATION_DB_PASSWORD`、`ENTITLEMENT_SERVICE_API_KEY`、`ENTITLEMENT_PARTNER_SECRET_PEPPER`、`ENTITLEMENT_PARTNER_TOKEN_SECRET`、`AI_VAULT_MASTER_KEY`（即使不上 AI 也需非空，否则 Compose 解析失败）。控制面共用一个 Postgres 实例、三个逻辑库；详见 [`OPERATOR.md`](OPERATOR.md) §5.4。
 
 已存在的 env **不会被覆盖口令**（避免把正在用的库锁死）。
 

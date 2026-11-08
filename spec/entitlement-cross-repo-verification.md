@@ -67,7 +67,7 @@ Several **rollout defects were fixed** during this pass (see §5). Remaining ite
 | `pnpm build` | `services/entitlement` | **Pass** |
 | `pnpm lint` | `services/entitlement` | **Pass** |
 | `pnpm check && pnpm test && pnpm build` | `shared/packages/entitlement-client` | **Pass** (9 tests) |
-| `docker compose up -d entitlement-db` | `services/entitlement` | **Pass** (`luminary-entitlement-db`) |
+| `pnpm ent:up` (shared `control-plane-db`) | MetaRepo | **Pass** (logical DB `entitlement`) |
 | `pnpm migration:run` | `services/entitlement` | **Pass** (`1730000000000` → `1730100000000`) |
 | `pnpm seed` | `services/entitlement` | **Pass** |
 | `node dist/main.js` (port 3040) | `services/entitlement` | **Pass** (after DI + column fixes) |
@@ -161,9 +161,10 @@ Recommended path: `off` → `shadow_read` (diff logs) → % enforce → full enf
 ### Central DB
 
 ```bash
+# MetaRepo root
+pnpm ent:up                  # shared control-plane-db (:5433)
 cd services/entitlement
-cp env.example .env          # never commit secrets
-docker compose up -d entitlement-db
+cp env.example .env          # never commit secrets; match control-plane.env passwords
 pnpm install
 pnpm migration:run           # 1730000000000 then 1730100000000
 pnpm seed

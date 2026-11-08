@@ -77,3 +77,11 @@ DataLuminary MCP 属于产品协议面，不升级为中央 AI Platform 的通�
 
 - ChainSkill ≠ AiTool。链上结算、Escrow、Merkle 不进模型网关。
 - 预留 feature `ai.strategy.run`，未实现前不得当已上线。
+
+## 8. Account Center
+
+终端用户账户中心在 `apps/account-center`（`:3060`），与运营控制台分开。
+
+- BYOK 与钱包从浏览器带用户 OIDC access token 调 AI Platform（audience `https://ai.luminaryworks.dev`）。`AI_PLATFORM_CORS_ORIGINS` 必须包含账户中心来源。
+- 用户只读账本：`GET /v1/me/wallet`、`GET /v1/me/grants`、`GET /v1/me/usage?limit=`。主体固定为 JWT `sub`（`ownerKind=user`）。不接受调用方传入的 `subjectId`。服务凭证在 `/v1/me/*` 上返回 403。
+- 密钥页使用 `@luminaryworks/ai-react` 的 `ModelForm`（`secretMode: "rotate"`），对接 `GET/POST /v1/providers`、`PATCH/DELETE /v1/providers/:uid`、`POST /v1/providers/test`、`POST /v1/providers/models`。响应只含 `hasSecret` 与 `secretFingerprint`。

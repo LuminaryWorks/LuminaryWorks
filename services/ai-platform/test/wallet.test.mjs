@@ -120,6 +120,7 @@ describe("ai platform wallet and credential scope", { concurrency: 1 }, () => {
     process.env.AI_PLATFORM_DATA_DIR = `/tmp/lw-ai-p2-data-${process.pid}`;
     process.env.PUBLIC_API_ENABLED = "false";
     process.env.AI_PLATFORM_WALLET_ENFORCE = "true";
+    process.env.AI_PLATFORM_ALLOW_PRIVATE_BASE_URLS = "true";
     process.env.ENTITLEMENT_BASE_URL = `http://127.0.0.1:${entPort}`;
     process.env.ENTITLEMENT_SERVICE_API_KEY = "ent-service-key-012345";
     process.env.AI_PRODUCT_POLICIES_JSON = JSON.stringify([
@@ -375,6 +376,33 @@ describe("ai platform wallet and credential scope", { concurrency: 1 }, () => {
     assert.equal(recon.activeHoldMicro, 0n);
     assert.equal(recon.settledMicro, 2500n);
     assert.equal(recon.grantedMicro, recon.remainingMicro + recon.activeHoldMicro + recon.settledMicro);
+  });
+
+  test("partial revoke leaves remaining spendable and accumulates clawback", async () => {
+    const { WalletService } = await import("../dist/wallet/wallet.service.js");
+    const wallet = app.get(WalletService);
+    const granted = await wallet.grantCredits(grantInput("user", "user-partial-rev", 10_000n, "ord-partial-rev"));
+    const first = await wallet.revokeBySource("order", "ord-partial-rev", 4_000n, { seal: false });
+    assert.equal(first.recoveredMicro, 4000n);
+    assert.equal(first.remainingMicro, 6000n);
+    assert.equal(first.idempotent, false);
+    const [afterFirst] = await wallet.listGrants(granted.walletId);
+    assert.equal(afterFirst.revokedAt, null);
+    await wallet.reserve({
+      requestId: "partial-rev-spend",
+      walletId: granted.walletId,
+      estimateMicro: 1000n,
+      productCode: "dataluminary",
+      capability: "chat.text",
+    });
+    const second = await wallet.revokeBySource("order", "ord-partial-rev", 3_000n, { seal: false });
+    assert.equal(second.recoveredMicro, 3000n);
+    assert.equal(second.remainingMicro, 2000n);
+    const sealed = await wallet.revokeBySource("order", "ord-partial-rev", undefined, { seal: true });
+    assert.equal(sealed.recoveredMicro, 2000n);
+    const [finalGrant] = await wallet.listGrants(granted.walletId);
+    assert.ok(finalGrant.revokedAt);
+    assert.equal(finalGrant.remainingMicro, 0n);
   });
 
   test("revoke recovers only remaining and a repeat revoke does not move more", async () => {
@@ -748,6 +776,49 @@ describe("ai platform wallet and credential scope", { concurrency: 1 }, () => {
       `SELECT billed, charged_micro FROM ai_usage_events WHERE trace_id = $1`,
       [byok.json.traceId],
     );
+    assert.equal(usage[0].billed, "byok");
+    assert.equal(usage[0].charged_micro, null);
+  });
+
+  test("user JWT BYOK does not reserve credits and cannot call a hosted connection", async () => {
+    const headers = { authorization: `Bearer ${await userToken("user-byok", "org-rich")}` };
+    const hosted = await hit("POST", "/v1/chat/complete", {
+      headers,
+      body: {
+        connectionUid: hostedUid,
+        messages: [{ role: "user", content: "hi" }],
+        productCode: "dataluminary",
+        maxTokens: 8,
+        idempotencyKey: "idem-user-hosted",
+      },
+    });
+    assert.equal(hosted.status, 403);
+    assert.equal(hosted.json.error.code, "FORBIDDEN");
+
+    const before = mockHits;
+    const byok = await hit("POST", "/v1/chat/complete", {
+      headers,
+      body: {
+        connectionUid: byokUid,
+        messages: [{ role: "user", content: "hi" }],
+        productCode: "dataluminary",
+        maxTokens: 8,
+        idempotencyKey: "idem-user-byok",
+      },
+    });
+    assert.equal(byok.status, 201, byok.text);
+    assert.equal(mockHits, before + 1);
+    const { DataSource } = await import("typeorm");
+    const ds = app.get(DataSource);
+    const holds = await ds.query(`SELECT hold_id FROM credit_holds WHERE request_id = $1`, ["idem-user-byok"]);
+    assert.equal(holds.length, 0);
+    const hostedHolds = await ds.query(`SELECT hold_id FROM credit_holds WHERE request_id = $1`, [
+      "idem-user-hosted",
+    ]);
+    assert.equal(hostedHolds.length, 0);
+    const usage = await ds.query(`SELECT billed, charged_micro FROM ai_usage_events WHERE trace_id = $1`, [
+      byok.json.traceId,
+    ]);
     assert.equal(usage[0].billed, "byok");
     assert.equal(usage[0].charged_micro, null);
   });

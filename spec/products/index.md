@@ -1,8 +1,8 @@
-# 六产品规划索引
+# 合作产品规划索引
 
 > **品牌决策**：[../domain-and-branding.md](../domain-and-branding.md) · **组织迁移**：[../github-org-migration.md](../github-org-migration.md) · **IAM**：[../identity-and-permissions.md](../identity-and-permissions.md) · **Entitlement**：[../subscription-and-entitlement.md](../subscription-and-entitlement.md) · **支付**：[../payment-platform.md](../payment-platform.md) · **存储/Doris 决策**：[../decisions/2026-09-storage-doris-payment.md](../decisions/2026-09-storage-doris-payment.md) · **法律模板**：[../legal/README.md](../legal/README.md) · **AI**：[../ai-platform.md](../ai-platform.md) · **Notify**：[../notification-service.md](../notification-service.md) · **可组合部署**：[../composable-deployment.md](../composable-deployment.md)
 
-LuminaryWorks（**启明工坊**）生态采用 **House of Brands**：六个产品各自独立品牌与 GitHub 组织（VistaCast / VistaRemote 为两个独立视觉产品线），通过 OIDC / HTTP / MQTT 按需集成。身份统一用 **Logto**（Experience Headless 登录页）；商业套餐 / Trial / License 用中央 **Entitlement**；产品资源权限用 **Casbin**。商业权益**不**进入 JWT。**无永久 Free 档**；适用产品 7 天 Trial（DoerFlow 无 Trial）。VistaCast / SyncroBrain 可在中央目录配置，**就绪前不可售、不发放 Trial**。
+LuminaryWorks 是平台，不是这些产品的运营方。DataLuminary、BlockyEdu、VistaRemote、VistaCast、DoerFlow、SyncroBrain 是独立合作产品，各有自己的运营团队或实体、域名、条款与发布节奏；VistaCast 与 VistaRemote 是两条独立的视觉产品线。它们经 LuminaryWorks 平台按需集成：身份用 **Logto**（Experience Headless 登录页）；商业套餐 / Trial / License 用中央 **Entitlement**；产品资源权限用 **Casbin**。商业权益**不**进入 JWT。**无永久 Free 档**；适用产品 7 天 Trial（DoerFlow 无 Trial）。VistaCast / SyncroBrain 可在中央目录配置，**就绪前不可售、不发放 Trial**。以后还可以有更多合作产品加入。
 
 ## 品牌中英对照
 

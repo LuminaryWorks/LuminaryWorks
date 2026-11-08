@@ -59,10 +59,9 @@ export const DOERFLOW_INTEGRATION_QUOTAS = {
 
 /**
  * Paid plans keep calendar-month task/API caps because the subscription renews.
- * The 7-day Trial uses the Pro amounts once, on lifetime counters, so they do not reset mid-trial.
+ * DoerFlow has no Trial plan (`trialPolicy: disabled`).
  */
 export const DOERFLOW_PLAN_LIMITS = {
-  trial: { agents: 3, taskPublish: 20, apiRequest: 5_000 },
   pro: { agents: 3, taskPublishMonthly: 20, apiRequestMonthly: 5_000 },
   ultra: { agents: 10, taskPublishMonthly: 100, apiRequestMonthly: 20_000 },
   enterprise: { agents: 10_000, taskPublishMonthly: 100_000, apiRequestMonthly: 10_000_000 },
@@ -167,7 +166,6 @@ export const STORAGE_BYTE_LIMITS = {
   },
   vistacast: {
     recording: {
-      trial: 1 * GIB,
       pro: 1 * GIB,
       ultra: 5 * GIB,
       enterprise: 50 * GIB,
@@ -199,12 +197,11 @@ export const VISTAREMOTE_ENTERPRISE_ONLY_FEATURES = [
 ] as const;
 
 /**
- * VistaCast ToC gauges. Trial matches Pro for the 7-day window.
- * Checkout stays closed (`sellable: false`) until the product is ready to sell.
+ * VistaCast ToC gauges. No Trial (`trialPolicy: disabled`); checkout stays
+ * closed (`sellable: false`) until the product is ready to sell.
  * Cloud Bridge, face/staff/fall/smoke, and production CV stay ungranted on ToC.
  */
 export const VISTACAST_PLAN_LIMITS = {
-  trial: { cameras: 2, sites: 1, previewConcurrent: 1, eventRetentionDays: 7 },
   pro: { cameras: 2, sites: 1, previewConcurrent: 1, eventRetentionDays: 7 },
   ultra: { cameras: 8, sites: 2, previewConcurrent: 2, eventRetentionDays: 30 },
   enterprise: { cameras: 50, sites: 20, previewConcurrent: 8, eventRetentionDays: 90 },
@@ -698,7 +695,8 @@ export const CATALOG: ProductSeed[] = [
   {
     code: "doerflow",
     name: "DoerFlow",
-    trialPolicy: "standard_7d",
+    // Spec: DoerFlow has no Trial (partners.md / products/index.md).
+    trialPolicy: "disabled",
     sellable: true,
     features: [
       { code: "agent.publish", name: "Publish agents", kind: "bool" },
@@ -730,38 +728,13 @@ export const CATALOG: ProductSeed[] = [
         kind: "quota",
         quotaPeriod: "calendar_month",
       },
-      {
-        code: "task.publish.trial",
-        name: "Task publications for the 7-day trial",
-        kind: "quota",
-        quotaPeriod: "lifetime",
-      },
-      {
-        code: "api.request.trial",
-        name: "API requests for the 7-day trial",
-        kind: "quota",
-        quotaPeriod: "lifetime",
-      },
       ...DOERFLOW_INTEGRATION_FEATURES,
     ],
     plans: [
       {
-        code: "trial",
-        name: "Trial",
-        rank: 1,
-        features: [
-          { code: "agent.publish" },
-          { code: "skill.register" },
-          { code: "task.publish" },
-          { code: "agent.limit", limitValue: DOERFLOW_PLAN_LIMITS.trial.agents },
-          { code: "task.publish.trial", limitValue: DOERFLOW_PLAN_LIMITS.trial.taskPublish },
-          { code: "api.request.trial", limitValue: DOERFLOW_PLAN_LIMITS.trial.apiRequest },
-        ],
-      },
-      {
         code: "pro",
         name: "Pro",
-        rank: 2,
+        rank: 1,
         features: [
           { code: "agent.publish" },
           { code: "skill.register" },
@@ -775,7 +748,7 @@ export const CATALOG: ProductSeed[] = [
       {
         code: "ultra",
         name: "Ultra",
-        rank: 3,
+        rank: 2,
         features: [
           { code: "agent.publish" },
           { code: "skill.register" },
@@ -792,7 +765,7 @@ export const CATALOG: ProductSeed[] = [
       {
         code: "enterprise",
         name: "Enterprise",
-        rank: 4,
+        rank: 3,
         features: [
           { code: "agent.publish" },
           { code: "skill.register" },
@@ -817,7 +790,7 @@ export const CATALOG: ProductSeed[] = [
   {
     code: "vistacast",
     name: "VistaCast",
-    trialPolicy: "standard_7d",
+    trialPolicy: "disabled",
     sellable: false,
     features: [
       { code: "visual.event", name: "Visual event ingest", kind: "bool" },
@@ -869,32 +842,9 @@ export const CATALOG: ProductSeed[] = [
     ],
     plans: [
       {
-        code: "trial",
-        name: "Trial",
-        rank: 1,
-        features: [
-          { code: "visual.event" },
-          { code: "preview.p2p" },
-          { code: "camera.limit", limitValue: VISTACAST_PLAN_LIMITS.trial.cameras },
-          { code: "site.limit", limitValue: VISTACAST_PLAN_LIMITS.trial.sites },
-          {
-            code: "preview.concurrent",
-            limitValue: VISTACAST_PLAN_LIMITS.trial.previewConcurrent,
-          },
-          {
-            code: "event.retention.days",
-            limitValue: VISTACAST_PLAN_LIMITS.trial.eventRetentionDays,
-          },
-          {
-            code: "recording.storage.bytes",
-            limitValue: STORAGE_BYTE_LIMITS.vistacast.recording.trial,
-          },
-        ],
-      },
-      {
         code: "pro",
         name: "Pro",
-        rank: 2,
+        rank: 1,
         features: [
           { code: "visual.event" },
           { code: "preview.p2p" },
@@ -917,7 +867,7 @@ export const CATALOG: ProductSeed[] = [
       {
         code: "ultra",
         name: "Ultra",
-        rank: 3,
+        rank: 2,
         features: [
           { code: "visual.event" },
           { code: "preview.p2p" },
@@ -940,7 +890,7 @@ export const CATALOG: ProductSeed[] = [
       {
         code: "enterprise",
         name: "Enterprise",
-        rank: 4,
+        rank: 3,
         features: [
           { code: "visual.event" },
           { code: "preview.p2p" },

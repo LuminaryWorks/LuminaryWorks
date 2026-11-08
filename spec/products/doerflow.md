@@ -15,7 +15,9 @@
 | MetaRepo | [DoerFlow/DoerFlow](https://github.com/DoerFlow/DoerFlow)（历史品牌 **VibeAgent**；`luminaryworks-ecosystem.md`、`spec/CONVENTIONS`） |
 | 协议 / 结算 | `spec/PROTOCOL.md`、`spec/SETTLEMENT.md`、`spec/PAYMENT_CHANNELS.md` 等（MetaRepo） |
 
-## 在 LuminaryWorks 六产品中的角色
+## 在 LuminaryWorks 平台上的位置
+
+DoerFlow 是独立合作产品，由自己的团队或实体运营，可经 LuminaryWorks 平台使用统一登录、账单与 AI 接入。
 
 | 维度 | 说明 |
 |------|------|
@@ -126,7 +128,7 @@ M2M **没有** OIDC redirect/callback；产品 SPA 仍走 PKCE。Management API 
 
 ## 官网与文档呈现
 
-- **doerflow.dev**：品牌站 SSG，生态区块可链至六产品官网（见 `repos/site`）。
+- **doerflow.dev**：品牌站 SSG，生态区块可链至其他合作产品的官网（见 `repos/site`）。
 - **docs.doerflow.dev**：部署见 `repos/docs` + `scripts/docs-sites.config.ps1` 中 `doerflow`。
 
 ## 开源许可

@@ -1,6 +1,6 @@
 # LuminaryWorks Control Console
 
-Standalone **business** superadmin SPA for Entitlement (catalog, payments, trial cleanup, legal, capacity).
+Standalone **business** superadmin SPA for Entitlement (catalog, payments, trial cleanup, legal, capacity) and AI Platform operations (settings, deployment connections, rate cards, wallets, usage).
 
 This is **not** the Logto Admin Console (`IDENTITY_ADMIN_PORT`, typically `:3002`). Logto Admin manages the IdP. This console calls Entitlement `/v1/admin/*` with an operator access token.
 
@@ -11,6 +11,7 @@ This is **not** the Logto Admin Console (`IDENTITY_ADMIN_PORT`, typically `:3002
 - Token audience: `https://entitlement.luminaryworks.dev` (Entitlement API resource). Required scope: `entitlement:admin` (assign the scope to the operator in Logto; this SPA cannot mint it).
 - Local callbacks: `http://localhost:3050/auth/callback` and `http://127.0.0.1:3050/auth/callback`. Production: add the public HTTPS origin in Logto (do not commit secrets). Social connectors are disabled in the login panel.
 - 401 → re-auth. 402 (commercial entitlement) is shown separately from 403 (missing admin scope / forbidden).
+- AI pages (`/ai`) call same-origin `/bff/ai/*`. The Fastify server checks the operator access token (`entitlement:admin` or `ai:admin`, audience from runtime config) and calls AI Platform with `AI_PLATFORM_INTERNAL_SERVICE_KEY`. That key is server-only: it is not in `/config.json` and is not returned to the browser. Deployment keys are still provisioned with `services/ai-platform/scripts/seed-deployment-connection.mjs`; the console can enable, disable, or rotate a deployment connection without showing the stored secret.
 
 Runtime config is served from **`GET /config.json`** (Rsbuild middleware in dev, Fastify in production). Rebuild is not required to change issuer, client id, or Entitlement URL. The SPA always rebinds redirects / Experience API to `window.location.origin` so `localhost` and `127.0.0.1` both work.
 

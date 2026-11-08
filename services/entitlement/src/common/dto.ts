@@ -3,6 +3,7 @@ import { Type } from "class-transformer";
 import {
   IsArray,
   IsBoolean,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -11,6 +12,7 @@ import {
   MinLength,
   ValidateNested,
 } from "class-validator";
+import { PRODUCT_LIFECYCLE_STATUSES } from "./constants";
 
 export class EntitlementsQueryDto {
   @ApiProperty({ example: "vistaremote" })
@@ -225,7 +227,7 @@ export class EnsureTrialDto {
 }
 
 export class AcceptPolicyDto {
-  @ApiProperty({ example: "lw-legal-v2026-09-07" })
+  @ApiProperty({ example: "lw-legal-v2026-11-07" })
   @IsString()
   @MinLength(1)
   policyVersion!: string;
@@ -433,4 +435,25 @@ export class AdminGrantDto {
   @IsInt()
   @Min(0)
   seatLimit?: number;
+}
+
+export class SetProductLifecycleStatusDto {
+  @ApiProperty({ enum: PRODUCT_LIFECYCLE_STATUSES })
+  @IsString()
+  @IsIn([...PRODUCT_LIFECYCLE_STATUSES])
+  status!: (typeof PRODUCT_LIFECYCLE_STATUSES)[number];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(512)
+  reason?: string;
+}
+
+export class ForceRevokeProductDto {
+  @ApiProperty({ description: "Why paid access for this product is cut before period end." })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(512)
+  reason!: string;
 }

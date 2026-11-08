@@ -68,6 +68,7 @@ export class PaymentConfigAdminController {
       priority: body.priority,
       capabilities: body.capabilities as Partial<ProviderCapabilities> | undefined,
       merchantId: body.merchantId,
+      merchantAccountId: body.merchantAccountId,
       credentials: body.credentials,
       metadata: body.metadata,
       enabled: body.enabled,

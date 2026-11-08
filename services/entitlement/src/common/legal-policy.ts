@@ -1,6 +1,6 @@
 import { PRODUCT_CODES } from "./constants";
 
-export const DEFAULT_LEGAL_POLICY_VERSION = "lw-legal-v2026-09-07";
+export const DEFAULT_LEGAL_POLICY_VERSION = "lw-legal-v2026-11-07";
 
 export const LEGAL_DOCUMENT_KEYS = ["terms", "privacy", "trial-deletion"] as const;
 export type LegalDocumentKey = (typeof LEGAL_DOCUMENT_KEYS)[number];

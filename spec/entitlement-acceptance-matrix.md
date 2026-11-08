@@ -54,7 +54,7 @@
 | `pnpm run check` | **PASS** |
 | `pnpm run test` | **PASS** (39 tests; includes `outbox-claim.spec.ts`) |
 | `pnpm run build` | **PASS** |
-| `docker compose up -d entitlement-db` | **PASS** (Postgres healthy) |
+| `pnpm ent:up` (shared `control-plane-db`; formerly service-local `entitlement-db`) | **PASS** (Postgres healthy) |
 | `pnpm run migration:run` | **PASS** (lease columns applied; no pending) |
 | `pnpm run seed` | **PASS** |
 | `GET http://127.0.0.1:3040/health` | **PASS** `{"status":"ok"}` |
@@ -149,7 +149,7 @@ Control-plane only (no product-repo purge handlers, no payment providers).
 
 | Check | Expected |
 |-------|----------|
-| Current policy version | `lw-legal-v2026-09-07` (configurable) |
+| Current policy version | `lw-legal-v2026-11-07` (configurable) |
 | `GET /v1/policies/current` + `POST /v1/policies/accept` | Authenticated; subject from token; idempotent for current version |
 | `POST /v1/trials/ensure` without accept | `TRIAL_POLICY_NOT_ACCEPTED` (400) |
 | Disabled trial (DoerFlow / VistaCast / SyncroBrain) | `PRODUCT_TRIAL_DISABLED` before acceptance writes |

@@ -21,6 +21,11 @@ export class PaymentAttemptEntity {
   @Column({ name: "order_id", type: "uuid" })
   orderId!: string;
 
+  /** Denormalized from the order so reconciliation can filter without a join. */
+  @Index()
+  @Column({ name: "product_code", type: "varchar", length: 64, nullable: true })
+  productCode!: string | null;
+
   @ManyToOne(() => OrderEntity, { onDelete: "CASCADE" })
   @JoinColumn({ name: "order_id" })
   order!: OrderEntity;

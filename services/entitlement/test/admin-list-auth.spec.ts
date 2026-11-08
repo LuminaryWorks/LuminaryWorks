@@ -1,4 +1,5 @@
 import { REQUIRES_ADMIN_KEY } from "../src/auth/decorators";
+import { readMerchantAccountId } from "../src/common/merchant-account";
 import { defaultCapabilities } from "../src/common/payment-providers";
 import type { PaymentProviderConfigEntity } from "../src/database/entities/payment-provider-config.entity";
 import { PaymentAdminController } from "../src/modules/payments/payment-admin.controller";
@@ -28,6 +29,7 @@ describe("provider public views never include credentials", () => {
       priority: 1,
       capabilities: defaultCapabilities("mock"),
       merchantId: "m_1",
+      merchantAccountId: " acct_connect_9 ",
       credentialFingerprint: "fp",
       credentialLastFour: "test",
       keyFingerprint: "kf",
@@ -48,5 +50,15 @@ describe("provider public views never include credentials", () => {
     expect(json).not.toContain("never");
     expect(view.credentialLastFour).toBe("test");
     expect(view.enabled).toBe(true);
+    expect(view.merchantAccountId).toBe("acct_connect_9");
+    const adapterConfig = svc.decryptForAdapter({
+      ...row,
+      credentialsCiphertext: "",
+      merchantAccountId: null,
+      metadata: {},
+    });
+    expect(adapterConfig.merchantId).toBe("m_1");
+    expect(adapterConfig.merchantAccountId).toBeNull();
+    expect(readMerchantAccountId(view.merchantAccountId)).toBe("acct_connect_9");
   });
 });

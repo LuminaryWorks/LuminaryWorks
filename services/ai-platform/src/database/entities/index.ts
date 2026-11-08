@@ -1,4 +1,5 @@
 import { AiUsageEventEntity } from "./ai-usage-event.entity";
+import { ConnectionAuditEventEntity } from "./connection-audit-event.entity";
 import { ProviderConnectionEntity } from "./provider-connection.entity";
 import {
   CreditGrantEntity,
@@ -12,6 +13,7 @@ import {
 export const ALL_ENTITIES = [
   ProviderConnectionEntity,
   AiUsageEventEntity,
+  ConnectionAuditEventEntity,
   WalletEntity,
   CreditGrantEntity,
   CreditHoldEntity,
@@ -20,4 +22,4 @@ export const ALL_ENTITIES = [
   RateCardLineEntity,
 ];
 
-export { AiUsageEventEntity, ProviderConnectionEntity };
+export { AiUsageEventEntity, ConnectionAuditEventEntity, ProviderConnectionEntity };

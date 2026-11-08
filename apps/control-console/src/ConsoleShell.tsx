@@ -1,19 +1,22 @@
 import {
+  ApiOutlined,
+  AppstoreOutlined,
   BarChartOutlined,
   CreditCardOutlined,
   DashboardOutlined,
+  FundOutlined,
   GlobalOutlined,
   LogoutOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
   ProfileOutlined,
   ReloadOutlined,
+  RobotOutlined,
   SafetyCertificateOutlined,
   UnorderedListOutlined,
+  WalletOutlined,
 } from "@ant-design/icons";
-import type { MenuProps } from "antd";
-import { Button, ConfigProvider, Dropdown, Layout, Menu } from "antd";
-import { useMemo, useState } from "react";
+import { AppShell, type ShellNavGroup } from "@luminaryworks/ui";
+import { Button, Dropdown } from "antd";
+import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Navigate,
@@ -24,13 +27,21 @@ import {
   useParams,
 } from "react-router-dom";
 import logoUrl from "../../../assets/logo.svg?url";
-import { luminaryAntTheme } from "../../../shared/brand/ant-theme";
-import { ConfirmDialogHost } from "./components/ConfirmDialog";
+import { ReasonConfirmHost } from "./components/ReasonConfirmDialog";
 import type { ConsoleLocale } from "./i18n";
+import type { AiClient } from "./lib/ai-client";
 import type { createApiClient } from "./lib/api-client";
 import { isPlatformAdmin, readJwtScopes } from "./lib/jwt-scopes";
+import { LOCALE_FULL_KEY, LOCALE_SHORT_KEY } from "./lib/locale-labels";
 import { isProviderId } from "./lib/payment-providers";
 import type { RuntimeConfig } from "./lib/runtime-config";
+import {
+  AiConnectionsPage,
+  AiOverviewPage,
+  AiRateCardsPage,
+  AiUsagePage,
+  AiWalletsPage,
+} from "./pages/ai/AiPages";
 import {
   ChannelSetupPage,
   ChannelsPage,
@@ -43,53 +54,15 @@ import {
   OrdersPage,
 } from "./pages/OpsPages";
 import { CatalogPage, OverviewPage } from "./pages/OverviewCatalogProviders";
+import { PartnersPage } from "./pages/PartnersPage";
 import { PREFERRED_LOCALES } from "./preferred-locale";
 import "antd/dist/reset.css";
 
-const { Header, Sider, Content } = Layout;
-
-const SHORT_KEY: Record<ConsoleLocale, string> = {
-  en: "lang.short.en",
-  "zh-CN": "lang.short.zhCN",
-  "zh-TW": "lang.short.zhTW",
-  ja: "lang.short.ja",
-  ko: "lang.short.ko",
-  pt: "lang.short.pt",
-  nl: "lang.short.nl",
-  it: "lang.short.it",
-  es: "lang.short.es",
-  fr: "lang.short.fr",
-};
-
-const FULL_KEY: Record<ConsoleLocale, string> = {
-  en: "lang.full.en",
-  "zh-CN": "lang.full.zhCN",
-  "zh-TW": "lang.full.zhTW",
-  ja: "lang.full.ja",
-  ko: "lang.full.ko",
-  pt: "lang.full.pt",
-  nl: "lang.full.nl",
-  it: "lang.full.it",
-  es: "lang.full.es",
-  fr: "lang.full.fr",
-};
-
-const ICONS = {
-  overview: <DashboardOutlined />,
-  catalog: <UnorderedListOutlined />,
-  providers: <CreditCardOutlined />,
-  orders: <ProfileOutlined />,
-  legal: <SafetyCertificateOutlined />,
-  cleanup: <ReloadOutlined />,
-  capacity: <BarChartOutlined />,
-} as const;
-
 type Api = ReturnType<typeof createApiClient>;
-type NavIconName = keyof typeof ICONS;
-type NavItem = { to: string; key: string; icon: NavIconName };
 
 export function ConsoleShell({
   api,
+  ai,
   runtime,
   accessToken,
   locale,
@@ -97,6 +70,7 @@ export function ConsoleShell({
   onSignOut,
 }: {
   api: Api;
+  ai: AiClient;
   runtime: RuntimeConfig;
   accessToken: string;
   locale: ConsoleLocale;
@@ -106,222 +80,275 @@ export function ConsoleShell({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(
-    () => localStorage.getItem("lw-cc-sider") === "1",
-  );
 
   const paymentsOff = runtime.paymentsMode === "disabled";
   const tenant = runtime.consoleRole === "tenant";
   const scopes = readJwtScopes(accessToken);
   const platformAdmin = isPlatformAdmin(scopes);
+  const aiOperator = !tenant && (platformAdmin || scopes.includes("ai:admin"));
   const catalogAdmin =
     platformAdmin ||
     scopes.some((scope) => scope.startsWith("entitlement:catalog:"));
 
-  const groups = useMemo(
-    (): { key: string; items: NavItem[] }[] => [
+  const nav = useMemo(
+    (): ShellNavGroup[] => [
       {
         key: "nav.groupCommerce",
+        labelKey: "nav.groupCommerce",
         items: [
-          { to: "/", key: "nav.overview", icon: "overview" as const },
-          ...(tenant || !catalogAdmin
-            ? []
-            : [
-                {
-                  to: "/catalog",
-                  key: "nav.catalog",
-                  icon: "catalog" as const,
-                },
-              ]),
-          ...(paymentsOff
-            ? []
-            : [
-                {
-                  to: "/commerce/channels",
-                  key: "nav.providers",
-                  icon: "providers" as const,
-                },
-                { to: "/orders", key: "nav.orders", icon: "orders" as const },
-              ]),
+          {
+            key: "/",
+            to: "/",
+            labelKey: "nav.overview",
+            icon: <DashboardOutlined />,
+          },
+          {
+            key: "/catalog",
+            to: "/catalog",
+            labelKey: "nav.catalog",
+            icon: <UnorderedListOutlined />,
+            visible: !tenant && catalogAdmin,
+          },
+          {
+            key: "/partners",
+            to: "/partners",
+            labelKey: "nav.partners",
+            icon: <AppstoreOutlined />,
+            visible: !tenant && platformAdmin,
+          },
+          {
+            key: "/commerce/channels",
+            to: "/commerce/channels",
+            labelKey: "nav.providers",
+            icon: <CreditCardOutlined />,
+            visible: !paymentsOff,
+          },
+          {
+            key: "/orders",
+            to: "/orders",
+            labelKey: "nav.orders",
+            icon: <ProfileOutlined />,
+            visible: !paymentsOff,
+          },
         ],
       },
-      ...(tenant
-        ? []
-        : [
-            {
-              key: "nav.groupTrust",
-              items: [
-                { to: "/legal", key: "nav.legal", icon: "legal" as const },
-              ],
-            },
-            {
-              key: "nav.groupPlatform",
-              items: [
-                {
-                  to: "/cleanup",
-                  key: "nav.cleanup",
-                  icon: "cleanup" as const,
-                },
-                {
-                  to: "/capacity",
-                  key: "nav.capacity",
-                  icon: "capacity" as const,
-                },
-              ],
-            },
-          ]),
+      {
+        key: "nav.groupTrust",
+        labelKey: "nav.groupTrust",
+        visible: !tenant,
+        items: [
+          {
+            key: "/legal",
+            to: "/legal",
+            labelKey: "nav.legal",
+            icon: <SafetyCertificateOutlined />,
+          },
+        ],
+      },
+      {
+        key: "nav.groupAi",
+        labelKey: "nav.groupAi",
+        visible: aiOperator,
+        items: [
+          {
+            key: "/ai",
+            to: "/ai",
+            labelKey: "nav.aiOverview",
+            icon: <RobotOutlined />,
+          },
+          {
+            key: "/ai/connections",
+            to: "/ai/connections",
+            labelKey: "nav.aiConnections",
+            icon: <ApiOutlined />,
+          },
+          {
+            key: "/ai/rate-cards",
+            to: "/ai/rate-cards",
+            labelKey: "nav.aiRateCards",
+            icon: <UnorderedListOutlined />,
+          },
+          {
+            key: "/ai/wallets",
+            to: "/ai/wallets",
+            labelKey: "nav.aiWallets",
+            icon: <WalletOutlined />,
+          },
+          {
+            key: "/ai/usage",
+            to: "/ai/usage",
+            labelKey: "nav.aiUsage",
+            icon: <FundOutlined />,
+          },
+        ],
+      },
+      {
+        key: "nav.groupPlatform",
+        labelKey: "nav.groupPlatform",
+        visible: !tenant,
+        items: [
+          {
+            key: "/cleanup",
+            to: "/cleanup",
+            labelKey: "nav.cleanup",
+            icon: <ReloadOutlined />,
+          },
+          {
+            key: "/capacity",
+            to: "/capacity",
+            labelKey: "nav.capacity",
+            icon: <BarChartOutlined />,
+          },
+        ],
+      },
     ],
-    [catalogAdmin, paymentsOff, tenant],
+    [aiOperator, catalogAdmin, paymentsOff, platformAdmin, tenant],
   );
-
-  const selected = useMemo(() => {
-    const items = groups.flatMap((group) => group.items);
-    const match = items.find((item) =>
-      item.to === "/"
-        ? location.pathname === "/"
-        : location.pathname === item.to ||
-          location.pathname.startsWith(`${item.to}/`),
-    );
-    return match?.to ?? "/";
-  }, [groups, location.pathname]);
-
-  const menuItems: MenuProps["items"] = groups.map((group) => ({
-    type: "group",
-    key: group.key,
-    label: t(group.key),
-    children: group.items.map((item) => ({
-      key: item.to,
-      icon: ICONS[item.icon],
-      label: t(item.key),
-    })),
-  }));
 
   return (
-    <ConfigProvider theme={luminaryAntTheme}>
-      <Layout className="console-layout">
-        <a className="skip" href="#main">
-          {t("nav.skip")}
-        </a>
-        <Sider
-          className="console-sider"
-          collapsed={collapsed}
-          collapsible
-          trigger={null}
-          width={248}
-          theme="dark"
+    <AppShell
+      logoSrc={logoUrl}
+      title={t("app.title")}
+      nav={nav}
+      pathname={location.pathname}
+      onNavigate={(to) => navigate(to)}
+      siderStorageKey="lw-cc-sider"
+      skipLabel={t("nav.skip")}
+      collapseLabel={t("nav.collapse")}
+      expandLabel={t("nav.expand")}
+      t={(key) => t(key)}
+      localeMenu={
+        <Dropdown
+          menu={{
+            selectedKeys: [locale],
+            items: PREFERRED_LOCALES.map((code) => ({
+              key: code,
+              label: t(LOCALE_FULL_KEY[code]),
+            })),
+            onClick: ({ key }) => onLocaleChange(key as ConsoleLocale),
+          }}
         >
-          <div className="console-brand">
-            <img
-              className="console-mark"
-              src={logoUrl}
-              alt={collapsed ? t("app.title") : ""}
-            />
-            {collapsed ? null : (
-              <span className="console-brand-name">{t("app.title")}</span>
-            )}
-          </div>
-          <div className="console-menu-scroll">
-            <Menu
-              theme="dark"
-              mode="inline"
-              inlineCollapsed={collapsed}
-              style={{ width: "100%" }}
-              selectedKeys={[selected]}
-              items={menuItems}
-              onClick={({ key }) => navigate(key)}
-            />
-          </div>
-          <button
-            type="button"
-            className="console-sider-toggle"
-            aria-label={collapsed ? t("nav.expand") : t("nav.collapse")}
-            onClick={() => {
-              const next = !collapsed;
-              setCollapsed(next);
-              localStorage.setItem("lw-cc-sider", next ? "1" : "0");
-            }}
-          >
-            {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            {collapsed ? null : <span>{t("nav.collapse")}</span>}
-          </button>
-        </Sider>
-        <Layout className="console-main">
-          <Header className="console-header">
-            <div id="page-header-slot" className="page-header-slot" />
-            <div className="console-tools">
-              <Dropdown
-                menu={{
-                  selectedKeys: [locale],
-                  items: PREFERRED_LOCALES.map((code) => ({
-                    key: code,
-                    label: t(FULL_KEY[code]),
-                  })),
-                  onClick: ({ key }) => onLocaleChange(key as ConsoleLocale),
-                }}
-              >
-                <Button type="text" icon={<GlobalOutlined />}>
-                  {t(SHORT_KEY[locale])}
-                </Button>
-              </Dropdown>
-              <Button type="text" icon={<LogoutOutlined />} onClick={onSignOut}>
-                {t("nav.logout")}
-              </Button>
-            </div>
-          </Header>
-          <Content id="main" className="console-content">
-            <Routes>
-              <Route
-                path="/"
-                element={<OverviewPage api={api} runtime={runtime} />}
-              />
-              <Route
-                path="/catalog"
-                element={
-                  <CatalogPage api={api} platformAdmin={platformAdmin} />
-                }
-              />
-              <Route
-                path="/providers"
-                element={<Navigate to="/commerce/channels" replace />}
-              />
-              <Route
-                path="/commerce/channels"
-                element={<ChannelsPage api={api} role={runtime.consoleRole} />}
-              />
-              <Route
-                path="/commerce/channels/new"
-                element={<Navigate to="/commerce/channels" replace />}
-              />
-              <Route
-                path="/commerce/channels/setup/:providerId"
-                element={
-                  <ChannelSetupRoute api={api} role={runtime.consoleRole} />
-                }
-              />
-              <Route
-                path="/commerce/channels/:id"
-                element={<ChannelRoute api={api} role={runtime.consoleRole} />}
-              />
-              <Route path="/orders" element={<OrdersPage api={api} />} />
-              <Route path="/cleanup" element={<CleanupPage api={api} />} />
-              <Route
-                path="/legal"
-                element={
-                  <LegalPage api={api} legalDocsUrl={runtime.legalDocsUrl} />
-                }
-              />
-              <Route
-                path="/capacity"
-                element={<CapacityPage api={api} runtime={runtime} />}
-              />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Content>
-        </Layout>
-      </Layout>
-      <ConfirmDialogHost />
-    </ConfigProvider>
+          <Button type="text" icon={<GlobalOutlined />}>
+            {t(LOCALE_SHORT_KEY[locale])}
+          </Button>
+        </Dropdown>
+      }
+      userMenu={
+        <Button type="text" icon={<LogoutOutlined />} onClick={onSignOut}>
+          {t("nav.logout")}
+        </Button>
+      }
+      confirm={{
+        title: t("confirm.title"),
+        cancelLabel: t("common.cancel"),
+        confirmLabel: t("common.confirm"),
+      }}
+    >
+      <ReasonConfirmHost
+        title={t("confirm.title")}
+        cancelLabel={t("common.cancel")}
+        confirmLabel={t("common.confirm")}
+        reasonLabel={t("confirm.reasonLabel")}
+        reasonPlaceholder={t("confirm.reasonPlaceholder")}
+      />
+      <Routes>
+        <Route
+          path="/"
+          element={<OverviewPage api={api} runtime={runtime} />}
+        />
+        <Route
+          path="/catalog"
+          element={<CatalogPage api={api} platformAdmin={platformAdmin} />}
+        />
+        <Route
+          path="/partners"
+          element={
+            !tenant && platformAdmin ? (
+              <PartnersPage api={api} />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        <Route
+          path="/providers"
+          element={<Navigate to="/commerce/channels" replace />}
+        />
+        <Route
+          path="/commerce/channels"
+          element={<ChannelsPage api={api} role={runtime.consoleRole} />}
+        />
+        <Route
+          path="/commerce/channels/new"
+          element={<Navigate to="/commerce/channels" replace />}
+        />
+        <Route
+          path="/commerce/channels/setup/:providerId"
+          element={<ChannelSetupRoute api={api} role={runtime.consoleRole} />}
+        />
+        <Route
+          path="/commerce/channels/:id"
+          element={<ChannelRoute api={api} role={runtime.consoleRole} />}
+        />
+        <Route path="/orders" element={<OrdersPage api={api} />} />
+        <Route path="/cleanup" element={<CleanupPage api={api} />} />
+        <Route
+          path="/legal"
+          element={<LegalPage api={api} legalDocsUrl={runtime.legalDocsUrl} />}
+        />
+        <Route
+          path="/capacity"
+          element={<CapacityPage api={api} runtime={runtime} />}
+        />
+        <Route
+          path="/ai"
+          element={
+            <AiGate allow={aiOperator}>
+              <AiOverviewPage ai={ai} />
+            </AiGate>
+          }
+        />
+        <Route
+          path="/ai/connections"
+          element={
+            <AiGate allow={aiOperator}>
+              <AiConnectionsPage ai={ai} />
+            </AiGate>
+          }
+        />
+        <Route
+          path="/ai/rate-cards"
+          element={
+            <AiGate allow={aiOperator}>
+              <AiRateCardsPage ai={ai} />
+            </AiGate>
+          }
+        />
+        <Route
+          path="/ai/wallets"
+          element={
+            <AiGate allow={aiOperator}>
+              <AiWalletsPage ai={ai} />
+            </AiGate>
+          }
+        />
+        <Route
+          path="/ai/usage"
+          element={
+            <AiGate allow={aiOperator}>
+              <AiUsagePage ai={ai} />
+            </AiGate>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AppShell>
   );
+}
+
+function AiGate({ allow, children }: { allow: boolean; children: ReactNode }) {
+  if (!allow) return <Navigate to="/" replace />;
+  return children;
 }
 
 function ChannelSetupRoute({

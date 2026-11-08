@@ -9,6 +9,7 @@ import type {
   SubjectKind,
 } from "../../common/constants";
 import { EntitlementException } from "../../common/errors";
+import { readLifecycleStatus } from "../../common/product-lifecycle";
 import {
   applyGaugeDelta,
   assertMeteringMode,
@@ -135,10 +136,14 @@ export class EntitlementsService {
         active: Boolean(trialSub && isActiveWindow(trialSub.startsAt, trialSub.endsAt, asOf)),
         endsAt: trialSub?.endsAt?.toISOString() ?? null,
         consumed: trialConsumed,
-        eligible: product.trialPolicy === "standard_7d" && !trialConsumed,
+        eligible:
+          product.trialPolicy === "standard_7d" &&
+          !trialConsumed &&
+          readLifecycleStatus(product.status) === "active",
         trialRedemptionId: trialRedemption?.id ?? null,
       },
       sellable: product.sellable,
+      lifecycleStatus: readLifecycleStatus(product.status),
       features: merged.features,
       quotas,
       asOf: asOf.toISOString(),

@@ -1,8 +1,8 @@
 import { ReloadOutlined } from "@ant-design/icons";
+import { ErrorBanner, PageHeader } from "@luminaryworks/ui";
 import { Button } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ErrorBanner, PageHeader } from "../components/ErrorBanner";
 import type { createApiClient } from "../lib/api-client";
 import { confirmDestructive } from "../lib/confirm";
 import { buildOrderTimeline } from "../lib/order-timeline";
@@ -115,7 +115,7 @@ export function OrdersPage({ api }: { api: Api }) {
   return (
     <section>
       <PageHeader title={t("orders.title")} />
-      <ErrorBanner error={error} />
+      <ErrorBanner error={error} t={(key) => t(key)} />
       <div className="tabs" role="tablist">
         {(["orders", "attempts", "refunds"] as const).map((item) => (
           <button
@@ -503,7 +503,7 @@ export function CleanupPage({ api }: { api: Api }) {
   return (
     <section>
       <PageHeader title={t("cleanup.title")} />
-      <ErrorBanner error={error} />
+      <ErrorBanner error={error} t={(key) => t(key)} />
       <form
         className="toolbar"
         onSubmit={(ev) => {
@@ -614,7 +614,7 @@ export function LegalPage({
   return (
     <section>
       <PageHeader title={t("legal.title")} />
-      <ErrorBanner error={error} />
+      <ErrorBanner error={error} t={(key) => t(key)} />
       <article className="panel-card">
         <h2>{t("legal.docs")}</h2>
         {legalDocsUrl ? (
@@ -713,7 +713,7 @@ export function CapacityPage({
           </Button>
         }
       />
-      <ErrorBanner error={error} />
+      <ErrorBanner error={error} t={(key) => t(key)} />
       <div className="probe-grid">
         <ProbeCard
           title={t("capacity.entitlementReady")}

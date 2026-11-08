@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
 import { DataSource, type Repository } from "typeorm";
 import { TRIAL_DURATION_MS } from "../../common/constants";
+import { assertProductCommerceOpen } from "../../common/product-lifecycle";
 import { assertTrialPlanAllowed } from "../../common/trial-policy";
 import { GrantEntity } from "../../database/entities/grant.entity";
 import { LicenseEntity } from "../../database/entities/license.entity";
@@ -52,6 +53,7 @@ export class TrialsService {
     trialRedemptionId: string | null;
     skippedReason?: string;
   }> {
+    await assertProductCommerceOpen(this.products, input.productCode);
     await assertTrialPlanAllowed(this.products, input.productCode, "trial");
 
     if (input.deploymentId) {

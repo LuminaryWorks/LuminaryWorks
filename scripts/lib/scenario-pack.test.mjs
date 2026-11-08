@@ -285,6 +285,7 @@ test("contract fixtures are UTF-8 without BOM and parse as JSON", () => {
 test("docker compose config is only for this repo's control-plane (skip if Docker missing)", () => {
   const env = {
     ...process.env,
+    CONTROL_PLANE_DB_ADMIN_PASSWORD: "8f2c1d9e77a4b0c3aa11bb22cc33dd43",
     IDENTITY_DB_PASSWORD: "8f2c1d9e77a4b0c3aa11bb22cc33dd44",
     IDENTITY_ENDPOINT: "http://localhost:3001",
     IDENTITY_ADMIN_ENDPOINT: "http://localhost:3002",
@@ -294,6 +295,11 @@ test("docker compose config is only for this repo's control-plane (skip if Docke
     ENTITLEMENT_SERVICE_API_KEY: "8f2c1d9e77a4b0c3aa11bb22cc33dd46",
     ENTITLEMENT_PARTNER_SECRET_PEPPER: "8f2c1d9e77a4b0c3aa11bb22cc33dd47",
     ENTITLEMENT_PARTNER_TOKEN_SECRET: "8f2c1d9e77a4b0c3aa11bb22cc33dd48",
+    NOTIFICATION_DB_PASSWORD: "8f2c1d9e77a4b0c3aa11bb22cc33dd49",
+    NOTIFICATION_SERVICE_KEY: "8f2c1d9e77a4b0c3aa11bb22cc33dd4a",
+    NOTIFICATION_SECRET_KEY: "8f2c1d9e77a4b0c3aa11bb22cc33dd4b",
+    AI_PLATFORM_DB_PASSWORD: "8f2c1d9e77a4b0c3aa11bb22cc33dd4c",
+    AI_PLATFORM_SERVICE_API_KEY: "8f2c1d9e77a4b0c3aa11bb22cc33dd4d",
     AI_VAULT_MASTER_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
   };
   const result = spawnSync(
@@ -309,6 +315,10 @@ test("docker compose config is only for this repo's control-plane (skip if Docke
   const config = JSON.parse(result.stdout);
   assert.ok(config.services.identity);
   assert.ok(config.services.entitlement);
+  assert.ok(config.services["control-plane-db"]);
+  assert.equal(config.services["identity-db"], undefined);
+  assert.equal(config.services["entitlement-db"], undefined);
+  assert.equal(config.services["notification-db"], undefined);
   assert.equal(config.services.api, undefined);
 });
 

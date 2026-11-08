@@ -180,7 +180,8 @@ interface SpeechAssessResult {
 
 - 用户 token **不能**直接使用托管（`deployment`）连接；托管路径只经产品 BFF。公共 API（D-AI-15）上线时需要自己的 principal 类型，不复用 `user`。
 - OIDC 模式必须显式配置 issuer、audience、JWKS URI；算法白名单 `RS256` / `ES256`。`legacy`（HS256）仅在显式配置密钥时可用，**生产禁用**。
-- **P2 前置要求（待办）**：当前所有产品共用一把服务凭证，任一产品的 BFF 可以声称自己是另一个产品。进入账本阶段前，服务凭证必须**绑定 `productCode`**，请求体里的 `productCode` 与凭证绑定值不一致则拒绝；否则扣费与 entitlement 归属可被伪造。
+- 服务凭证已经绑定 `productCodes`（`AI_PLATFORM_SERVICE_PRODUCT_CODES` 或 `AI_PLATFORM_SERVICE_CREDENTIALS_JSON`）。请求体 `productCode` 不在该凭证允许列表内时返回 `FORBIDDEN`，而不是 `ENTITLEMENT_DENIED`。
+- 托管（非 BYOK）调用还可按产品加限流。环境变量 `AI_PLATFORM_PRODUCT_LIMITS_JSON` 形如 `{ "<productCode>": { "rpm": number, "dailyChargeMicro": number } }`。未出现的产品不加这层限制。`rpm` 是进程内 60 秒窗口；`dailyChargeMicro` 按 UTC 日累计报价微单位，钱包未强制扣费时仍会为了天花板询价。超限返回 `RATE_LIMITED`（HTTP 429）。计数随进程重启清空，多副本不共享。BYOK 不走这层限制。
 
 ## 9. 产品接入变化
 

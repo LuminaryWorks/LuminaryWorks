@@ -1,0 +1,48 @@
+{
+  "name": "@luminaryworks/account-center",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Polyform-Noncommercial-1.0.0",
+  "description": "LuminaryWorks end-user Account Center",
+  "type": "module",
+  "scripts": {
+    "dev": "rsbuild dev",
+    "build": "tsc -p tsconfig.json --noEmit && rsbuild build",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "lint": "biome check src server rsbuild.config.ts rstest.config.ts",
+    "test": "rstest && node --test server/*.test.mjs",
+    "start": "node server/main.mjs",
+    "preview": "rsbuild preview"
+  },
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=11"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^6.3.4",
+    "@fastify/static": "^10.1.2",
+    "@luminaryworks/ai-client": "link:../../shared/packages/ai-client",
+    "@luminaryworks/ai-react": "link:../../shared/packages/ai-react",
+    "@luminaryworks/auth-react": "^0.7.5",
+    "@luminaryworks/ui": "link:../../shared/packages/ui",
+    "antd": "^6.6.5",
+    "fastify": "^5.12.5",
+    "i18next": "^24.2.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-i18next": "^15.7.4",
+    "react-router-dom": "^7.8.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.0",
+    "@luminaryworks/auth-dev-proxy": "^0.2.2",
+    "@rsbuild/core": "^2.2.11",
+    "@rsbuild/plugin-react": "^2.1.1",
+    "@rstest/adapter-rsbuild": "^0.10.2",
+    "@rstest/core": "^0.10.2",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "typescript": "6.0.3"
+  }
+}

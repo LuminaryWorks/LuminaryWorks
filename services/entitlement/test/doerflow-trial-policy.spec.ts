@@ -22,10 +22,11 @@ function expectDisabled(promise: Promise<unknown>) {
 }
 
 describe("DoerFlow trial policy", () => {
-  it("keeps the shipped DoerFlow catalog on a 7-day trial", () => {
+  it("ships DoerFlow with trial disabled and no trial plan", () => {
     const doerflow = CATALOG.find((product) => product.code === "doerflow");
-    expect(doerflow?.trialPolicy).toBe("standard_7d");
-    expect(doerflow?.plans.some((plan) => plan.code === "trial")).toBe(true);
+    expect(doerflow?.trialPolicy).toBe("disabled");
+    expect(doerflow?.plans.some((plan) => plan.code === "trial")).toBe(false);
+    expect(doerflow?.plans.map((plan) => plan.code)).toEqual(["pro", "ultra", "enterprise"]);
     expect(doerflow?.features.some((feature) => feature.code.startsWith("integration."))).toBe(
       true,
     );
@@ -35,7 +36,7 @@ describe("DoerFlow trial policy", () => {
     const audit = { record: jest.fn() };
     const legal = {
       assertCurrentPolicyAccepted: jest.fn(),
-      currentPolicyVersion: jest.fn().mockReturnValue("lw-legal-v2026-09-07"),
+      currentPolicyVersion: jest.fn().mockReturnValue("lw-legal-v2026-11-07"),
     };
     const service = new TrialsService(
       dataSource as never,

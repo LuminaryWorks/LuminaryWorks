@@ -48,6 +48,11 @@ export const PLAN_PRIORITY: Record<PlanCode | "none", number> = {
 
 export const TRIAL_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
+/** Commercial kill-switch. Independent of `products.active` and `products.sellable`. */
+export const PRODUCT_LIFECYCLE_STATUSES = ["active", "suspended", "retired"] as const;
+
+export type ProductLifecycleStatus = (typeof PRODUCT_LIFECYCLE_STATUSES)[number];
+
 export const ENTITLEMENT_ERROR_CODES = [
   "ENTITLEMENT_REQUIRED",
   "ENTITLEMENT_TRIAL_EXPIRED",
@@ -59,6 +64,8 @@ export const ENTITLEMENT_ERROR_CODES = [
   "ENTITLEMENT_SERVICE_UNAVAILABLE",
   "PRODUCT_TRIAL_DISABLED",
   "PRODUCT_NOT_SELLABLE",
+  "PRODUCT_SUSPENDED",
+  "PRODUCT_RETIRED",
   "TRIAL_POLICY_NOT_ACCEPTED",
   "PAYMENT_PRICE_MISMATCH",
   "PAYMENT_OFFERING_INVALID",
@@ -90,6 +97,8 @@ export const ERROR_HTTP_STATUS: Record<EntitlementErrorCode, number> = {
   ENTITLEMENT_SERVICE_UNAVAILABLE: 503,
   PRODUCT_TRIAL_DISABLED: 402,
   PRODUCT_NOT_SELLABLE: 402,
+  PRODUCT_SUSPENDED: 402,
+  PRODUCT_RETIRED: 402,
   TRIAL_POLICY_NOT_ACCEPTED: 400,
   PAYMENT_PRICE_MISMATCH: 400,
   PAYMENT_OFFERING_INVALID: 400,

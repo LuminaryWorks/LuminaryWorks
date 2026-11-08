@@ -20,6 +20,11 @@ export interface ProviderConfig {
   priority: number;
   capabilities: ProviderCapabilities;
   merchantId: string | null;
+  /**
+   * Reserved for Connect / a per-product merchant account.
+   * Null is the LuminaryWorks merchant-of-record account. Do not call Connect.
+   */
+  merchantAccountId?: string | null;
   /** Decrypted in-memory only. Never log, audit, or return from GET. */
   credentials: Record<string, string>;
   metadata: Record<string, unknown>;

@@ -33,10 +33,11 @@ Frozen rules:
 ## Local central service (Docker Postgres)
 
 ```bash
+# MetaRepo root: shared control-plane-db on 127.0.0.1:5433
+pnpm ent:up
 cd services/entitlement
-cp env.example .env   # if needed
+cp env.example .env   # password must match ENTITLEMENT_DB_PASSWORD in control-plane.env
 pnpm install
-docker compose up -d entitlement-db
 pnpm run migration:run   # includes outbox lease columns (locked_until / locked_by)
 pnpm run seed
 pnpm run build && node dist/main.js
@@ -45,7 +46,7 @@ pnpm run build && node dist/main.js
 
 Outbox workers are multi-instance safe: claim uses `SELECT … FOR UPDATE SKIP LOCKED` with lease expiry recovery (`OUTBOX_CLAIM_SQL`). Configure `outboxLeaseSeconds` / `outboxWorkerId` if needed.
 
-Trial cleanup: set `ENTITLEMENT_LEGAL_POLICY_VERSION` (default `lw-legal-v2026-09-07`) and `ENTITLEMENT_TRIAL_PURGE_TARGETS` as a JSON object of `productCode → { url, secret }` (placeholders only in examples). Missing purge targets retry / dead-letter and never mark `trial.purge` sent. Paid fulfillment cancels pending T-3 / T-1 / expired / purge work under the same per-user/product advisory lock.
+Trial cleanup: set `ENTITLEMENT_LEGAL_POLICY_VERSION` (default `lw-legal-v2026-11-07`) and `ENTITLEMENT_TRIAL_PURGE_TARGETS` as a JSON object of `productCode → { url, secret }` (placeholders only in examples). Missing purge targets retry / dead-letter and never mark `trial.purge` sent. Paid fulfillment cancels pending T-3 / T-1 / expired / purge work under the same per-user/product advisory lock.
 
 Do **not** commit `.env`, PEM private keys, or filled `ENTITLEMENT_LICENSE_PRIVATE_KEY`.
 

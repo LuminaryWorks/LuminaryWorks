@@ -265,8 +265,12 @@ function packControlPlane(options, platform, packArch) {
     writeFileSync(
       packEnv,
       [
+        "CONTROL_PLANE_DB_ADMIN_PASSWORD=pack-placeholder",
         "IDENTITY_DB_PASSWORD=pack-placeholder",
         "ENTITLEMENT_DB_PASSWORD=pack-placeholder",
+        "NOTIFICATION_DB_PASSWORD=pack-placeholder",
+        "NOTIFICATION_SERVICE_KEY=pack-placeholder-service-key",
+        "NOTIFICATION_SECRET_KEY=pack-placeholder-secret-key",
         "ENTITLEMENT_SERVICE_API_KEY=pack-placeholder",
         "ENTITLEMENT_PARTNER_SECRET_PEPPER=pack-placeholder",
         "ENTITLEMENT_PARTNER_TOKEN_SECRET=pack-placeholder",
@@ -322,6 +326,19 @@ function packControlPlane(options, platform, packArch) {
     join(metaRoot, "deploy", "compose", "control-plane.yaml"),
     join(packDir, "deploy", "compose", "control-plane.yaml"),
   );
+  mkdirSync(join(packDir, "deploy", "compose", "init"), { recursive: true });
+  cpSync(
+    join(metaRoot, "deploy", "compose", "init", "control-plane-db.sh"),
+    join(packDir, "deploy", "compose", "init", "control-plane-db.sh"),
+  );
+  const backupScripts = join(metaRoot, "deploy", "scripts");
+  if (existsSync(backupScripts)) {
+    mkdirSync(join(packDir, "deploy", "scripts"), { recursive: true });
+    for (const name of ["pg-backup.sh", "pg-restore-drill.sh"]) {
+      const src = join(backupScripts, name);
+      if (existsSync(src)) cpSync(src, join(packDir, "deploy", "scripts", name));
+    }
+  }
   const overlay = join(metaRoot, "deploy", "compose", "control-plane.object-storage.yaml");
   if (existsSync(overlay)) {
     cpSync(overlay, join(packDir, "deploy", "compose", "control-plane.object-storage.yaml"));
@@ -371,7 +388,7 @@ function packControlPlane(options, platform, packArch) {
     name,
     target: "control-plane",
     kind: "control-plane",
-    project: "luminary-control-plane",
+    project: "luminary-works",
     platform,
     gitSha: version,
     images: CONTROL_PLANE_PACK_IMAGES,

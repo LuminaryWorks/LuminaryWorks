@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://luminaryworks.dev/contracts/partners.manifest.schema.json",
+  "title": "LuminaryWorks partner registry",
+  "description": "One manifest drives onboarding of a partner product. No client secrets, service keys, or prices.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "partners"],
+  "properties": {
+    "$comment": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "partners": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/partner" }
+    }
+  },
+  "$defs": {
+    "partner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "displayName",
+        "operatorLabel",
+        "domains",
+        "githubOrg",
+        "oidcApps",
+        "entitlementProductCodes",
+        "aiServiceCredentialHint",
+        "legalTermsUrl",
+        "legalPrivacyUrl",
+        "supportEmail",
+        "statusPageUrl",
+        "sellable"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,62}$",
+          "description": "Registry key. For the current products this is the entitlement productCode."
+        },
+        "displayName": { "type": "string", "minLength": 1 },
+        "operatorLabel": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Brand name until a legal entity is supplied. Do not invent a company name."
+        },
+        "domains": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "githubOrg": { "type": "string", "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{0,38}$" },
+        "oidcApps": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/oidcApp" }
+        },
+        "entitlementProductCodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,62}$" }
+        },
+        "aiServiceCredentialHint": { "$ref": "#/$defs/aiHint" },
+        "legalTermsUrl": { "type": "string", "format": "uri" },
+        "legalPrivacyUrl": { "type": "string", "format": "uri" },
+        "supportEmail": {
+          "type": ["string", "null"],
+          "description": "Null until the partner publishes a mailbox. Do not copy the platform admin address onto a partner."
+        },
+        "statusPageUrl": { "type": ["string", "null"] },
+        "sellable": { "type": "boolean" },
+        "status": {
+          "type": "string",
+          "enum": ["active", "suspended", "retired"],
+          "default": "active",
+          "description": "Same vocabulary as Entitlement product lifecycle. Omitted means active."
+        }
+      }
+    },
+    "oidcApp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "clientId"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "enum": ["SPA", "MachineToMachine", "API"] },
+        "redirectUris": { "type": "array", "items": { "type": "string", "format": "uri" } },
+        "postLogoutRedirectUris": { "type": "array", "items": { "type": "string", "format": "uri" } },
+        "resourceIndicator": { "type": "string", "format": "uri" },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string", "minLength": 1 },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string", "minLength": 1 },
+                  "description": { "type": "string" }
+                }
+              }
+            ]
+          }
+        },
+        "description": { "type": "string" },
+        "clientId": {
+          "type": ["string", "null"],
+          "description": "Null when the public client id lives only in identity/registered-apps.json. PUBLIC_CLIENT_ID_PLACEHOLDER marks a new template that --write-apps may append. Never a client secret."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "SPA" } },
+            "required": ["type"]
+          },
+          "then": {
+            "required": ["redirectUris"],
+            "properties": { "redirectUris": { "type": "array", "minItems": 1 } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "API" } },
+            "required": ["type"]
+          },
+          "then": { "required": ["resourceIndicator"] }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "MachineToMachine" } },
+            "required": ["type"]
+          },
+          "then": { "required": ["resourceIndicator"] }
+        }
+      ]
+    },
+    "aiHint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["productCodes", "internal"],
+      "properties": {
+        "productCodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,62}$" }
+        },
+        "internal": { "type": "boolean" },
+        "note": { "type": "string" }
+      }
+    }
+  }
+}

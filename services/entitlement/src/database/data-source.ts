@@ -13,6 +13,7 @@ import { PaymentPlatform1730800000000 } from "./migrations/1730800000000-Payment
 import { BillingProfilePayerType1730900000000 } from "./migrations/1730900000000-BillingProfilePayerType";
 import { PaymentChannelLifecycle1731000000000 } from "./migrations/1731000000000-PaymentChannelLifecycle";
 import { PaymentCatalogOrder1731100000000 } from "./migrations/1731100000000-PaymentCatalogOrder";
+import { ProductIsolation1731200000000 } from "./migrations/1731200000000-ProductIsolation";
 
 const url =
   process.env.ENTITLEMENT_DATABASE_URL ??
@@ -35,6 +36,7 @@ export default new DataSource({
     BillingProfilePayerType1730900000000,
     PaymentChannelLifecycle1731000000000,
     PaymentCatalogOrder1731100000000,
+    ProductIsolation1731200000000,
   ],
   synchronize: false,
 });

@@ -17,7 +17,7 @@ describe("trial.purge signature and ack", () => {
     productCode: "dataluminary",
     startsAt: "2026-09-07T00:00:00.000Z",
     endsAt: "2026-09-14T00:00:00.000Z",
-    policyVersion: "lw-legal-v2026-09-07",
+    policyVersion: "lw-legal-v2026-11-07",
     scheduledFor: "2026-09-14T00:00:00.000Z",
   };
 

@@ -190,3 +190,20 @@ AI Platform: 回收对应 grant 的 remaining；已消耗部分不可回收，�
 - Postgres，append-only 流水；`ledger_entries` 不得 UPDATE / DELETE（用数据库权限强制，不只靠代码约定）。
 - 平台不存 prompt / 响应正文（D-AI-17）；`traceId` 可关联上游日志。
 - 上游密钥只在 Vault（[ai-provider-and-vault.md §3](./ai-provider-and-vault.md)）；管理台读不到明文。
+
+## 13. 运营控制台
+
+Control Console 的 `/ai` 只对平台操作者开放（`entitlement:admin` 或 `ai:admin`）。浏览器只带操作者的 OIDC access token。`AI_PLATFORM_BASE_URL` 与 `AI_PLATFORM_INTERNAL_SERVICE_KEY` 只存在于控制台 Fastify 进程，经 `/bff/ai/*` 转发，不进入 `/config.json`，也不回给浏览器。
+
+AI Platform 下列接口只接受内部服务凭证（`assertInternalService`）：
+
+| 方法 | 路径 | 作用 |
+|------|------|------|
+| GET | `/v1/internal/admin/wallets?ownerKind&ownerId` | 钱包、对账等式（granted = remaining + holds + settled + revoked）、grant 明细 |
+| GET | `/v1/internal/admin/usage?from&to&productCode&limit` | 按产品与能力汇总 calls、charged micro、upstream cost micro USD、毛利 |
+| GET | `/v1/internal/admin/rate-cards` | 版本与行。发布仍走 `POST /v1/internal/rate-cards`，版本只增 |
+| GET | `/v1/internal/admin/connections` | `ownerKind=deployment` 的连接，不含 ciphertext |
+| GET | `/v1/internal/admin/settings` | `PUBLIC_API_ENABLED` 生效值、钱包强制开关、hardening gate 的运行时观察 |
+| PUT | `/v1/internal/admin/settings/public-api` | `{ enabled: boolean, reason?: string }` 写入 `platform_settings` 并记审计。无记录时仍读环境变量 |
+
+手工发放不改现有入账契约：控制台生成 `orderId=admin:<uuid>`，`kind=promo` 且带 `expiresAt`，调用 `POST /v1/internal/credits/grant`（`sourceType` 仍为 `order`）。回收调用 `POST /v1/internal/credits/revoke`。原因在 BFF 必填；该契约本身不落 reason。部署连接的启用、停用、轮换走既有 `POST/PATCH /v1/providers`。

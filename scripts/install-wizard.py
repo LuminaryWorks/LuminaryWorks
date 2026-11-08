@@ -129,15 +129,27 @@ LOGIN_ACCOUNTS = [
 
 INTERNAL_SECRETS = [
     {
+        "key": "CONTROL_PLANE_DB_ADMIN_PASSWORD",
+        "file": "deploy/env/control-plane.env",
+        "label": "Control-plane Postgres admin",
+        "product": "control-plane",
+    },
+    {
         "key": "IDENTITY_DB_PASSWORD",
         "file": "deploy/env/control-plane.env",
-        "label": "Identity Postgres",
+        "label": "Identity Postgres role",
         "product": "control-plane",
     },
     {
         "key": "ENTITLEMENT_DB_PASSWORD",
         "file": "deploy/env/control-plane.env",
-        "label": "Entitlement Postgres",
+        "label": "Entitlement Postgres role",
+        "product": "control-plane",
+    },
+    {
+        "key": "NOTIFICATION_DB_PASSWORD",
+        "file": "deploy/env/control-plane.env",
+        "label": "Notification Postgres role",
         "product": "control-plane",
     },
     {

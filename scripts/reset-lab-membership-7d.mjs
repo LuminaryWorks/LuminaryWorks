@@ -12,7 +12,7 @@
  *   pnpm lab:reset-membership -- --users user01,user03 --days 7 --plan pro
  *   pnpm lab:reset-membership -- --dry-run
  *
- * Requires local Docker: luminary-identity-db :5433, luminary-entitlement-db :5434,
+ * Requires local Docker: control-plane-db published on :5433 (logto + entitlement DBs),
  * optional vistaremote-postgres :5437.
  */
 import { execFileSync } from "node:child_process";
@@ -100,17 +100,54 @@ function containerRunning(name) {
   }
 }
 
+function findContainerBySubstring(substring) {
+  try {
+    const out = execFileSync("docker", ["ps", "--format", "{{.Names}}"], {
+      encoding: "utf8",
+    });
+    return (
+      out
+        .split("\n")
+        .map((line) => line.trim())
+        .find((name) => name.includes(substring)) || ""
+    );
+  } catch {
+    return "";
+  }
+}
+
+/** Shared control-plane Postgres (one instance, three DBs). */
+function findControlPlaneDb() {
+  const exact = "luminary-works-control-plane-db-1";
+  if (containerRunning(exact)) return exact;
+  return findContainerBySubstring("control-plane-db");
+}
+
+function findLogtoDb() {
+  return findControlPlaneDb() || (containerRunning("luminary-identity-db") ? "luminary-identity-db" : "");
+}
+
+function findEntitlementDb() {
+  return (
+    findControlPlaneDb() ||
+    (containerRunning("luminary-entitlement-db") ? "luminary-entitlement-db" : "")
+  );
+}
+
 function sqlString(value) {
   return `'${String(value).replace(/'/g, "''")}'`;
 }
 
 function loadLabUsers() {
-  if (!containerRunning("luminary-identity-db")) {
-    throw new Error("luminary-identity-db is not running (need Logto users)");
+  const db = findLogtoDb();
+  if (!db) {
+    throw new Error(
+      "Logto DB not running (control-plane-db dbname=logto). Run: pnpm ent:up",
+    );
   }
   const list = userFilter.map(sqlString).join(",");
   const raw = dockerPsql(
-    "luminary-identity-db",
+    db,
     "logto",
     "logto",
     `SELECT id || E'\\t' || coalesce(username,'') || E'\\t' || coalesce(primary_email,'')
@@ -134,8 +171,9 @@ function loadLabUsers() {
 }
 
 function resetEntitlement(users) {
-  if (!containerRunning("luminary-entitlement-db")) {
-    console.warn("WARN  luminary-entitlement-db not running — skip central grants");
+  const db = findEntitlementDb();
+  if (!db) {
+    console.warn("WARN  entitlement DB not running — skip central grants");
     return;
   }
   const subs = users.map((u) => sqlString(u.id)).join(",");
@@ -213,9 +251,9 @@ COMMIT;
     console.log("[dry-run] entitlement SQL chars=", sql.length);
     return;
   }
-  dockerPsql("luminary-entitlement-db", "entitlement", "entitlement", sql);
+  dockerPsql(db, "entitlement", "entitlement", sql);
   console.log(
-    `OK  entitlement: ${users.length} users × ${PRODUCT_CODES.length} products → ${grantPlan} until ${endsAtIso}`,
+    `OK  entitlement (${db}): ${users.length} users × ${PRODUCT_CODES.length} products → ${grantPlan} until ${endsAtIso}`,
   );
 }
 

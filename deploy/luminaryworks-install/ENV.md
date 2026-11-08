@@ -23,7 +23,7 @@
 
 | 文件 | 典型项 |
 |---|---|
-| `deploy/env/control-plane.env` | `IDENTITY_DB_PASSWORD`、`ENTITLEMENT_DB_PASSWORD`、服务 API key / pepper |
+| `deploy/env/control-plane.env` | `CONTROL_PLANE_DB_ADMIN_PASSWORD`、三库角色口令（`IDENTITY_` / `ENTITLEMENT_` / `NOTIFICATION_DB_PASSWORD`）、服务 API key / pepper |
 | `identity/.env` | `LW_LOGTO_ADMIN_PASSWORD`（Admin 仅 `ssh -L 3002:127.0.0.1:3002`） |
 | `products/<产品>/` 下的 `.env` | 该产品自己的库口令 |
 

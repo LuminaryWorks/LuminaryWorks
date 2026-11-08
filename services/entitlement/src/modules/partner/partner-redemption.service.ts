@@ -3,6 +3,7 @@ import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
 import { DataSource, type Repository } from "typeorm";
 import type { PlanCode } from "../../common/constants";
 import { EntitlementException } from "../../common/errors";
+import { assertProductCommerceOpen } from "../../common/product-lifecycle";
 import { assertTrialPlanAllowed } from "../../common/trial-policy";
 import { GrantEntity } from "../../database/entities/grant.entity";
 import { OutboxEventEntity } from "../../database/entities/outbox-event.entity";
@@ -89,6 +90,7 @@ export class PartnerRedemptionService {
       );
     }
 
+    await assertProductCommerceOpen(this.products, productCode);
     await assertTrialPlanAllowed(this.products, productCode, planCode);
 
     const startsAt = new Date();

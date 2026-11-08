@@ -298,7 +298,7 @@ Control Manifest 的 `stage`（`dev`/`lab`/`pilot`/`production`）与能力成�
 
 内部通信一律走 **Compose / K8s 网络 DNS 名**；生产数据库不暴露 host 端口；secret 前缀按产品隔离，不用一个共享 `.env` 承载全生态 secret。
 
-现有 `identity/docker-compose.yml` 与 `services/entitlement/docker-compose.yml` **保持可独立运行**（各自 project 名、固定卷名、单机 dev 默认值）；[`deploy/compose/control-plane.yaml`](../deploy/compose/control-plane.yaml) 是**另一个** Compose project，复用同样的镜像但采用组合安全设置。二者不要同时占用同一批 host 端口。
+Entitlement / Notification **应用**可在本机进程跑（`pnpm ent:dev` 等），数据面默认连控制面共享 Postgres（`control-plane-db`，三逻辑库）；服务目录不再自带独立 Postgres Compose。[`deploy/compose/control-plane.yaml`](../deploy/compose/control-plane.yaml) 是控制面 Compose project（组合安全设置：无固定 `container_name`、无提交 secret、数据面默认不暴露 host 端口）。
 
 ## 11. 验收标准
 

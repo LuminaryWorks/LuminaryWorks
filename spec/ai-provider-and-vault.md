@@ -100,3 +100,89 @@ interface CompleteChatResult {
 - 前端 **不** 直连 Provider 拉模型；Key 只打到产品 BFF，BFF 调用 `@luminaryworks/ai-client` 的 `listProviderModels`。
 
 建议模型 catalog 与 live 过滤规则（去掉 embed / whisper / 图像等）由共享包维护，产品不得各写一份。
+
+## 6. AI Platform 连接 API
+
+账户中心（或产品 BFF）用下列路径管理 BYOK。契约名保持稳定。调用者须带 OIDC Bearer 或服务凭证。
+
+| 方法 | 路径 | 认证 | 说明 |
+|------|------|------|------|
+| `GET` | `/v1/providers` | 用户 JWT 或服务凭证 | list-mine。用户只看到 `ownerKind=user` 且 owner 为自己，或 `ownerKind=organization` 且 owner 为 token 中的 org。服务凭证看到全部（含 `deployment`）。 |
+| `POST` | `/v1/providers` | 同上 | 创建。带已有 `uid` 则整包更新并可轮换 `secret`。 |
+| `PATCH` | `/v1/providers/:uid` | 同上 | 部分更新。`secret` 非空则轮换；`enabled` 即启用 / 停用。不能改 owner。 |
+| `DELETE` | `/v1/providers/:uid` | 同上 | 删除。不存在为 404 `VALIDATION_ERROR`；越权为 403 `FORBIDDEN`。 |
+| `POST` | `/v1/providers/test` | 同上 | 连通性测试。 |
+| `POST` | `/v1/providers/models` | 同上 | 模型列表，形状与 `@luminaryworks/ai-react` 的 `listModels` 一致。 |
+
+用户 JWT 不能管理 `deployment` 或 `space`，不能读写、测试或调用他人的 `user` 连接，不能把托管连接用于推理。服务凭证保持原有行为（可管理全部连接，托管推理仍须服务凭证）。
+
+连接响应只含掩码，不含密文：
+
+```json
+{
+  "uid": "conn_…",
+  "ownerKind": "user",
+  "ownerUid": "sub",
+  "providerType": "deepseek",
+  "displayName": "personal",
+  "baseUrl": "https://api.deepseek.com",
+  "model": "deepseek-chat",
+  "enabled": true,
+  "hasSecret": true,
+  "secretFingerprint": "abcd"
+}
+```
+
+`secretFingerprint` 为密钥末 4 位。`hasSecret` 表示库中已有密文。
+
+`POST /v1/providers/test` 请求：
+
+```json
+{ "connectionUid": "conn_…" }
+```
+
+或（不落库）：
+
+```json
+{ "ephemeral": { "providerType": "openai", "baseUrl": "https://api.openai.com/v1", "model": "gpt-4o-mini", "secret": "sk-…" } }
+```
+
+成功 `200`：`{ "ok": true, "model", "latencyMs", "hasSecret": true, "secretFingerprint" }`。上游失败仍为 `200`：`{ "ok": false, "latencyMs", "hasSecret", "secretFingerprint", "error": { "code": "PROVIDER_ERROR", "message" } }`。`message` 已脱敏。SSRF、校验、越权、限流仍返回对应 4xx，而不是 `ok: false`。
+
+`POST /v1/providers/models` 请求字段与 `ListProviderModelsInput` 相同：`providerType`、`baseUrl`、`secret`、`connectionUid`、`purpose`（`chat` / `stt` / `tts`）。响应 `{ "source": "live" | "catalog", "models": string[] }`。无密钥或上游失败时回退 catalog（`source=catalog`）；SSRF 拒绝的 `baseUrl` 不会回退。
+
+生产环境只有这两个路径接受请求体里的一次性密钥。`/v1/chat/complete` 等业务路径仍返回 `EPHEMERAL_NOT_ALLOWED`。
+
+## 7. baseUrl SSRF
+
+创建、更新、测试、拉模型，以及真正发上游请求时都检查 `baseUrl`（未填写时检查该厂商的默认 URL）。
+
+拒绝：非 `http`/`https`、URL 内嵌账号密码、环回、链路本地、RFC1918、组播/保留地址、云元数据地址（含 `169.254.169.254`、`100.100.100.200`），以及解析到这些地址的主机名。先解析 DNS，再把本次请求钉在已检查的地址上，并拒绝重定向，避免 DNS 重绑定。
+
+`AI_PLATFORM_ALLOW_PRIVATE_BASE_URLS=true` 仅供实验和测试放行私网地址。默认关闭。生产不要设置。协议和「禁止内嵌凭据」在开启时仍然生效。
+
+非法 `baseUrl` 返回 `400` `VALIDATION_ERROR`，响应不回显 URL 或密钥。
+
+## 8. 审计、脱敏与探测限额
+
+`connection_audit_events` 记录 `create` / `update` / `delete` / `test`：`actor_sub`、`actor_kind`、`owner_kind`、`owner_uid`、`connection_uid`、`ok`。不写密钥、密文或 baseUrl。
+
+日志与错误响应会去掉 `sk-…`、`Bearer` 和 `key=` 查询参数。探测失败只打一行已脱敏的 `console.warn`。
+
+`POST /v1/providers/test` 与 `POST /v1/providers/models` 使用进程内令牌桶，按 `kind:subjectId` 分桶（多副本不共享，重启即清空）：
+
+| 变量 | 默认 |
+|------|------|
+| `AI_PLATFORM_PROBE_RATE_CAPACITY` | `20` |
+| `AI_PLATFORM_PROBE_RATE_REFILL_PER_SEC` | `0.5` |
+| `AI_PLATFORM_PROBE_TIMEOUT_MS` | `4000` |
+
+超出返回 `429` `RATE_LIMITED`。
+
+## 9. 浏览器 CORS 与部署种子
+
+`AI_PLATFORM_CORS_ORIGINS` 为逗号分隔的精确 Origin。空值不返回 CORS 头（生产默认）。`*` 被忽略。匹配的 Origin 可以用 `Authorization: Bearer` 调用平台。预检 `OPTIONS` 在 Origin 合法时返回 `204`。
+
+BYOK（`ownerKind` 为 `user` / `space` / `organization`，以及一次性密钥）不预留钱包额度。`deployment` 与 `luminary-managed` 仍走托管预留。
+
+`services/ai-platform/scripts/seed-deployment-connection.mjs` 从 `--env-file` 指向的 gitignore 文件读取 `deepseek_api_key`、`openrouter_api_key` 等，用 `AI_PLATFORM_SERVICE_API_KEY` 调用 `POST /v1/providers` 写入 `ownerKind=deployment`。脚本不打印密钥，也不会自行打开 `identity/.env.ai`。

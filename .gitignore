@@ -6,6 +6,7 @@
 /node_modules/
 services/**/node_modules/
 apps/**/node_modules/
+packages/**/node_modules/
 apps/**/dist/
 
 # 嵌套独立仓（各自 Git，由 MetaRepo 编排，不纳入根提交）
@@ -25,6 +26,9 @@ apps/**/dist/
 /deploy/helm/**/Chart.lock
 /deploy/helm/**/*.tgz
 /dist/
+
+# Local Postgres dumps (db-consolidate / pg-backup). Never commit.
+/.db-backups/
 
 # AIStor Free license (operator-obtained; never commit; not in packs)
 /deploy/object-storage/*.license

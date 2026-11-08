@@ -3,11 +3,11 @@
 > **状态**：Approved · **生效**：2024-04  
 > **原则**：GitHub 组织名与主域名根一致；能注册 `.com` 优先，否则用 `.dev`（技术产品）或已持有的 `.com`。
 
-## 1. 生态总览
+## 1. 平台与合作产品
 
 | 层级 | 品牌 | 中文名 | 域名 | GitHub 组织 | 定位 |
 |------|------|--------|------|-------------|------|
-| 母公司 / 实验室 | **LuminaryWorks** | **启明工坊** | [luminaryworks.dev](https://luminaryworks.dev) | [LuminaryWorks](https://github.com/LuminaryWorks) | AI 生态编排、共享身份与规范 |
+| 平台 | **LuminaryWorks** | **启明工坊** | [luminaryworks.dev](https://luminaryworks.dev) | [LuminaryWorks](https://github.com/LuminaryWorks) | 统一账号、账单与权益、AI 网关、通知与共享标准 |
 | 产品 1 | **DataLuminary** | **数据明鉴** | [dataluminary.dev](https://dataluminary.dev) | [dataluminary](https://github.com/dataluminary) | AI 数据洞察与 BI |
 | 产品 2 | **BlockyEdu** | **智码工坊** | [blockyedu.com](https://blockyedu.com) | [blockyedu](https://github.com/blockyedu) | AI 全民创造 + VibeLearn 企业大学 |
 | 产品 3 | **DoerFlow** | **智工网** | [doerflow.dev](https://doerflow.dev) | [doerflow](https://github.com/doerflow) | 执行者价值流动网络 |
@@ -17,7 +17,7 @@
 
 **中文名使用原则**：对外宣传、官网 Hero、投资人材料可用中文名；代码仓、域名、GitHub 组织、npm scope 仍用英文品牌（与域名一致）。
 
-**架构策略**：House of Brands（多独立品牌），非 Branded House。各产品可独立融资、独立发版、独立面向不同客群；LuminaryWorks（启明工坊）仅维护叙事、标准与共享库。
+**架构策略**：平台 + 独立合作产品。各产品可独立融资、独立发版、独立面向不同客群，并由自己的团队或实体运营。LuminaryWorks 提供统一账号、账单与权益、AI 网关、通知与共享标准。表中的产品行不是平台的部门。法律模板里的运营主体使用占位符，本文不发明公司法定名称。
 
 ## 2. 域名后缀策略
 
@@ -42,13 +42,15 @@
 | LuminaryGroup | 「Group」偏资本运作、官僚气，不符合极客产品气质 |
 | 统一 Lumi* 子品牌 | 消费级品牌屋模式；五产品跨度大，不适合 |
 
-## 3. LuminaryWorks（母公司）— 启明工坊
+## 3. LuminaryWorks（平台）— 启明工坊
 
 **域名**：luminaryworks.dev · **中文名**：启明工坊
 
-**命名含义**：「Works」在英语科技语境中代表工坊、实验室、兵工厂——亲自动手创造硬核产品。
+**角色**：LuminaryWorks 提供平台服务：统一账号、账单与权益（当前由平台担任托管结账的商户记录与收款代理）、AI 网关、通知，以及接入这些服务所需的共享标准。合作产品由各自的团队或实体运营，使用自己的域名、条款与发布节奏。
 
-参考：Skunk Works（洛克希德）、ThoughtWorks、DreamWorks。
+**命名含义**：「Works」在英语技术语境中曾指工坊或实验室。这个词解释名称来源。它不表示平台编写或拥有合作产品。
+
+参考：Skunk Works（洛克希德）、ThoughtWorks、DreamWorks。这些名字说明工程气质，不是所有权结构。
 
 **已占用域名（未采用）**：
 
@@ -105,6 +107,8 @@
 
 ### 4.7 生态协同叙事
 
+下面描述合作产品之间可选的配合，不是所有权结构。
+
 ```text
 SyncroBrain（物理世界数据大脑）  ↔  DoerFlow（数字世界价值流动）
          Brain（思考）                    Flow（流动）
@@ -129,9 +133,20 @@ SyncroBrain（物理世界数据大脑）  ↔  DoerFlow（数字世界价值流
 
 全生态 **UI 主色统一为品牌蓝 `#1677ff`**。令牌与 Ant Design 主题见 [`shared/brand`](https://github.com/LuminaryWorks/shared/tree/main/brand)（`tokens.css`、`ant-theme.ts`）。青 `#18a0fb` → 薄荷 `#21d4a8` 仅作 hero / 高亮点缀。
 
-LuminaryWorks **不为六个产品规定独立 accent**，也不在本仓维护六套色板。产品页与登录页用各自 Logo 与文案区分品牌。母品牌 Logo 的光束渐变是工坊标识本身，不是产品配色表。
+LuminaryWorks **不为合作产品规定独立 accent**，也不在本仓维护多套色板。产品页与登录页用各自 Logo 与文案区分品牌。平台 Logo 的光束渐变是平台标识本身，不是产品配色表。
 
-## 7. 文档归属
+## 7. 品牌与法律隔离原则
+
+目的：一个合作产品被下线或发生争议时，平台和其他合作产品不因品牌措辞或法律表述被牵连。
+
+1. 平台文案只描述平台服务。产品文案只描述该产品。不把平台写成各合作产品的所有者，也不把各产品写成同一个运营主体的产品线。
+2. 合作产品的官网页脚不得把 LuminaryWorks 写成该产品的所有者或运营方。平台页脚可以链接合作产品的独立站点，并标明它们是合作产品。
+3. 支持邮箱、状态页、GitHub 组织、域名注册人各自独立。不共用一个会把各方展示成同一个运营主体的联系点或注册人。
+4. 每个合作产品有独立的停用开关：平台可以暂停该产品的托管接入、目录展示与计费入口，而不停止平台本身或其他合作产品。
+5. 下架：权利人通知按 [`spec/legal`](./legal/README.md) 的下架模板处理。措施落在被通知的合作产品，或其中被指认的内容，不扩大到无关产品。产品内容争议走该产品自己的法律页面与支持渠道。平台负责平台账号、账单与平台接入。
+6. 以后还可以有更多合作产品加入。加入不改变既有产品的运营主体、域名或发布节奏。
+
+## 8. 文档归属
 
 | 内容 | 主仓 |
 |------|------|

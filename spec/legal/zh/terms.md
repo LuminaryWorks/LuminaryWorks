@@ -1,14 +1,23 @@
 # 服务条款（工程模板）
 
-**非法律意见（NOT LEGAL ADVICE）。** 本文是 LuminaryWorks 托管于 OVH 的上线文本（`lw-legal-v2026-10-03`）。建议由法国执业律师复核。运营方对外名称为 LuminaryWorks（启明工坊）。登记地址与登记号以 [luminaryworks.dev/legal](https://luminaryworks.dev/legal) 页眉公示为准。
+**非法律意见（NOT LEGAL ADVICE）。** 本文是 LuminaryWorks 托管于 OVH 的上线文本（`lw-legal-v2026-11-07`）。建议由法国执业律师复核。平台运营方对外名称为 LuminaryWorks（启明工坊）。合作产品由其自己的运营方运营。登记地址与登记号以 [luminaryworks.dev/legal](https://luminaryworks.dev/legal) 页眉公示为准。
 
 相关：[隐私政策](./privacy.md) · [Trial 与数据删除政策](./trial-data-deletion.md) · [English Terms](../en/terms.md) · [权益规范](../../subscription-and-entitlement.md)
 
-## 1. 运营方与服务
+## 1. 平台运营方、合作产品与服务
 
-本条款适用于 LuminaryWorks 托管控制面以及使用中央身份与权益的产品表面（包括 DataLuminary、BlockyEdu、VistaRemote、DoerFlow）。VistaCast 与 SyncroBrain 可在运营方启用时出现在账户配置中；在运营方将其标为可售之前，**不在本平台售卖**。
+LuminaryWorks 向独立的合作产品提供平台服务。这些服务是：统一账号（身份）、账单与权益、AI 网关、通知，以及调用这些服务所需的技术标准。对托管结账，LuminaryWorks 担任商户记录（merchant of record）与收款代理。
 
-**不存在永久免费会员。** 若无有效付费套餐且不在 Trial 窗口内，您仅可登录、查看账单并使用公共演示。
+合作产品，包括 DataLuminary、BlockyEdu、VistaRemote、VistaCast、DoerFlow、SyncroBrain，以及此后加入的合作产品，由其自己的运营方运营。各运营方负责该产品的内容、知识产权和产品专属服务条款。某一产品通过 LuminaryWorks 平台提供，并不表示 LuminaryWorks 编写、拥有或背书该产品。
+
+LuminaryWorks 不背书、也不保证合作内容、合作知识产权或合作方的产品专属承诺。产品条款公布在该产品自己的域名上。关于产品内容、产品知识产权或产品专属服务的问题，请联系该产品的运营方。关于平台账号、托管结账、权益或本平台条款的问题，请联系 LuminaryWorks：admin@luminaryworks.dev。
+
+在收到通知、法律命令、合作协议违约或平台风险时，LuminaryWorks 可以暂停或移除某一个合作产品，或其中被指认的材料。该步骤不停用其他合作产品，也不停止平台账号服务。通知应写明通知人、合作产品、材料、所主张的权利以及善意依据，并发送至 admin@luminaryworks.dev 和该产品的运营方。合作产品运营方可以把反通知发到同一平台地址。针对同一合作产品的重复有效通知，可以只导致该合作产品被暂停。
+
+VistaCast 与 SyncroBrain 可在启用时出现在账户配置中；在被标为可售之前，**不在本平台售卖**。**不存在永久免费会员。** 若无有效付费套餐且不在 Trial 窗口内，您仅可登录、查看账单并使用公共演示。
+
+在本条款中，「平台运营方」指 LuminaryWorks。「合作产品运营方」指某一合作产品自己的运营方。未加「合作」二字的「运营方」指平台运营方。
+
 
 ## 2. 账户
 
@@ -20,7 +29,7 @@
 
 向您展示的支付方式取决于可信地理信号以及运营方已启用的渠道。IP 仅用于渠道路由，不构成加密支付合规证明。若提供加密货币结账，当可信位置或账户 billing country **任一为 CN** 时将拒绝。
 
-退款遵循支付平台及实际收款渠道的规则。
+退款遵循支付平台及实际收款渠道的规则。对托管结账，LuminaryWorks 担任商户记录与收款代理。退款、拒付和准备金如何与合作产品运营方分摊，由合作协议约定。该分摊不使 LuminaryWorks 成为合作内容的作者。
 
 ## 4. Trial
 
@@ -58,4 +67,4 @@ Trial 或付费期限结束后，**付费产品功能立即阻断**。Trial 产�
 
 您须年满 15 周岁方可自行创建账户。隐私与删除请求请发送至 admin@luminaryworks.dev。
 
-生效日：2026-10-03。版本：`lw-legal-v2026-10-03`。
+生效日：2026-11-07。版本：`lw-legal-v2026-11-07`。

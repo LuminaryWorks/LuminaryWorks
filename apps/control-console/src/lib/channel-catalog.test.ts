@@ -116,7 +116,10 @@ describe("channel catalog", () => {
     expect(
       canSaveChannel(
         "alipay_f2f",
-        { appId: "9021000168692418", notifyUrl: "https://luminaryworks.dev/notify" },
+        {
+          appId: "9021000168692418",
+          notifyUrl: "https://luminaryworks.dev/notify",
+        },
         true,
       ),
     ).toBe(true);

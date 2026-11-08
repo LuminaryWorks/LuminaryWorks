@@ -6,33 +6,36 @@ Authoritative contract: [`spec/subscription-and-entitlement.md`](../../spec/subs
 
 ## Local quickstart
 
+Data plane is the shared control-plane Postgres (`control-plane-db`, logical DB `entitlement` on `127.0.0.1:5433`). There is no service-local `docker-compose.yml`.
+
 ```bash
 # from MetaRepo root
-pnpm ent:up          # postgres (+ optional app container)
+cp deploy/env/control-plane.env.example deploy/env/control-plane.env   # once; fill secrets
+pnpm ent:up          # starts control-plane-db (+ publishes :5433)
+cp services/entitlement/env.example services/entitlement/.env
+# set ENTITLEMENT_DATABASE_URL password = ENTITLEMENT_DB_PASSWORD from control-plane.env
 pnpm ent:migrate     # TypeORM migrations
 pnpm ent:seed        # catalog seed (trial/pro/ultra/enterprise)
 pnpm ent:dev         # nest start --watch on :3040
 ```
 
-Or inside this directory:
+Or inside this directory (DB already up via `pnpm ent:up`):
 
 ```bash
 cp env.example .env   # gitignored; do not commit secrets
-docker compose up -d entitlement-db
 pnpm install
 pnpm migration:run
 pnpm seed
 pnpm start:dev
 ```
 
-Schema changes: prefer `pnpm migration:run`. Set `ENTITLEMENT_SYNCHRONIZE=true` only for throwaway local DBs. Compose sets `ENTITLEMENT_MIGRATIONS_RUN=true`, which keeps synchronize off.
+Schema changes: prefer `pnpm migration:run`. Set `ENTITLEMENT_SYNCHRONIZE=true` only for throwaway local DBs. Control-plane Compose sets `ENTITLEMENT_MIGRATIONS_RUN=true`, which keeps synchronize off.
 
 ## Listen port (frozen)
 
 `ENTITLEMENT_PORT` defaults to **3040**. That is the only advertised listen port:
 
-- standalone `services/entitlement/docker-compose.yml`
-- control-plane `deploy/compose/control-plane.yaml` (`http://entitlement:3040` on the Compose network)
+- host process (`pnpm ent:dev`) or control-plane `deploy/compose/control-plane.yaml` (`http://entitlement:3040` on the Compose network)
 - Control Manifest `services.entitlement.url`
 - product `ENTITLEMENT_BASE_URL` / `LW_ENTITLEMENT_URL`
 
@@ -190,7 +193,7 @@ Outbox delivery (not a silent “No handler” mark-sent):
 
 VistaRemote ingress: `POST /api/v1/commerce/webhooks/entitlement` with product `ENTITLEMENT_WEBHOOK_SECRET` equal to `TARGETS.vistaremote.secret`. PSP merchant notify stays on Entitlement `POST /v1/payments/webhooks/:provider/:configId` (see `deploy/PAYMENTS.md`).
 
-Current legal version defaults to `lw-legal-v2026-09-07` (`ENTITLEMENT_LEGAL_POLICY_VERSION`). `POST /v1/trials/ensure` returns `TRIAL_POLICY_NOT_ACCEPTED` (400) until Terms, Privacy, and Trial-deletion for that version are accepted. Subject is always the verified token `sub` (or `X-Act-As-Subject` for service/admin). Disabled-trial products (DoerFlow / VistaCast / SyncroBrain) still fail with `PRODUCT_TRIAL_DISABLED` before any acceptance write. Enterprise and private-license skip paths still skip Trial without requiring a new accept.
+Current legal version defaults to `lw-legal-v2026-11-07` (`ENTITLEMENT_LEGAL_POLICY_VERSION`). `POST /v1/trials/ensure` returns `TRIAL_POLICY_NOT_ACCEPTED` (400) until Terms, Privacy, and Trial-deletion for that version are accepted. Subject is always the verified token `sub` (or `X-Act-As-Subject` for service/admin). Disabled-trial products (DoerFlow / VistaCast / SyncroBrain) still fail with `PRODUCT_TRIAL_DISABLED` before any acceptance write. Enterprise and private-license skip paths still skip Trial without requiring a new accept.
 
 Product HTTP purge endpoints are **not** implemented in this change; each product must accept the signed body and respond with the ack shape above. Deletion is irreversible and must key off `trialRedemptionId` + billing owner, not a vague creator match.
 

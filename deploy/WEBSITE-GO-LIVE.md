@@ -76,7 +76,7 @@ pnpm legal:check   # CI：校验法律页与 spec 同步
 
 ## 3. 法律页与 Entitlement
 
-官网承载公开法律页（政策版本 **`lw-legal-v2026-09-07`**）：
+官网承载公开法律页（政策版本 **`lw-legal-v2026-11-07`**）：
 
 - `/legal/terms/`、`/legal/privacy/`、`/legal/trial-data-deletion/`（中文）
 - `/en/legal/...`（英文）
@@ -104,7 +104,6 @@ https://luminaryworks.dev/legal
 | `deploy/compose/control-plane.yaml` | `ENTITLEMENT_LEGAL_PUBLIC_BASE_URL` 默认值（entitlement 服务） | `https://luminaryworks.dev/legal` |
 | `deploy/compose/control-plane.yaml` | `CONTROL_CONSOLE_LEGAL_DOCS_URL` 默认值（control-console） | 同上，或显式设 `CONTROL_CONSOLE_LEGAL_DOCS_URL` |
 | `services/entitlement/env.example` | `ENTITLEMENT_LEGAL_PUBLIC_BASE_URL` | `https://luminaryworks.dev/legal` |
-| `services/entitlement/docker-compose.yml` | `ENTITLEMENT_LEGAL_PUBLIC_BASE_URL` 默认值 | `https://luminaryworks.dev/legal` |
 | `services/entitlement/src/config/entitlement.config.ts` | 代码内 fallback（未设 env 时） | `https://luminaryworks.dev/legal` |
 | `apps/control-console/.env.example` | `CONTROL_CONSOLE_LEGAL_DOCS_URL` | `https://luminaryworks.dev/legal` |
 | `apps/control-console/server/config.mjs` | 读取 `CONTROL_CONSOLE_LEGAL_DOCS_URL` 或 `ENTITLEMENT_LEGAL_PUBLIC_BASE_URL` | 通过 env 注入，无需改代码 |
@@ -114,8 +113,8 @@ https://luminaryworks.dev/legal
 说明：
 
 - **Hosted SaaS / 控制面**：改 `deploy/env/control-plane.env` 后 `docker compose ... up -d` 重建 entitlement、control-console。
-- **仅 entitlement 独立栈**：改 `services/entitlement/.env` 后重启服务。
-- `ENTITLEMENT_LEGAL_POLICY_VERSION` 保持 **`lw-legal-v2026-09-07`**，与官网页头 `policyVersion` 一致。
+- **本机 `pnpm ent:dev`**：改 `services/entitlement/.env` 后重启进程（DB 仍为共享 `control-plane-db`）。
+- `ENTITLEMENT_LEGAL_POLICY_VERSION` 保持 **`lw-legal-v2026-11-07`**，与官网页头 `policyVersion` 一致。
 
 ---
 

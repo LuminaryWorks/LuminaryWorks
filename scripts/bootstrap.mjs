@@ -8,7 +8,7 @@
  * 2) shared: pnpm install + build (@luminaryworks/*)
  * 3) docs: pnpm install
  * 4) website: pnpm install
- * 5) entitlement: .env → install → DB → migrate → seed
+ * 5) entitlement: .env → install → shared control-plane-db → migrate → seed
  * 6) auth-gateway: .env from example (no npm deps)
  *
  * Sibling clones (identity / shared / docs / website) missing → warn & skip, not fatal.
@@ -84,6 +84,24 @@ function assertDockerReady() {
   }
 }
 
+function findRunningContainer(substring) {
+  try {
+    const out = execSync("docker ps --format '{{.Names}}'", {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: true,
+    });
+    return (
+      out
+        .split("\n")
+        .map((line) => line.trim())
+        .find((name) => name.includes(substring)) || ""
+    );
+  } catch {
+    return "";
+  }
+}
+
 async function waitPgReady(container, { attempts = 36, intervalMs = 2500 } = {}) {
   for (let i = 1; i <= attempts; i++) {
     try {
@@ -135,8 +153,10 @@ step("Auth gateway", "services/auth-gateway", (dir) => {
     console.log("\n▶ Entitlement service");
     ensureEnv(dir);
     run("pnpm install", dir);
-    run("docker compose up -d entitlement-db", dir);
-    const ready = await waitPgReady("luminary-entitlement-db");
+    run("node scripts/control-plane-db.mjs up", root, { soft: true });
+    const dbContainer =
+      findRunningContainer("control-plane-db") || "luminary-works-control-plane-db-1";
+    const ready = await waitPgReady(dbContainer);
     if (ready) {
       run("pnpm migration:run", dir, { soft: true });
       run("pnpm seed", dir, { soft: true });
@@ -152,7 +172,7 @@ Ready:
   · shared            → @luminaryworks/* built
   · docs              → pnpm docs:dev
   · website           → pnpm web:dev
-  · entitlement DB    → localhost:5434
+  · control-plane-db  → 127.0.0.1:5433 (logto / entitlement / notification)
   · auth-gateway env  → pnpm auth:gateway  (needs identity up)
   · control-console   → pnpm console:dev  (http://127.0.0.1:3050; needs id + ent)
 

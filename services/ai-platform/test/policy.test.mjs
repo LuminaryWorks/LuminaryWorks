@@ -5,6 +5,8 @@ import {
   entitlementCacheKey,
   ephemeralSecretAllowed,
   isByokPath,
+  allowPrivateBaseUrls,
+  readCorsOrigins,
   readPublicApiEnabled,
   readWalletEnforce,
   resolveIngress,
@@ -62,6 +64,18 @@ test("entitlement cache key contains subjectId and feature", () => {
   const key = entitlementCacheKey("user-1", "ai.analysis", "dataluminary");
   assert.equal(key, "user-1+ai.analysis+dataluminary");
   assert.match(key, /user-1\+ai\.analysis/);
+});
+
+test("private base URLs and browser CORS default closed", () => {
+  assert.equal(allowPrivateBaseUrls({}), false);
+  assert.equal(allowPrivateBaseUrls({ AI_PLATFORM_ALLOW_PRIVATE_BASE_URLS: "true" }), true);
+  assert.equal(allowPrivateBaseUrls({ AI_PLATFORM_ALLOW_PRIVATE_BASE_URLS: "false" }), false);
+  assert.deepEqual(readCorsOrigins({}), []);
+  assert.deepEqual(readCorsOrigins({ AI_PLATFORM_CORS_ORIGINS: "*" }), []);
+  assert.deepEqual(
+    readCorsOrigins({ AI_PLATFORM_CORS_ORIGINS: " http://localhost:3050, *,http://localhost:3050 " }),
+    ["http://localhost:3050"],
+  );
 });
 
 test("wallet enforce defaults off", () => {

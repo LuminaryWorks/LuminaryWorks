@@ -10,12 +10,12 @@
 
 当前 `luminaryworks.dev` 由文档站 [`LuminaryWorks/docs`](https://github.com/LuminaryWorks/docs)（Rspress）直接充当官网，问题：
 
-1. 骨架是文档站（侧栏 / 文档排版），母品牌叙事撑不起来；
+1. 骨架是文档站（侧栏 / 文档排版），平台叙事撑不起来；
 2. 首页用 emoji 图标（✨🧩🚀）+ 多段渐变卡片，观感廉价，与「工业级严谨」定位冲突；
 3. 与已上线的产品官网（[VistaRemote](https://remote.vistacast.dev)、[DoerFlow](https://doerflow.dev)：Next.js 静态导出 + 深色蓝工业风）**不同源**，跨站跳转像两家公司；
 4. `docs.luminaryworks.dev/legal` 被 Entitlement 引用（`ENTITLEMENT_LEGAL_PUBLIC_BASE_URL`）但页面不存在——**上线阻塞项**。
 
-**目标**：新建独立母品牌官网，承担「生态叙事 + 六产品导流 + 私有化交付咨询 + 法律页」四件事；文档站回归 `docs.luminaryworks.dev` 只做文档。
+**目标**：新建独立平台官网，承担「平台叙事 + 合作产品导流 + 私有化交付咨询 + 法律页」四件事；文档站回归 `docs.luminaryworks.dev` 只做文档。
 
 **非目标**：不改六个产品各自官网；不做博客 / 新闻 / 招聘（v1 不排）；不做定价表（定价在各产品站与 Console）。
 
@@ -23,7 +23,7 @@
 
 ## 1. 设计概念：蓝图（Blueprint）
 
-LuminaryWorks 是**工坊**，不是消费级 SaaS。全站观感应接近**工程蓝图与控制室**，而非营销落地页。
+LuminaryWorks 是**平台**，不是消费级 SaaS。全站观感应接近**工程蓝图与控制室**，而非营销落地页。
 
 五条设计支柱：
 
@@ -40,7 +40,7 @@ LuminaryWorks 是**工坊**，不是消费级 SaaS。全站观感应接近**工�
 ### 1.1 明确禁止项（实现时逐条自查）
 
 - 禁止 emoji 作为图标（用 `@ant-design/icons` 线性图标或自绘 SVG）
-- 禁止按钮渐变、禁止大面积渐变背景、禁止渐变标题文字（渐变仅限：母品牌 Logo mark 本身、Hero 顶部 1px 光束、价值链连接线）
+- 禁止按钮渐变、禁止大面积渐变背景、禁止渐变标题文字（渐变仅限：平台 Logo mark 本身、Hero 顶部 1px 光束、价值链连接线）
 - 禁止给六个产品配不同 accent 色（品牌规范硬约束，差异化靠 Logo + 名称 + 角色标签）
 - 禁止毛玻璃卡片堆叠（`backdrop-filter` 仅用于 sticky header）
 - 禁止编造数字（用户数 / 客户 Logo / 好评率 / "99.99% 可用性"）。事实条只写可验证事实
@@ -104,7 +104,7 @@ LuminaryWorks 是**工坊**，不是消费级 SaaS。全站观感应接近**工�
 
 ### 2.1 Logo 使用
 
-- 母品牌 mark（`assets/logo.svg`，紫→薄荷光束）**保持原样**，因为品牌规范明确「母品牌 Logo 的光束渐变是工坊标识本身」。
+- 平台 mark（`assets/logo.svg`，紫→薄荷光束）**保持原样**，因为品牌规范明确「平台 Logo 的光束渐变是平台标识本身」。
 - Header：mark 24px + 文字标 `LuminaryWorks`，右侧 mono 小字 `启明工坊`。
 - Hero：不重复放大 Logo；品牌身份由 eyebrow 文字承担。
 - 产品卡：直接复用 `docs/docs/public/brand/{product}-logo.svg` 七个既有 SVG（复制进本站 `public/brand/`）。
@@ -116,7 +116,7 @@ LuminaryWorks 是**工坊**，不是消费级 SaaS。全站观感应接近**工�
 
 | 组件 | 规范 |
 |------|------|
-| **Header** | sticky / 64px / `rgba(13,17,23,.72)` + `blur(14px)`；滚动 >10px 后加 1px 底边。左：Logo 组 + 导航；右：语言切换（antd Dropdown，`GlobalOutlined`）+ GitHub 图标。移动端汉堡抽屉。**母品牌不是具体产品，Header 不展示「开始试用」** |
+| **Header** | sticky / 64px / `rgba(13,17,23,.72)` + `blur(14px)`；滚动 >10px 后加 1px 底边。左：Logo 组 + 导航；右：语言切换（antd Dropdown，`GlobalOutlined`）+ GitHub 图标。移动端汉堡抽屉。**平台本身不是某一款合作产品，Header 不展示「开始试用」** |
 | **按钮** | 主按钮 antd `type="primary"` 纯色 `#1677ff`、`borderRadius: 8`、`fontWeight: 600`、高 44px（large）。次按钮 `transparent` 底 + `--lw-border` 描边 + `--lw-muted` 文字，hover 时描边转 `--lw-primary-rim` |
 | **卡片** | `--lw-surface` 底 + 1px `--lw-border` + `--lw-r-lg`；hover 仅：描边转 `--lw-primary-rim`、底色转 `--lw-surface-2`、`translateY(-2px)`。**不加发光阴影** |
 | **区块小标题** | mono 大写编号 + 名称（`02 / PRODUCTS`），下方 H2，再下方一句 `--lw-muted` 导语，最多 2 行 |
@@ -140,7 +140,7 @@ LuminaryWorks 是**工坊**，不是消费级 SaaS。全站观感应接近**工�
 | `/products/` | 产品总览 | 六张完整产品卡 + 对比表（角色 / 适用对象 / 域名 / 商业化状态 / Trial） |
 | `/ecosystem/` | 生态与架构 | 价值链闭环、共享底座、集成矩阵、统一错误语义、开放协议清单 |
 | `/deploy/` | 部署与私有化 | 五种部署形态、能力模式矩阵、安装套件、air-gapped 与离线 License |
-| `/about/` | 关于工坊 | 命名叙事（Works = 工坊/兵工厂）、House of Brands、许可与商用、联系方式 |
+| `/about/` | 关于平台 | 名称来历、平台与合作产品、许可与商用、成为合作伙伴、联系方式 |
 | `/legal/terms/` | 服务条款 | 由 `spec/legal/{zh,en}/terms.md` 渲染，页头显示 `policyVersion` |
 | `/legal/privacy/` | 隐私政策 | 同上 |
 | `/legal/trial-data-deletion/` | Trial 与数据删除 | 同上 |
@@ -158,12 +158,12 @@ LuminaryWorks 是**工坊**，不是消费级 SaaS。全站观感应接近**工�
 
 ### 00 · Hero
 
-- Eyebrow（mono，大写）：`LUMINARYWORKS · 启明工坊`
-- H1 zh：**六个可独立部署的 AI 产品，一套统一的身份与权益底座**
-- H1 en：**Six independently deployable AI products. One shared identity and entitlement foundation.**
-- 副文 zh：LuminaryWorks（启明工坊）用 OIDC、MQTT、REST、WebRTC、ONVIF 等开放协议，把创造教育、设备物联、数据洞察、视觉安防、远程运维与 Agent 协作连成一条价值链。每个产品都能独立交付与私有化，也能按需组合成完整闭环。
-- 副文 en：LuminaryWorks builds an AI-native open ecosystem on open protocols — OIDC, MQTT, REST, WebRTC and ONVIF. Creation and learning, device connectivity, data insight, visual security, remote operations and agent collaboration form one value chain. Every product ships standalone and self-hosted, and composes on demand.
-- 主 CTA：`查看六大产品` / `Explore the six products` → `/products/`
+- Eyebrow（mono，大写）：`LUMINARYWORKS · PLATFORM`
+- H1 zh：**提供登录、账单与 AI 接入的平台。合作产品保持独立。**
+- H1 en：**A platform for sign-in, billing and AI access. Partner products stay independent.**
+- 副文 zh：LuminaryWorks 提供统一账号、账单与权益、AI 网关、通知和共享标准。列出的产品是合作产品，各自由自己的团队或实体运营，使用自己的域名和条款，并通过 LuminaryWorks 平台提供。
+- 副文 en：LuminaryWorks provides a unified account, billing and entitlement, an AI gateway, notifications and shared standards. Listed products are independent partners, each operated by its own team or entity, and available through the LuminaryWorks Platform.
+- 主 CTA：`查看合作产品` / `See partner products` → `/products/`
 - 次 CTA：`私有化部署` / `Self-hosted deployment` → `/deploy/`
 - 文字链：`开发者文档 ↗` / `Developer docs ↗` → `https://docs.luminaryworks.dev`
 - 右侧结构图卡（mono 标签，静态，含状态点）：
@@ -185,7 +185,7 @@ PRODUCT PLANES  ·  各自数据库与 ACL
 
 | 数值 | zh | en |
 |------|----|----|
-| `6` | 独立可售产品 | independently sellable products |
+| `6` | 列出的合作产品 | partner products listed |
 | `5` | 冻结部署形态 | frozen deployment profiles |
 | `1` | 套统一登录与权益 | shared identity and entitlement layer |
 | `5` | 类开放协议 | families of open protocols |
@@ -193,19 +193,19 @@ PRODUCT PLANES  ·  各自数据库与 ACL
 
 ### 02 · 价值链闭环（`02 / VALUE CHAIN`）
 
-- H2 zh：**六个产品，回答同一条价值链的不同环节**
-- H2 en：**Six products, one value chain**
+- H2 zh：**合作产品可以沿一条价值链配合**
+- H2 en：**Partner products along one value chain**
 - 导语 zh：学 + 创起步，接入设备、洞察数据，延伸到视觉安防、远程运维，最后由 Agent 与人类共同结算。
 - 节点（角色字 + 品牌 + 一行）：`学+创 BlockyEdu` → `连 SyncroBrain` → `看 DataLuminary`，分支 `视 VistaCast`、`控 VistaRemote`，汇入 `赚 DoerFlow`
 - 结构图用 CSS Grid + 1px 连线；点击节点滚动到 §03 对应卡片；移动端退化为纵向时间轴
 - 英文角色字：`Create` / `Connect` / `See` / `Watch` / `Control` / `Earn`
 
-### 03 · 六大产品（`03 / PRODUCTS`）
+### 03 · 合作产品（`03 / PRODUCTS`）
 
-- H2 zh：**每个产品可独立售卖，组合后形成闭环**
-- H2 en：**Each product sells on its own. Together they close the loop.**
+- H2 zh：**每个合作产品有自己的站点与运营方。**
+- H2 en：**Each partner product stands on its own site, with its own operator.**
 
-3×2 卡片网格（桌面）/ 1 列（移动）。每卡：产品 Logo(32px) + 英文名 + 中文名 + 角色标签 + 一句话 + 3 个能力 chip + 状态徽标 + `访问官网 ↗` 与 `文档 ↗`。
+3×2 卡片网格（桌面）/ 1 列（移动）。每卡：产品 Logo(32px) + 英文名 + 中文名 + 角色标签 + 一句话 + 3 个能力 chip + 运营方 +「由其自己的团队或实体运营」+ 状态徽标 + `访问官网 ↗`、`产品条款 ↗` 与 `源码 ↗`。
 
 | 品牌 | 中文 | 角色 | 一句话 zh | 一句话 en | 能力 chips | 状态 | 官网 |
 |------|------|------|-----------|-----------|------------|------|------|
@@ -218,7 +218,7 @@ PRODUCT PLANES  ·  各自数据库与 ACL
 
 **成熟度诚实矩阵（不得违反）**：
 
-- 六产品均可售
+- 当前列出的合作产品在平台目录中均可售
 - `dataluminary` / `blockyedu` / `vistaremote`：7×24h Trial，每用户每产品一次
 - `doerflow` / `vistacast` / `syncrobrain`：**无 Trial**
 - 全站不得出现「永久免费 / Free 套餐」（生态无永久 Free 档）
@@ -261,7 +261,7 @@ PRODUCT PLANES  ·  各自数据库与 ACL
 - 能力模式 mono 行：`identity=central|external_oidc|local` · `entitlement=off|shadow_read|enforce|offline_license` · `ai=off|central|local_byok` · `notification=none|smtp|platform`
 - CTA：`查看部署方案` → `/deploy/`
 
-### 06 · 为什么是工坊（`06 / WHY`）
+### 06 · 为什么是平台（`06 / WHY`）
 
 四条，每条一个标题 + 两行说明：
 
@@ -274,20 +274,20 @@ PRODUCT PLANES  ·  各自数据库与 ACL
 
 - H2 zh：**先跑起来，再决定怎么买**
 - H2 en：**Run it first, decide later**
-- 说明 zh：适用产品提供 7 天 Trial；生态不提供永久免费档。需要私有化或离线交付，直接联系工坊。
-- 按钮：`联系商务`（`mailto:admin@luminaryworks.dev`）· `GitHub ↗`。母品牌首页不放「开始试用」
+- 说明 zh：合作产品若提供 Trial，符合条件的产品含 7 天试用。没有永久免费档。私有化交付或希望成为合作伙伴，请发邮件给平台。
+- 按钮：`联系商务`（`mailto:admin@luminaryworks.dev`）· `GitHub ↗`。平台首页不放「开始试用」
 - 蓝图网格底 + 上下发丝线收口
 
 ### Footer
 
 四列：
 
-- **产品**：六个品牌 + 各自官网
+- **合作产品**：各产品的独立官网
 - **平台与文档**：开发者文档、统一登录、部署套件、GitHub 组织
 - **生态**：生态叙事、总体架构、许可与商用
 - **法律**：服务条款、隐私政策、Trial 与数据删除
 
-品牌行：`LuminaryWorks · 启明工坊 — AI 原生开源生态`
+品牌行：`LuminaryWorks — 提供统一登录、账单、AI 接入与共享标准的平台`
 License 行：`Polyform Noncommercial License 1.0.0 · 商业使用须另行授权`
 右侧：语言切换 + 备案信息占位注释。
 
@@ -308,7 +308,7 @@ License 行：`Polyform Noncommercial License 1.0.0 · 商业使用须另行授�
 | 字体 | `next/font/google` 的 Inter（`--font-inter`）；中文与等宽走系统栈，不自托管字体文件 |
 | i18n | 照抄 `lib/i18n/{config,context,paths,metadata}` 形状；`LOCALES = ['zh','en']`、`DEFAULT_LOCALE='zh'`；文案放 `lib/i18n/messages/{zh,en}.ts`（带类型约束，两语种必须同构完整）。本站**不用** i18next，故 `defaultValue` 规则不适用，但「两语种同时补齐」仍是硬要求 |
 | 目录 | `app/`（`page.tsx` + `[locale]/`）、`components/{site,sections}/`、`lib/`、`styles/`、`content/legal/{zh,en}/`、`public/brand/` |
-| 法律页 | `spec/legal/{zh,en}/*.md` 由 MetaRepo 脚本同步进 `content/legal/`，构建时用 `marked` 渲染为静态页；页头显示 `policyVersion`（当前 `lw-legal-v2026-09-07`）与「非法律意见」提示 |
+| 法律页 | `spec/legal/{zh,en}/*.md` 由 MetaRepo 脚本同步进 `content/legal/`，构建时用 `marked` 渲染为静态页；页头显示 `policyVersion`（当前 `lw-legal-v2026-11-07`）与「非法律意见」提示 |
 | SEO | `app/sitemap.ts` + `app/robots.ts`（`dynamic = 'force-static'`）、每页 `generateMetadata` 带 `alternates.languages`、OG 图用静态 SVG/PNG（不用 `next/og`，静态导出不支持） |
 | Lint | biome（照抄 `tooling` preset），`engines.node >= 24.0.0`，`engines.pnpm >=11`（勿钉死 `packageManager` 精确版本，以免日后 pnpm 12 报错） |
 | 端口 | `next dev -p 13000`（避开产品站 13010 / 13106） |
@@ -366,8 +366,9 @@ License 行：`Polyform Noncommercial License 1.0.0 · 商业使用须另行授�
 | 2026-09-12 | 文字三级色阶按实测对比度重排：`--lw-muted` `#8b949e` → `#9aa5b1`、`--lw-faint` `#4a5568` → `#8b949e`。判据是最暗一档在**最亮表面** `--lw-surface-2` `#1c2a3a` 上也要 ≥ 4.5:1（原值在卡面上只有 4.3:1） | 实现会话 |
 | 2026-09-12 | `ProductCard` 增加 `headingLevel` 参数：首页区块内用 `h3`，`/products` 页作为一级分区用 `h2`，避免 h1 → h3 跳级 | 实现会话 |
 | 2026-09-12 | 实测结果：首页 / 产品页 / 法律页移动端 Lighthouse 可访问性、最佳实践、SEO 均 **100**，0 项失败 | 实现会话 |
-| 2026-09-12 | 用户复核后移除 Header（桌面与移动 Drawer）的「开始试用」。母品牌本身不是具体产品；Header 只保留产品/生态/部署/文档/关于、语言与 GitHub | UI 优化会话 |
+| 2026-09-12 | 用户复核后移除 Header（桌面与移动 Drawer）的「开始试用」。平台本身不是某一款合作产品；Header 只保留产品/生态/部署/文档/关于、语言与 GitHub | UI 优化会话 |
 | 2026-09-12 | 首页 Value Chain 改成占满统一容器的六节点工程轨道：统一左边界、`01–06` mono 序号、角色/英文品牌/中文名三层信息；移动端退化为节点间距 ≥16px 的纵向轨道 | UI 优化会话 |
 | 2026-09-12 | `/ecosystem` 从同质卡片堆叠改为六种视觉模式：价值链轨道、共享控制面架构板、允许/禁止对照、401/402/403 三联编号块、协议轨道、产品自治声明；每段改为全宽 section + 统一内层容器，移除负 margin 拼接 | UI 优化会话 |
 | 2026-09-12 | 修复 Facts Strip 把 `.lw-container` padding 覆盖为 0 的组合类 bug；改成容器包裹 grid，桌面实测事实条、Value Chain 标题与节点均从 x=140px 起 | UI 优化会话 |
 | 2026-09-12 | 六产品在官网上均标「正式可售」。VistaCast / SyncroBrain 仍无 Trial。首页 CTA 去掉「开始试用」；「联系商务」改为 `mailto:admin@luminaryworks.dev` | 用户复核 |
+| 2026-11-07 | 叙事改为平台与独立合作产品。关于页增加成为合作伙伴。法律模板版本 `lw-legal-v2026-11-07`。 | 平台定位 |

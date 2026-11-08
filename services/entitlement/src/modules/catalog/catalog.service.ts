@@ -3,6 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { In, type Repository } from "typeorm";
 import type { BillingMarket } from "../../common/catalog-pricing";
 import { EntitlementException } from "../../common/errors";
+import { readLifecycleStatus } from "../../common/product-lifecycle";
 import { CatalogRevisionEntity } from "../../database/entities/catalog-revision.entity";
 import { FeatureEntity } from "../../database/entities/feature.entity";
 import { OfferingEntity } from "../../database/entities/offering.entity";
@@ -75,6 +76,7 @@ export class CatalogService {
         productName: product.name,
         trialPolicy: product.trialPolicy,
         sellable: product.sellable,
+        status: readLifecycleStatus(product.status),
         plans: plans.map((p) => ({
           code: p.code,
           name: p.name,
@@ -107,6 +109,7 @@ export class CatalogService {
       out.push({
         productCode: product.code,
         sellable: product.sellable,
+        status: readLifecycleStatus(product.status),
         features: features.map((f) => ({
           code: f.code,
           name: f.name,
@@ -143,7 +146,9 @@ export class CatalogService {
       order: { productCode: "ASC", sku: "ASC" },
     });
     const sellableCodes = new Set(
-      (await this.products.find({ where: { active: true, sellable: true } })).map((p) => p.code),
+      (await this.products.find({ where: { active: true, sellable: true } }))
+        .filter((product) => readLifecycleStatus(product.status) === "active")
+        .map((product) => product.code),
     );
     return {
       catalogRevisionId: published.id,

@@ -46,6 +46,13 @@ export class PaymentProviderConfigEntity {
   @Column({ name: "merchant_id", type: "varchar", length: 128, nullable: true })
   merchantId!: string | null;
 
+  /**
+   * Reserved Connect / per-product merchant account.
+   * Null means the LuminaryWorks merchant-of-record account. Adapters do not call Connect.
+   */
+  @Column({ name: "merchant_account_id", type: "varchar", length: 128, nullable: true })
+  merchantAccountId!: string | null;
+
   @Column({ name: "credentials_ciphertext", type: "text", default: "" })
   credentialsCiphertext!: string;
 

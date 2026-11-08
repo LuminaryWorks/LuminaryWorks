@@ -1,6 +1,6 @@
 # 法律政策工程模板（Legal policy templates）
 
-> **状态**：OVH 上线文本 · **版本**：`lw-legal-v2026-10-03` · **不是法律意见**  
+> **状态**：OVH 上线文本 · **版本**：`lw-legal-v2026-11-07` · **不是法律意见**  
 > **关联**：[subscription-and-entitlement.md](../subscription-and-entitlement.md) · [payment-platform.md](../payment-platform.md) · [decisions/2026-09-storage-doris-payment.md](../decisions/2026-09-storage-doris-payment.md)
 
 本目录是 Hosted SaaS **工程契约模板**，供注册与 Trial 激活勾选、Entitlement 持久化 `policyVersion` 使用。  
@@ -9,9 +9,11 @@
 
 | 政策 | 中文 | English | 当前版本 |
 |------|------|---------|----------|
-| 服务条款 | [zh/terms.md](./zh/terms.md) | [en/terms.md](./en/terms.md) | `lw-legal-v2026-10-03` |
-| 隐私政策 | [zh/privacy.md](./zh/privacy.md) | [en/privacy.md](./en/privacy.md) | `lw-legal-v2026-10-03` |
-| Trial 与数据删除 | [zh/trial-data-deletion.md](./zh/trial-data-deletion.md) | [en/trial-data-deletion.md](./en/trial-data-deletion.md) | `lw-legal-v2026-10-03` |
+| 服务条款 | [zh/terms.md](./zh/terms.md) | [en/terms.md](./en/terms.md) | `lw-legal-v2026-11-07` |
+| 隐私政策 | [zh/privacy.md](./zh/privacy.md) | [en/privacy.md](./en/privacy.md) | `lw-legal-v2026-11-07` |
+| Trial 与数据删除 | [zh/trial-data-deletion.md](./zh/trial-data-deletion.md) | [en/trial-data-deletion.md](./en/trial-data-deletion.md) | `lw-legal-v2026-11-07` |
+| 合作协议（律师模板，非登录勾选） | [zh/partner-agreement.md](./zh/partner-agreement.md) | [en/partner-agreement.md](./en/partner-agreement.md) | `lw-legal-v2026-11-07` |
+| 下架政策（律师模板，非登录勾选） | [zh/takedown-policy.md](./zh/takedown-policy.md) | [en/takedown-policy.md](./en/takedown-policy.md) | `lw-legal-v2026-11-07` |
 
 ## 接受与版本
 
@@ -21,3 +23,5 @@
 - 政策 bump 版本后，已注册用户继续使用账号；**再次激活 Trial**（若仍有资格）须接受新版本。DoerFlow 无 Trial，不走 Trial 接受流。
 
 不存在永久 Free 套餐。无会员账号仅可登录、查看账单与公共演示。
+
+合作协议与下架政策给法国执业律师审阅，用来约定平台与合作产品运营方的分成、通知和停用。它们不是登录页勾选的三份对外政策。官网公开页只渲染服务条款、隐私政策和 Trial 与数据删除。

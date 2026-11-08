@@ -4,12 +4,14 @@ import {
   type LuminaryAuthSession,
 } from "@luminaryworks/auth-react";
 import "@luminaryworks/auth-react/style.css";
+import { LanguageMenu } from "@luminaryworks/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LanguageMenu } from "../components/LanguageMenu";
 import { type ConsoleLocale, readConsoleLocale, setLanguage } from "../i18n";
 import { toIdpConfig } from "../lib/auth";
+import { LOCALE_FULL_KEY, LOCALE_SHORT_KEY } from "../lib/locale-labels";
 import type { RuntimeConfig } from "../lib/runtime-config";
+import { PREFERRED_LOCALES } from "../preferred-locale";
 import { LoginTermsCheckbox, useLoginTermsAccepted } from "./LoginTermsGate";
 
 export function LoginPage({
@@ -32,7 +34,17 @@ export function LoginPage({
   return (
     <div className="login-frame">
       <div className="login-lang">
-        <LanguageMenu locale={locale} tone="onDark" onChange={changeLocale} />
+        <LanguageMenu
+          locale={locale}
+          tone="onDark"
+          ariaLabel={t("nav.language")}
+          items={PREFERRED_LOCALES.map((code) => ({
+            code,
+            shortLabel: t(LOCALE_SHORT_KEY[code]),
+            fullLabel: t(LOCALE_FULL_KEY[code]),
+          }))}
+          onChange={(code) => changeLocale(code as ConsoleLocale)}
+        />
       </div>
       <LoginCanvas
         tone="console"

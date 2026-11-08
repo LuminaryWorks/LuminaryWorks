@@ -54,7 +54,17 @@ export class CreatePaymentProviderConfigDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(128)
   merchantId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Reserved Connect / per-product merchant account. Omit or blank for the LuminaryWorks MoR account. Adapters do not call Connect.",
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  merchantAccountId?: string | null;
 
   @ApiPropertyOptional({
     description: "String-valued credential map. Never returned by GET.",
@@ -100,7 +110,17 @@ export class UpdatePaymentProviderConfigDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(128)
   merchantId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Reserved Connect / per-product merchant account. Null or blank keeps the LuminaryWorks MoR account.",
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  merchantAccountId?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()

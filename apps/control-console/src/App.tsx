@@ -10,6 +10,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { Navigate, useLocation } from "react-router-dom";
 import { readConsoleLocale, setLanguage } from "./i18n";
+import { createAiClient } from "./lib/ai-client";
 import { createApiClient } from "./lib/api-client";
 import { isCallbackPath, restoreSession, signOut } from "./lib/auth";
 import type { RuntimeConfig } from "./lib/runtime-config";
@@ -29,6 +30,20 @@ export function App({ runtime }: { runtime: RuntimeConfig }) {
   const [session, setSession] = useState<LuminaryAuthSession | null>(null);
   const [needLogin, setNeedLogin] = useState(false);
   const [sessionReady, setSessionReady] = useState(false);
+
+  const ai = useMemo(
+    () =>
+      createAiClient({
+        tokens: {
+          getAccessToken: () => session?.accessToken ?? null,
+          onUnauthorized: () => {
+            setSession(null);
+            setNeedLogin(true);
+          },
+        },
+      }),
+    [session],
+  );
 
   const api = useMemo(() => {
     // Local entitlement is reached via the SPA /v1 proxy. Calling a loopback
@@ -124,6 +139,7 @@ export function App({ runtime }: { runtime: RuntimeConfig }) {
     >
       <ConsoleShell
         api={api}
+        ai={ai}
         runtime={runtime}
         accessToken={session.accessToken}
         locale={locale}

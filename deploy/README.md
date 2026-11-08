@@ -10,9 +10,10 @@ The control plane is **optional**. Every product ships and runs standalone with 
 
 | Path | Purpose |
 |---|---|
-| `compose/control-plane.yaml` | Identity + Auth Gateway + Entitlement + Control Console core; `ai` and `observability` opt-in profiles |
+| `compose/control-plane.yaml` | Identity + Auth Gateway + Entitlement + Notification + Control Console; one Postgres (`control-plane-db`) with four logical DBs; `ai` / `observability` opt-in |
+| `compose/init/control-plane-db.sh` | First-boot: create `logto` / `entitlement` / `notification` roles + databases |
 | `compose/control-plane.object-storage.yaml` | Optional `object-storage` profile: official AIStor Free standalone. **Not** in offline image packs |
-| `compose/control-plane.dev-ports.yaml` | Local-only override publishing datastore ports |
+| `compose/control-plane.dev-ports.yaml` | Local-only override publishing the shared Postgres + Redis ports |
 | `object-storage/` | Buckets/bootstrap, 120 GiB watermarks, CDN/origin Caddy example, migration notes |
 | `env/control-plane.env.example` | Every variable; copy to `env/control-plane.env` (git-ignored) and fill in |
 | `manifests/*.json` | Reference Control Manifests, one per deployment profile |
@@ -35,7 +36,8 @@ The control plane is **optional**. Every product ships and runs standalone with 
 
 ```bash
 cp deploy/env/control-plane.env.example deploy/env/control-plane.env
-# fill in IDENTITY_DB_PASSWORD, ENTITLEMENT_DB_PASSWORD, ENTITLEMENT_SERVICE_API_KEY, …
+# fill in CONTROL_PLANE_DB_ADMIN_PASSWORD, IDENTITY_DB_PASSWORD, ENTITLEMENT_DB_PASSWORD,
+# NOTIFICATION_DB_PASSWORD, ENTITLEMENT_SERVICE_API_KEY, …
 #   node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 
 pnpm preflight:control-plane                       # manifest + Compose contract, no containers started
@@ -107,9 +109,11 @@ Two independent gates, neither of which starts a container:
 
 ## Relationship to the standalone stacks
 
-`identity/docker-compose.yml` and `services/entitlement/docker-compose.yml` stay as they are and remain independently runnable — they keep their own project names, fixed volume names and single-service dev defaults. `compose/control-plane.yaml` is a **separate** Compose project that reuses the same images with composition-safe settings (no `container_name`, no committed secrets, no datastore host ports, project-scoped volumes).
+`compose/control-plane.yaml` is the Compose project for the shared control plane (no `container_name`, no committed secrets, no datastore host ports unless you attach `control-plane.dev-ports.yaml`).
 
-Pick one at a time: running both against the same host ports will conflict. Use `CONTROL_PLANE_BIND_ADDR` / the port variables to move the control plane if you need both.
+Identity / Entitlement / Notification / AI Platform share **one Postgres instance** (`control-plane-db`) and keep **separate databases and roles**. That is not a shared business schema and does not apply to product planes (DataLuminary, BlockyEdu, VistaCast, VistaRemote stay on their own Postgres). Service directories no longer ship their own Postgres Compose files — host processes use `env.example` → `127.0.0.1:5433` after `pnpm ent:up`.
+
+Use `CONTROL_PLANE_BIND_ADDR` / the port variables if host ports collide with other stacks.
 
 Product Compose projects reach the control plane by joining its edge network:
 
@@ -123,7 +127,9 @@ networks:
 
 ## Control Console vs Logto Admin
 
-`control-console` (loopback **:3050** by default) is the **business** superadmin SPA: catalog publish, payment provider enable/rotate/test, orders, trial cleanup, legal audit, capacity probes. It is **not** Logto Admin (`CONTROL_PLANE_ADMIN_BIND_ADDR` **:3002**), which only manages the IdP.
+`control-console` (loopback **:3050** by default) is the **business** superadmin SPA: catalog publish, payment provider enable/rotate/test, orders, trial cleanup, legal audit, capacity probes, AI admin. It is **not** Logto Admin (`CONTROL_PLANE_ADMIN_BIND_ADDR` **:3002**), which only manages the IdP.
+
+`account-center` (loopback **:3060**) is the **end-user** SPA: profile, billing snapshots, AI wallet / BYOK keys, partner app launcher. Register it in `identity/apps.json`, run `pnpm id:register`, set `ACCOUNT_CENTER_IDP_CLIENT_ID`, and include its origin in `AI_PLATFORM_CORS_ORIGINS` / `ENTITLEMENT_CORS_ORIGINS`.
 
 Setup:
 

@@ -1,4 +1,5 @@
 import { ReloadOutlined } from "@ant-design/icons";
+import { ErrorBanner, PageHeader, requestConfirm } from "@luminaryworks/ui";
 import {
   Alert,
   Button,
@@ -15,8 +16,6 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { requestConfirm } from "../components/ConfirmDialog";
-import { ErrorBanner, PageHeader } from "../components/ErrorBanner";
 import type { createApiClient } from "../lib/api-client";
 import type { RuntimeConfig } from "../lib/runtime-config";
 
@@ -64,7 +63,7 @@ export function OverviewPage({
           </Button>
         }
       />
-      <ErrorBanner error={error} />
+      <ErrorBanner error={error} t={(key) => t(key)} />
       {paymentsOff ? (
         <Alert
           type="warning"
@@ -293,7 +292,7 @@ export function CatalogPage({
   return (
     <section>
       <PageHeader title={t("catalog.title")} />
-      <ErrorBanner error={error} />
+      <ErrorBanner error={error} t={(key) => t(key)} />
       <Form
         layout="inline"
         style={{ marginBottom: 16 }}

@@ -17,6 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { ErrorBanner, PageHeader, requestConfirm } from "@luminaryworks/ui";
 import { Alert, Button, Segmented, Switch, Table } from "antd";
 import {
   createContext,
@@ -30,8 +31,6 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
-import { requestConfirm } from "../../components/ConfirmDialog";
-import { ErrorBanner, PageHeader } from "../../components/ErrorBanner";
 import {
   ConsoleApiError,
   type createApiClient,
@@ -63,6 +62,7 @@ import {
   PAYMENT_ENVIRONMENTS,
   type PaymentEnvironment,
   providerCnRestriction,
+  readMerchantAccountInput,
   STRUCTURED_CREDENTIAL_FIELDS,
 } from "../../lib/payment-providers";
 
@@ -350,7 +350,7 @@ export function ChannelsPage({ api, role }: { api: Api; role: ConsoleRole }) {
     <section>
       <PageHeader title={t("providers.title")} />
       <p className="channel-lede">{t("providers.catalogLede")}</p>
-      <ErrorBanner error={error} />
+      <ErrorBanner error={error} t={(key) => t(key)} />
       {notice ? (
         <Alert
           type="success"
@@ -510,6 +510,7 @@ export function ChannelSetupPage({
   const [environment, setEnvironment] = useState<PaymentEnvironment>("sandbox");
   const bootstrapped = useRef(false);
   const [merchantId, setMerchantId] = useState("");
+  const [merchantAccountId, setMerchantAccountId] = useState("");
   const [marketScopes, setMarketScopes] = useState("");
   const [currencies, setCurrencies] = useState("");
   const [instructions, setInstructions] = useState("");
@@ -595,6 +596,7 @@ export function ChannelSetupPage({
       ).join(", "),
     );
     setMerchantId(row?.merchantId ?? "");
+    setMerchantAccountId(row?.merchantAccountId ?? "");
     const saved = row?.metadata?.instructions;
     setInstructions(typeof saved === "string" ? saved : "");
     setCredentialValues({ ...(row?.credentialPublic ?? {}) });
@@ -608,7 +610,7 @@ export function ChannelSetupPage({
         <Link className="back-link" to="/commerce/channels">
           {t("nav.providers")}
         </Link>
-        <ErrorBanner error={error} />
+        <ErrorBanner error={error} t={(key) => t(key)} />
       </section>
     );
   }
@@ -656,6 +658,10 @@ export function ChannelSetupPage({
     if (markets.length === 0 || currencyList.length === 0) {
       throw new Error(t("providers.routingRequired"));
     }
+    if (merchantAccountId.trim().length > 128) {
+      throw new Error(t("providers.merchantAccountTooLong"));
+    }
+    const accountId = readMerchantAccountInput(merchantAccountId);
     const metadata = offline
       ? { instructions: instructions.trim() }
       : undefined;
@@ -672,6 +678,7 @@ export function ChannelSetupPage({
         providerId,
         environment,
         merchantId: merchantId.trim() || null,
+        merchantAccountId: accountId,
         marketScopes: markets,
         currencies: currencyList,
         priority,
@@ -680,10 +687,16 @@ export function ChannelSetupPage({
         enabled: false,
       });
       id = created.id;
+      if (role === "tenant" && accountId) {
+        await api.put(`${collection(role)}/${id}`, {
+          merchantAccountId: accountId,
+        });
+      }
     } else {
       await api.put(`${collection(role)}/${id}`, {
         environment,
         merchantId: merchantId.trim() || null,
+        merchantAccountId: accountId,
         marketScopes: markets,
         currencies: currencyList,
         metadata,
@@ -713,7 +726,7 @@ export function ChannelSetupPage({
             : t("providers.cnHostedBlocked")}
         </p>
       ) : null}
-      <ErrorBanner error={error} />
+      <ErrorBanner error={error} t={(key) => t(key)} />
       {notice ? (
         <Alert
           type="success"
@@ -814,6 +827,21 @@ export function ChannelSetupPage({
               </Field>
             );
           })}
+        </div>
+        <div className="create-grid">
+          <Field
+            label={t("providers.merchantAccountId")}
+            htmlFor="channel-merchant-account"
+          >
+            <input
+              id="channel-merchant-account"
+              maxLength={128}
+              value={merchantAccountId}
+              autoComplete="off"
+              onChange={(event) => setMerchantAccountId(event.target.value)}
+            />
+            <p className="muted">{t("providers.merchantAccountHint")}</p>
+          </Field>
         </div>
         <details className="channel-routing">
           <summary>{t("providers.advancedRouting")}</summary>

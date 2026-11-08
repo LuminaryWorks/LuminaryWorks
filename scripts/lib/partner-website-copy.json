@@ -1,0 +1,63 @@
+{
+  "sources": [
+    "spec/domain-and-branding.md",
+    "spec/products/index.md",
+    "spec/website-design.md"
+  ],
+  "products": {
+    "dataluminary": {
+      "nameZh": "数据明鉴",
+      "roleZh": "看",
+      "roleEn": "See",
+      "summaryZh": "用 AI 照亮数据：低代码 BI、可视化大屏，一句话生成报告与图表。",
+      "summaryEn": "Illuminate data with AI — low-code BI, video-wall dashboards, reports from a single prompt.",
+      "chips": ["DataView", "DataTalk", "DataInsight"],
+      "trial": "standard_7d"
+    },
+    "blockyedu": {
+      "nameZh": "智码工坊",
+      "roleZh": "学+创",
+      "roleEn": "Create",
+      "summaryZh": "AI 全民创造平台：从积木到网站、小程序与实体玩具；VibeLearn 为企业交付可私有化的内部培训。",
+      "summaryEn": "AI creation for everyone — from blocks to websites, mini programs and physical toys; VibeLearn delivers self-hostable corporate training.",
+      "chips": ["三屏一助手", "统一 Artifact", "VibeLearn LMS"],
+      "trial": "standard_7d"
+    },
+    "doerflow": {
+      "nameZh": "智工网",
+      "roleZh": "赚",
+      "roleEn": "Earn",
+      "summaryZh": "自主执行体的价值流动协议：任务发布、匹配与托管结算，人与 Agent 同权。",
+      "summaryEn": "The liquidity protocol for autonomous agents — task publishing, matching and escrow settlement, where humans and agents are peers.",
+      "chips": ["任务市场", "Agent 经济", "多链结算"],
+      "trial": "disabled"
+    },
+    "vistacast": {
+      "nameZh": "视界云遥",
+      "roleZh": "视",
+      "roleEn": "Watch",
+      "summaryZh": "把线下空间变成可编程的视觉事件流：复用既有 ONVIF/RTSP 摄像头，在边缘产出结构化事件。",
+      "summaryEn": "Turn physical space into a programmable stream of visual events — reuse existing ONVIF/RTSP cameras, emit structured events at the edge.",
+      "chips": ["ONVIF/RTSP", "客流与入侵", "Webhook 事件"],
+      "trial": "disabled"
+    },
+    "vistaremote": {
+      "nameZh": "视界远程",
+      "roleZh": "控",
+      "roleEn": "Control",
+      "summaryZh": "跨平台实时远程桌面与自托管录制洞察：工控机、边缘网关、IT 桌面与远程协助。",
+      "summaryEn": "Cross-platform real-time remote desktop with self-hosted recording insight — industrial PCs, edge gateways, IT desktops and remote assistance.",
+      "chips": ["WebRTC 远控", "会话录制审计", "AI 摘要"],
+      "trial": "standard_7d"
+    },
+    "syncrobrain": {
+      "nameZh": "万物智脑",
+      "roleZh": "连",
+      "roleEn": "Connect",
+      "summaryZh": "连接设备的 AI 原生操作系统：接入、设备影子、OTA、边缘规则与数字孪生。",
+      "summaryEn": "An AI-native operating system for connected devices — onboarding, shadows, OTA, edge rules and digital twins.",
+      "chips": ["多协议接入", "边缘规则", "Safety Kernel"],
+      "trial": "disabled"
+    }
+  }
+}
