@@ -8,6 +8,8 @@ services/**/node_modules/
 apps/**/node_modules/
 packages/**/node_modules/
 apps/**/dist/
+services/**/dist/
+*.tsbuildinfo
 
 # 嵌套独立仓（各自 Git，由 MetaRepo 编排，不纳入根提交）
 /identity/
