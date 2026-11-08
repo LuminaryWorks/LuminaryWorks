@@ -158,12 +158,14 @@ LuminaryWorks 是**平台**，不是消费级 SaaS。全站观感应接近**工�
 
 ### 00 · Hero
 
+> **对外叙事（2026-11-08）**：官网讲「平台 + 已验证落地的产品 + 价值合作链」。六产品拆分与主体隔离是集团内部架构，**不要**在营销首页反复写「各自团队/实体运营」。技术隔离（独立库、ACL、可单品交付）可以写；法律细则放条款页。
+
 - Eyebrow（mono，大写）：`LUMINARYWORKS · PLATFORM`
-- H1 zh：**提供登录、账单与 AI 接入的平台。合作产品保持独立。**
-- H1 en：**A platform for sign-in, billing and AI access. Partner products stay independent.**
-- 副文 zh：LuminaryWorks 提供统一账号、账单与权益、AI 网关、通知和共享标准。列出的产品是合作产品，各自由自己的团队或实体运营，使用自己的域名和条款，并通过 LuminaryWorks 平台提供。
-- 副文 en：LuminaryWorks provides a unified account, billing and entitlement, an AI gateway, notifications and shared standards. Listed products are independent partners, each operated by its own team or entity, and available through the LuminaryWorks Platform.
-- 主 CTA：`查看合作产品` / `See partner products` → `/products/`
+- H1 zh：**AI SaaS 基础服务平台**（品类定位，一句）
+- H1 en：**AI SaaS foundation platform**
+- 副文 zh（两段）：① 平台提供统一账号、账单与权益、AI 网关、通知与共享标准；产品可独立交付，也可串联使用。② 六款产品已在本平台完成商业落地验证，并形成一条价值合作链。
+- 副文 en（两段）：① Unified accounts, billing and entitlement, an AI gateway, notifications, and shared standards. Each product ships on its own — or together along the chain. ② Six products have proven commercial landing on this platform and form one value chain.
+- 主 CTA：`查看产品` / `Explore products` → `/products/`
 - 次 CTA：`私有化部署` / `Self-hosted deployment` → `/deploy/`
 - 文字链：`开发者文档 ↗` / `Developer docs ↗` → `https://docs.luminaryworks.dev`
 - 右侧结构图卡（mono 标签，静态，含状态点）：
@@ -172,38 +174,40 @@ LuminaryWorks 是**平台**，不是消费级 SaaS。全站观感应接近**工�
 CONTROL PLANE  ·  可选共享
 ┌ Identity · OIDC ┐ ┌ Entitlement ┐ ┌ AI Gateway · lab ┐
 └─────────┬───────┘ └──────┬──────┘ └─────────┬────────┘
-PRODUCT PLANES  ·  各自数据库与 ACL
+PRODUCT PLANES  ·  可独立交付
 [ DataLuminary ] [ BlockyEdu ] [ SyncroBrain ]
 [ VistaCast ]    [ VistaRemote ] [ DoerFlow ]
 ```
 
-结构图要点：`AI Gateway` 必须带 `lab` 标记（诚实原则）；控制面到产品面的连线用虚线（表示可选依赖）。
+结构图要点：`AI Gateway` 必须带 `lab` 标记（诚实原则）；控制面到产品面的连线用虚线（表示可选依赖）。Hero 标题 `max-width ≈ 12.5em`，副文控制在约 2–3 行，避免法律声明式长段。
 
 ### 01 · 事实条（facts strip）
 
 单行 5 项，mono 数字 + 说明；移动端 2 列。**只写可验证事实**：
 
-| 数值 | zh | en |
-|------|----|----|
-| `6` | 列出的合作产品 | partner products listed |
-| `5` | 冻结部署形态 | frozen deployment profiles |
-| `1` | 套统一登录与权益 | shared identity and entitlement layer |
-| `5` | 类开放协议 | families of open protocols |
-| `NC` | Polyform 非商业开源 | Polyform Noncommercial source |
+改用**可读短语**作主行（不再用裸数字 `6 / 5 / 1 / 5 / NC`），4 列：
+
+| 主行 zh | 说明 zh | 主行 en | 说明 en |
+|---------|---------|---------|---------|
+| 六款产品 | 商业落地已验证 | 6 products | commercially proven |
+| 一套底座 | 登录 · 账单 · AI 网关 | 1 foundation | sign-in · billing · AI gateway |
+| 五种部署 | 单品到断网内网 | 5 deploys | standalone to air-gapped |
+| 开源许可 | Polyform 非商业 | Open source | Polyform Noncommercial |
 
 ### 02 · 价值链闭环（`02 / VALUE CHAIN`）
 
-- H2 zh：**合作产品可以沿一条价值链配合**
-- H2 en：**Partner products along one value chain**
-- 导语 zh：学 + 创起步，接入设备、洞察数据，延伸到视觉安防、远程运维，最后由 Agent 与人类共同结算。
+- H2 zh：**我们已经形成一条价值合作链**
+- H2 en：**One value chain, already in place**
+- 导语 zh：从创造与学习，到设备接入与数据洞察，再到视觉安防与远程运维，最后由 Agent 与人完成结算。六款产品各自可独立交付，串联后覆盖完整闭环。
 - 节点（角色字 + 品牌 + 一行）：`学+创 BlockyEdu` → `连 SyncroBrain` → `看 DataLuminary`，分支 `视 VistaCast`、`控 VistaRemote`，汇入 `赚 DoerFlow`
 - 结构图用 CSS Grid + 1px 连线；点击节点滚动到 §03 对应卡片；移动端退化为纵向时间轴
 - 英文角色字：`Create` / `Connect` / `See` / `Watch` / `Control` / `Earn`
 
-### 03 · 合作产品（`03 / PRODUCTS`）
+### 03 · 产品（`03 / PRODUCTS`）
 
-- H2 zh：**每个合作产品有自己的站点与运营方。**
-- H2 en：**Each partner product stands on its own site, with its own operator.**
+- H2 zh：**六款产品，各自可独立交付**
+- H2 en：**Six products, each ready to ship on its own**
+- 卡片脚注口径：`独立站点与发布节奏` + `登录与账单接入 LuminaryWorks`；**不要**在每张卡重复「由其自己的团队或实体运营」
 
 3×2 卡片网格（桌面）/ 1 列（移动）。每卡：产品 Logo(32px) + 英文名 + 中文名 + 角色标签 + 一句话 + 3 个能力 chip + 运营方 +「由其自己的团队或实体运营」+ 状态徽标 + `访问官网 ↗`、`产品条款 ↗` 与 `源码 ↗`。
 
@@ -372,3 +376,4 @@ License 行：`Polyform Noncommercial License 1.0.0 · 商业使用须另行授�
 | 2026-09-12 | 修复 Facts Strip 把 `.lw-container` padding 覆盖为 0 的组合类 bug；改成容器包裹 grid，桌面实测事实条、Value Chain 标题与节点均从 x=140px 起 | UI 优化会话 |
 | 2026-09-12 | 六产品在官网上均标「正式可售」。VistaCast / SyncroBrain 仍无 Trial。首页 CTA 去掉「开始试用」；「联系商务」改为 `mailto:admin@luminaryworks.dev` | 用户复核 |
 | 2026-11-07 | 叙事改为平台与独立合作产品。关于页增加成为合作伙伴。法律模板版本 `lw-legal-v2026-11-07`。 | 平台定位 |
+| 2026-11-08 | 营销首页改口径：一句平台 H1；强调六产品已商业落地与「价值合作链已形成」；弱化「各自实体运营」话术（内部隔离不写进营销首屏）。产品卡脚注收成一行。Hero 标题限宽。 | 运营/营销文案 |
