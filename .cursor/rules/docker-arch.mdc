@@ -1,0 +1,12 @@
+---
+description: Host-matched Docker locally; prefer multi-arch images for deploy portability (LuminaryWorks)
+alwaysApply: true
+---
+
+# Docker architecture (LuminaryWorks)
+
+- Local run: only images matching the host CPU. On Apple Silicon, never run amd64/x86 (including qemu/Rosetta).
+- Image choice: prefer multi-arch tags (arm64 + amd64). Do not pin `platform: linux/amd64` for local convenience.
+- Publish: buildx multi-platform when artifacts may run on Mac or x86 servers.
+- Canonical: `LuminaryWorks/docs/DOCKER.md` (or this product copy / AGENTS.md section).
+

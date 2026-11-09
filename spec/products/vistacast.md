@@ -9,14 +9,18 @@
 
 ## 1. 定位
 
-**视觉事件平台** — 兼容已有 ONVIF/RTSP 摄像头，在边缘完成检测，用结构化事件驱动 ToB 安防/运营；（后期）OEM / 家庭看护为第二产品线。不做默认全量云录像。
+**楔子是质检 AOI-lite**，不是安防 NVR。同一套视觉平台先做电子元器件 / 3C / PCBA 的工位光学检测：SMT 回流焊后焊点（视觉可见的虚焊征兆、连焊、少焊）、波峰焊、DIP 外观。仓储安防和门店客流是第二、第三条腿。不做 2D/3D AOI、SPI、线扫、飞拍整机；判定出站，推料留给客户 PLC。
+
+权威在 VistaCast 仓：[product-optimization-playbook.md](https://github.com/VistaCast/VistaCast/blob/main/spec/product-optimization-playbook.md) · [product-roadmap.md](https://github.com/VistaCast/VistaCast/blob/main/spec/product-roadmap.md)（FR-SCN-09、FR-QC-07/08/14）。`accuracyClaimed` / `sellable` / 客户板 F1 仍为否，质检判定不得调用 LLM。
 
 | 维度 | 说明 |
 |------|------|
-| 独立价值 | 门店客流、仓储防盗、工厂危险区告警 — 不依赖兄弟产品即可部署 |
-| 生态角色 | **视** — 线下视觉数据流 + AI 事件源 |
-| 受众 | 连锁零售、仓储物流、中小工厂、物业安防；OEM 看护后置 |
-| 差异化 | 开源可私有化、事件优先、边缘推理、P2P 预览 |
+| 独立价值 | 工位 AOI-lite 可单独私有化；不依赖兄弟产品才能检板 |
+| 生态角色 | **视** — 产线视觉判定与证据；安防 / 门店事件是后续场景 |
+| 受众 | 小厂 SMT、波峰、DIP 目检工位；其后才是仓储与连锁门店 |
+| 差异化 | 纯软件、坐标 CSV 生成 ROI、证据留在客户侧、不替代高速整线 AOI |
+
+**视觉事件平台**仍兼容已有 ONVIF/RTSP，在边缘完成检测。（后期）OEM / 家庭看护为合同驱动，不主动开发。不做默认全量云录像。
 
 两条产品线共用同一平台，不建两套后端。**第一商业版只卖 Enterprise。**
 

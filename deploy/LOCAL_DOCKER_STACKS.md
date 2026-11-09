@@ -25,6 +25,31 @@ Product Postgres containers stay on their own ports. Do not merge six product pl
 
 `identity/docker-compose.yml` is **standalone-only** (`--profile standalone-db`). Default `pnpm id:up` starts Identity from the control-plane compose. See `deploy/OPERATOR.md` §5.4–§5.5.
 
+### Entitlement Docker sidecar (all products)
+
+Central Entitlement is a **Docker service** (`:3040`), not a per-product host Nest process.
+
+| Audience | Command | What starts |
+|---|---|---|
+| **Product developers** (DataLuminary, BlockyEdu, DoerFlow, VistaRemote, VistaCast, SyncroBrain) | From the product MetaRepo: `pnpm ent:sidecar` | Minimal slice: `control-plane-db` + `identity-redis` + `identity` + `entitlement` |
+| Shared DB only | `pnpm ent:up` (LuminaryWorks) | Postgres only — **not** the Entitlement API |
+| Entitlement **source** changes | `pnpm ent:dev` (LuminaryWorks) | Host Nest against shared DB |
+
+Products must **not** vendor a second Entitlement compose. Delegates are synced with `pnpm sync:ent-sidecar` from LuminaryWorks. Override sibling path with `LUMINARYWORKS_ROOT`.
+
+```bash
+# From any product MetaRepo (sibling clone of LuminaryWorks required)
+pnpm ent:sidecar
+curl -fsS http://127.0.0.1:3040/ready
+
+# Product .env when exercising commerce / membership / legal
+# ENTITLEMENT_MODE=shadow_read
+# ENTITLEMENT_BASE_URL=http://localhost:3040
+# ENTITLEMENT_SERVICE_API_KEY=<same as deploy/env/control-plane.env>
+```
+
+Default product mode remains `ENTITLEMENT_MODE=off` (no central calls). Do not leave the sidecar in default `docker compose up` for product cores.
+
 ## Product pointers
 
 | Product | Core compose | Optional AI / heavy |
@@ -33,6 +58,7 @@ Product Postgres containers stay on their own ports. Do not merge six product pl
 | VistaRemote | `deploy/compose/docker-compose.dev.yml` (postgres/redis) | `--profile ai` → lab `ollama` + qdrant + python-worker (**lab-only**; host Ollama port often `11435`) |
 | VistaCast | `deploy/docker-compose.yml` | Demo RTSP/RTMP publishers on separate profiles; edge infer on client, not server GPU |
 | Identity / control plane | `deploy/compose/control-plane.yaml` (project `luminary-works`) | Identity alone: `identity/` + `--profile standalone-db` |
+| Entitlement (product opt-in) | same compose; `pnpm ent:sidecar` | Minimal services only — not full `cp:up` |
 
 ## VistaRemote lab AI (optional)
 
@@ -51,4 +77,5 @@ Production / early SaaS: configure `LUMINARY_AI_*` or `DEEPSEEK_*` on the `ai` W
 ```bash
 pnpm sync:cursor-local-docker-rule   # sidecar profiles
 pnpm sync:cursor-ai-hosting          # cloud API + edge; no early server LLM
+pnpm sync:ent-sidecar                # product MetaRepo ent:sidecar delegates
 ```

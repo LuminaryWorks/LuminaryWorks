@@ -19,9 +19,6 @@
 **/.nyc_output/
 **/*.tsbuildinfo
 
-# 官网与演示站（非核心产品仓）
-website/
-share-demo/
 
 # 根目录临时试验文件
 /test.md

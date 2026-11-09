@@ -36,3 +36,11 @@
 
 - catalog id: `luminaryworks`
 - GitHub: `LuminaryWorks/LuminaryWorks`
+
+## Docker 架构（本机 + 部署选型）
+
+- **本机跑容器**：只允许与宿主 CPU 匹配的镜像。Apple Silicon（arm64）**禁止**跑 amd64/x86（含 qemu/Rosetta）。
+- **选用镜像**：优先 **multi-arch** 同一 tag（linux/arm64 + linux/amd64），便于服务器迁移与换平台；禁止为省事写死 `platform: linux/amd64`。
+- **发布构建**：`buildx --platform linux/arm64,linux/amd64`（或流水线等价）。
+- 细则：本生态以 [docs/DOCKER.md](docs/DOCKER.md) 为准（旗下产品 AGENTS / docs 已对齐）。
+

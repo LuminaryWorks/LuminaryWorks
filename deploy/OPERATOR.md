@@ -178,7 +178,18 @@ node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 
 控制面 Compose 工程默认名 **`luminary-works`**（`CONTROL_PLANE_PROJECT`）。单一服务 `control-plane-db`（固定卷名 `luminary_works_pg`，compose key 仍叫 `control-plane-db-data`）。平台 Redis 服务名 `identity-redis`（前期共用）。首次**空** volume 启动时，[`compose/init/control-plane-db.sh`](compose/init/control-plane-db.sh) 创建四个逻辑库与角色：`logto`、`entitlement`、`notification`、`ai_platform`。Compose 内应用连接串 host 为 `control-plane-db`；本机 `pnpm ent:dev` / notification `start:dev` 用 env 连 `127.0.0.1:5433`（见各服务 `env.example`）。
 
-`services/entitlement` / `services/notification` **不再**提供独立 `docker-compose.yml`。本地只起共享库：`pnpm ent:up`（=`node scripts/control-plane-db.mjs up`）。
+`services/entitlement` / `services/notification` **不再**提供独立 `docker-compose.yml`。
+
+本地分层：
+
+| 命令 | 用途 |
+|------|------|
+| `pnpm ent:up` | 只起共享库（=`node scripts/control-plane-db.mjs up`） |
+| **`pnpm ent:sidecar`** | **产品联调**：Docker 最小集（db + identity + `entitlement:3040`）。各产品 MetaRepo 同步脚本后也可在产品根执行同名命令 |
+| `pnpm ent:dev` | 仅改 Entitlement **源码**时的宿主机 Nest |
+| `pnpm cp:up` | 整套控制面（含 console / notification 等） |
+
+产品仓不要复制第二套 entitlement compose；见 [`LOCAL_DOCKER_STACKS.md`](LOCAL_DOCKER_STACKS.md)「Entitlement Docker sidecar」。
 
 **已有 volume（本地 lab / OVH）不会重跑 init。** 升级到含 AI Platform 的版本时必须二选一：
 
