@@ -3,6 +3,7 @@
 *.log
 .env
 .env.*
+.env.ai
 /node_modules/
 services/**/node_modules/
 apps/**/node_modules/
