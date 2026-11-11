@@ -11,11 +11,14 @@ import { fulfillPaidOrderTx } from "../orders/order-fulfillment";
 import { PaymentConfigService } from "./payment-config.service";
 import { PaymentsService } from "./payments.service";
 import type { PaymentAdapter, ProviderConfig, VerifiedWebhook } from "./payment-adapter";
+import { DoerflowCreditFixture, doerflowCreditFixtureEnabled } from "./doerflow-credit.fixture";
 
 const NOT_FOUND_MESSAGE = "Not found";
 
 @Injectable()
 export class PaymentWebhookService {
+  private readonly creditFixture = new DoerflowCreditFixture();
+
   constructor(
     @InjectDataSource() private readonly dataSource: DataSource,
     @InjectRepository(ProviderWebhookEventEntity)
@@ -35,6 +38,9 @@ export class PaymentWebhookService {
     headers: Record<string, string>;
   }): Promise<{ status: number; body: unknown }> {
     const row = await this.paymentConfigs.loadEnabled(input.configId);
+    if (!row && input.provider === "doerflow_credit" && doerflowCreditFixtureEnabled()) {
+      return this.creditFixture.handle(input.rawBody, input.headers, input.configId);
+    }
     if (!row || row.providerId !== input.provider) {
       throw new EntitlementException("NOT_FOUND", NOT_FOUND_MESSAGE);
     }
@@ -99,6 +105,13 @@ export class PaymentWebhookService {
     }
 
     return ack;
+  }
+
+  fixtureSnapshot(configId: string) {
+    if (!doerflowCreditFixtureEnabled()) {
+      throw new EntitlementException("NOT_FOUND", NOT_FOUND_MESSAGE);
+    }
+    return this.creditFixture.snapshot(configId);
   }
 
   private async verifyWithCandidates(

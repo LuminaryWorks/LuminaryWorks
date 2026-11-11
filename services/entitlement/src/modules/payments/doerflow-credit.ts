@@ -47,12 +47,28 @@ export type MerchantChargeResult =
 
 export const MERCHANT_CHARGE_EVENT_TYPE = "doerflow.merchant.charge.settled" as const;
 
+/** Lab fixture only. Production refunds stay pull-based and do not emit this event. */
+export const MERCHANT_REFUND_EVENT_TYPE = "doerflow.merchant.refund.settled" as const;
+
 export type MerchantChargeWebhookPayload = {
   eventType: typeof MERCHANT_CHARGE_EVENT_TYPE;
   eventId: string;
   orderId: string;
   chargeId: string;
   status: MerchantChargeStatus;
+  amountMinor: string;
+  currency: string;
+  asset: DoerflowCreditAsset;
+  merchantAccount: string;
+  settledAt: string;
+};
+
+export type MerchantRefundWebhookPayload = {
+  eventType: typeof MERCHANT_REFUND_EVENT_TYPE;
+  eventId: string;
+  orderId: string;
+  chargeId: string;
+  status: "succeeded";
   amountMinor: string;
   currency: string;
   asset: DoerflowCreditAsset;

@@ -1,4 +1,4 @@
-import { Controller, Headers, Param, Post, Req, Res } from "@nestjs/common";
+import { Controller, Get, Headers, Param, Post, Req, Res } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import type { FastifyReply } from "fastify";
 import { REQUEST_RAW_BODY_KEY } from "../../auth/auth.types";
@@ -11,6 +11,12 @@ import { PaymentWebhookService } from "./payment-webhook.service";
 @Controller("v1/payments/webhooks")
 export class PaymentWebhookController {
   constructor(private readonly webhooks: PaymentWebhookService) {}
+
+  @Public()
+  @Get("doerflow_credit/:configId/fixture")
+  fixture(@Param("configId") configId: string) {
+    return this.webhooks.fixtureSnapshot(configId);
+  }
 
   @Public()
   @Post(":provider/:configId")

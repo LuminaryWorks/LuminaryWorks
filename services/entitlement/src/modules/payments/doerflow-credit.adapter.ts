@@ -298,6 +298,7 @@ export class DoerflowCreditPaymentAdapter implements PaymentAdapter {
       {
         orderId: input.orderId,
         chargeId: input.providerRef,
+        originalIdempotencyKey: deriveChargeIdempotencyKey(input.orderId, input.attemptId),
         amountMinor,
         currency: input.currency.toUpperCase(),
         idempotencyKey: input.idempotencyKey,

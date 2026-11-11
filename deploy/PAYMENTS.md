@@ -540,13 +540,15 @@ createCheckout 返回 `action.type=x402`（`hostedUrl=false`），不是托管�
 | `DOERFLOW_CREDIT_WEBHOOK_SECRET` | 与 Entitlement `webhookSecret` 相同 |
 | `PAYMENT_SERVICE_KEY` | 与 Entitlement `serviceKey` 相同（dev 可回退 `PAYMENT_SERVICE_JWT_SECRET`） |
 | `ENTITLEMENT_BASE_URL` | Entitlement 基址（出站 webhook 目标） |
+| `ENTITLEMENT_SERVICE_API_KEY` | 可选。出站 webhook 额外带 `X-Service-Key` |
+| `DOERFLOW_CREDIT_FIXTURE` | Lab：`1` 时，config id 没有已启用 provider 行就记录 dry-run plan 标记，并在退款后发 `doerflow.merchant.refund.settled`。`NODE_ENV=production` 时忽略。Entitlement 进程使用同一开关、同一 webhook secret 与同一 `DOERFLOW_MERCHANT_ACCOUNT` |
 
 ### 行为
 
 - 创建：同步 `POST …/merchant/charges`（`X-Service-Key`）；返回 `action.type=ledger_debit`。余额不足 → `LEDGER_INSUFFICIENT_FUNDS`（402）。
 - 出站 webhook：DoerFlow → `POST /v1/payments/webhooks/doerflow_credit/:configId`，`x-lw-timestamp` / `x-lw-nonce` / `x-lw-signature: v1=` HMAC-SHA256 over `ts.nonce.rawBody`。
 - 入站验签：Entitlement 校验签名、`merchantAccount` 与凭证/订单快照一致、`eventId` 形如 `dfc_<32 hex>`。
-- 退款：`POST …/merchant/refunds`（账本内，可用余额范围内）。
+- 退款：`POST …/merchant/refunds`，入参含 `originalIdempotencyKey`（扣款时的 idempotencyKey，形如 `dfc:{orderId}:{attemptId}`）。账本内，可用余额范围内。Lab `DOERFLOW_CREDIT_FIXTURE=1` 时另发 `doerflow.merchant.refund.settled` 给 dry-run 接收端。
 - Health：`POST /v1/admin/payments/providers/:id/test` 远程 `GET {baseUrl}/api/v1/payments/merchant/health`（`remote: true`）。
 
 ### 沙箱

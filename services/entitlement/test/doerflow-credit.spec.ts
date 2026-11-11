@@ -8,6 +8,7 @@ import {
   deriveChargeIdempotencyKey,
   ledgerAmountMinorToCents,
   MERCHANT_CHARGE_EVENT_TYPE,
+  MERCHANT_REFUND_EVENT_TYPE,
   toLedgerAmountMinor,
 } from "../src/modules/payments/doerflow-credit";
 import { doerflowCreditConfig, jsonResponse } from "./payment-adapter-fixtures";
@@ -201,6 +202,48 @@ describe("doerflow_credit adapter", () => {
     } catch (err) {
       expect(err).toMatchObject({ code: "PAYMENT_AMOUNT_MISMATCH" });
     }
+  });
+
+  it("refunds with the original charge idempotency key", async () => {
+    const seen: Array<{ url?: string; body?: string }> = [];
+    const adapter = new DoerflowCreditPaymentAdapter(async (url, init) => {
+      seen.push({ url: String(url), body: readBody(init?.body) });
+      return jsonResponse({ status: "succeeded", refundId: "rf_1" });
+    }, clock);
+    const result = await adapter.refund(
+      {
+        orderId: "ord_1",
+        attemptId: "att_1",
+        providerRef: "chg_1",
+        amountCents: 1200,
+        currency: "usd",
+        idempotencyKey: "refund_1",
+      },
+      config,
+    );
+    const parsed = JSON.parse(seen[0]?.body ?? "{}") as Record<string, unknown>;
+    expect(new URL(seen[0]?.url ?? "").pathname).toBe("/api/v1/payments/merchant/refunds");
+    expect(parsed.originalIdempotencyKey).toBe(deriveChargeIdempotencyKey("ord_1", "att_1"));
+    expect(parsed.orderId).toBe("ord_1");
+    expect(parsed.chargeId).toBe("chg_1");
+    expect(parsed.amountMinor).toBe(toLedgerAmountMinor(1200));
+    expect(parsed.currency).toBe("USD");
+    expect(parsed.idempotencyKey).toBe("refund_1");
+    expect(result).toMatchObject({ status: "succeeded", providerRef: "rf_1", amountCents: 1200 });
+  });
+
+  it("ignores a signed refund notice instead of treating it as a second charge", async () => {
+    const adapter = new DoerflowCreditPaymentAdapter(undefined, clock);
+    const signed = signedWebhook(
+      webhookPayload({ eventType: MERCHANT_REFUND_EVENT_TYPE }),
+      secret,
+      { nonce: "nonce_refund_evt_1" },
+    );
+    const verified = await adapter.verifyWebhook(signed.body, signed.headers, config);
+    expect(verified.status).toBe("ignored");
+    expect(verified.eventId).toBe(
+      deriveChargeEventId(deriveChargeIdempotencyKey("ord_1", "att_1")),
+    );
   });
 
   it("maps insufficient-funds responses to LEDGER_INSUFFICIENT_FUNDS", async () => {
