@@ -9,6 +9,7 @@ import { RedactingExceptionFilter } from "./common/redacting-exception.filter";
 import aiPlatformConfig, { type AiPlatformConfig } from "./config/ai-platform.config";
 import { ALL_ENTITIES } from "./database/entities";
 import { AiPlatformConnectionAudit1762600000000 } from "./database/migrations/1762600000000-AiPlatformConnectionAudit";
+import { AiPlatformConnectionProductCode1762800000000 } from "./database/migrations/1762800000000-AiPlatformConnectionProductCode";
 import { AiPlatformInitial1762406400000 } from "./database/migrations/1762406400000-AiPlatformInitial";
 import { AiPlatformWallet1762500000000 } from "./database/migrations/1762500000000-AiPlatformWallet";
 import { EntitlementGate } from "./entitlement-gate";
@@ -40,6 +41,7 @@ import { WalletService } from "./wallet/wallet.service";
             AiPlatformInitial1762406400000,
             AiPlatformWallet1762500000000,
             AiPlatformConnectionAudit1762600000000,
+            AiPlatformConnectionProductCode1762800000000,
           ],
           migrationsRun: settings.migrationsRun,
         };

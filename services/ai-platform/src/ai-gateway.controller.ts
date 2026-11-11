@@ -8,12 +8,14 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   Res,
   UnauthorizedException,
 } from "@nestjs/common";
 import type { FastifyReply } from "fastify";
 import { AiGatewayService } from "./ai-gateway.service";
+import type { ConnectionOwnerKind } from "./database/entities/provider-connection.entity";
 import { AI_PRINCIPAL, type AiPrincipal, type AuthedRequest } from "./auth/auth.types";
 
 @Controller()
@@ -21,9 +23,18 @@ export class AiGatewayController {
   constructor(private readonly ai: AiGatewayService) {}
 
   @Get("v1/providers")
-  async providers(@Req() req: AuthedRequest) {
+  async providers(
+    @Req() req: AuthedRequest,
+    @Query("ownerKind") ownerKind?: string,
+    @Query("ownerUid") ownerUid?: string,
+    @Query("productCode") productCode?: string,
+  ) {
     return {
-      items: await this.ai.listConnections(principalOf(req)),
+      items: await this.ai.listConnections(principalOf(req), {
+        ownerKind: ownerKind as ConnectionOwnerKind | undefined,
+        ownerUid,
+        productCode,
+      }),
       types: ["deepseek", "doubao", "openai", "openai-compatible", "anthropic", "gemini"],
     };
   }

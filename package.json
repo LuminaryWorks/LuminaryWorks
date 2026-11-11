@@ -28,6 +28,8 @@
     "cp:up": "docker compose --env-file deploy/env/control-plane.env -f deploy/compose/control-plane.yaml up -d",
     "cp:down": "docker compose --env-file deploy/env/control-plane.env -f deploy/compose/control-plane.yaml down",
     "cp:config": "docker compose --env-file deploy/env/control-plane.env -f deploy/compose/control-plane.yaml config",
+    "ai:sync-lab-env": "node scripts/sync-lab-ai-product-env.mjs",
+    "ai:dev": "pnpm --dir services/ai-platform start:dev",
     "id:probe": "node identity/scripts/probe-readiness.mjs",
     "id:brand": "node identity/scripts/ensure-admin-console-branding.mjs",
     "test:contracts": "node --test scripts/lib/*.test.mjs",

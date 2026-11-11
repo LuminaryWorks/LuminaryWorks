@@ -1,4 +1,8 @@
 import { assertPlaybackGrant, type PlaybackGrant } from "./grant";
+import {
+  installSegmentFetchInterceptor,
+  type SegmentFetcher,
+} from "./segment-fetch";
 
 type HlsPlayer = {
   destroy(): void;
@@ -21,6 +25,11 @@ export type ProtectedHlsOptions = {
   autoplay?: boolean;
   onProgress?: (seconds: number) => void;
   renew?: () => Promise<PlaybackGrant>;
+  /**
+   * Optional ciphertext segment loader (P2P → CDN).
+   * Manifest and AES-128 key keep using the player’s native requests.
+   */
+  segmentFetcher?: SegmentFetcher;
 };
 
 export async function createProtectedHlsPlayer(
@@ -31,6 +40,9 @@ export async function createProtectedHlsPlayer(
     playlistUrl: options.playlistUrl,
     expiresAt: options.expiresAt ?? new Date(Date.now() + 60_000).toISOString(),
   });
+  const uninstallFetch = options.segmentFetcher
+    ? installSegmentFetchInterceptor(options.segmentFetcher)
+    : () => undefined;
   const xg = (await import("xgplayer")) as { default: PlayerCtor };
   const hlsMod = (await import("xgplayer-hls")) as { default?: unknown };
   const HlsPlayer = hlsMod.default ?? hlsMod;
@@ -54,6 +66,7 @@ export async function createProtectedHlsPlayer(
   return {
     destroy() {
       if (timer != null) window.clearTimeout(timer);
+      uninstallFetch();
       player.destroy();
     },
     currentTime: () => player.currentTime || 0,

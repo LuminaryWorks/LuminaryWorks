@@ -1,10 +1,11 @@
 openapi: 3.1.0
 info:
   title: LuminaryWorks Media Gateway
-  version: 1.0.0
+  version: 1.1.0
   description: >
     点播会话、加密 HLS 清单与 AES-128 密钥。分片由边缘从私有桶读取。
     浏览器不接收对象存储 URL。规格 spec/media-gateway.md。
+    1.1.0：tenant 枚举移除 entfunhub（EntFunHub 不进本网关运行时）。
 servers:
   - url: /
 paths:
@@ -165,7 +166,10 @@ components:
       properties:
         tenant:
           type: string
-          enum: [blockyedu, entfunhub, vistaremote, vistacast]
+          enum: [blockyedu, vistaremote, vistacast]
+          description: >
+            LuminaryWorks product tenants only. EntFunHub is not a tenant of this
+            gateway (runtime isolation); reuse player/packaging code elsewhere.
         assetId: { type: string }
         title: { type: string }
         licenseCode:

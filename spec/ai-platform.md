@@ -14,12 +14,12 @@
 | D-AI-5 | **密钥不进产品业务库明文**：Vault 由 AI Platform（或产品内兼容适配器）持有；聊天记录不回写密钥。 |
 | D-AI-6 | **LLM 禁止**：原始 SQL、HTML、自行计算关键数字、持有数据源密码。 |
 | D-AI-7 | **产品通过 `@luminaryworks/ai-client` 调用**；未部署中央服务时，产品可用本地 BYOK 适配器（同一契约）。 |
-| D-AI-8 | **`ai=central` 当前为 lab**：pilot/production Manifest 必须被 preflight 拒绝，直到 `AI_CENTRAL_HARDENING_GATES` 全部翻转 | [composable-deployment.md](./composable-deployment.md) §9.2 |
+| D-AI-8 | **`ai=central` 成熟度仍为 lab**：`AI_CENTRAL_HARDENING_GATES` 已为 true，但 `CAPABILITY_MATURITY.ai.central` 未升前，pilot/production Manifest 仍被 preflight 拒绝 | [composable-deployment.md](./composable-deployment.md) §9.2 |
 | D-AI-9 | **初创期推理默认走云 API / BYOK**（DeepSeek、OpenAI 等）；**禁止**各产品服务端默认部署自托管大模型（Ollama / vLLM / 自建 GPU 池）。端侧 / 客户主机 **4B–21B** 允许。仅当生态（含 EntFunHub、OmniSellerAI 等）有可量化的庞大需求，并经运营授权后，才在 **LuminaryWorks 统一层**自托管 LLM，避免各产品重复烧 GPU/运维。Agent 门禁见 `.cursor/rules/ai-hosting-policy.mdc`。 |
 
 ### 0.1 2026-11 增补（D-AI-10 ~ D-AI-18）
 
-统一 Provider / 能力路由 / 钱包账本 / 公共 API 可关闭设计，详见 [ADR 2026-11](./decisions/2026-11-unified-ai-platform.md)、[ai-capability-routing.md](./ai-capability-routing.md)、[ai-wallet-and-billing.md](./ai-wallet-and-billing.md)。D-AI-8 的五个 hardening gate 仍是任何托管计费上线的**前置条件**。
+统一 Provider / 能力路由 / 钱包账本 / 公共 API 可关闭设计，详见 [ADR 2026-11](./decisions/2026-11-unified-ai-platform.md)、[ai-capability-routing.md](./ai-capability-routing.md)、[ai-wallet-and-billing.md](./ai-wallet-and-billing.md)。P1 hardening gate 已在 `control-manifest` 标为 true；托管计费对外宣称仍受 `CAPABILITY_MATURITY.ai.central`（lab）约束。
 
 ## 1. 定位
 
@@ -90,17 +90,21 @@ DataLuminary MVP **不得** 在 DataTalk 另造一套日后必须拆除的 Provi
 
 ## 7. 部署成熟度（诚实门禁）
 
-`ai=central` **当前为 lab**，不得写入 `pilot` / `production` Control Manifest。`@luminaryworks/control-manifest` preflight 拒绝该模式，直到 `AI_CENTRAL_HARDENING_GATES` 全部为 true：
+`ai=central` **能力成熟度仍为 lab**（`CAPABILITY_MATURITY.ai.central`，见 `@luminaryworks/control-manifest`）。`pilot` / `production` Manifest 仍会被 preflight 以 `capability_not_ready_for_stage` **拒绝** `ai=central`，与下方 P1 gate 是否已全部为 true **无关**。
+
+`AI_CENTRAL_HARDENING_GATES`（代码真相，`shared/packages/control-manifest/src/constants.ts`）：
 
 | Gate | 现状 | 含义 |
 |------|------|------|
-| `authn` | false | 平台须验 OIDC/JWT，拒绝匿名调用 |
-| `entitlement` | false | 花费 provider 配额前须咨询中央 Entitlement（`:3040`） |
-| `persistentMetering` | false | 用量须落持久存储，不得只在进程内存 |
-| `secretVault` | false | provider secret 来自 vault，不得来自请求体或 env dump |
-| `readiness` | false | 须实现 `/ready`，反映 provider / vault / 存储依赖 |
+| `authn` | true | 验 OIDC/JWT 或服务凭证；拒绝匿名调用 |
+| `entitlement` | true | 托管路由花费 provider 配额前咨询中央 Entitlement（`:3040`）；BYOK 不经此 gate |
+| `persistentMetering` | true | 用量与连接元数据落 Postgres |
+| `secretVault` | true | Provider secret 为 Postgres 内 AES-256-GCM 密文；生产业务路由拒绝请求体 secret |
+| `readiness` | true | `/ready` 反映 Postgres 与 vault master key |
 
-参考场景使用 `ai=off` 或 `ai=local_byok`。翻转某一 gate **必须**与该能力落地同一改动，禁止提前把 Manifest 标成 production。详见 [composable-deployment.md §9.2](./composable-deployment.md)。
+**目标态（含私有化）**：六产品 **不** 长期自持 AI Vault。私有化安装包以对等 **AI Platform sidecar** 交付，产品只经 `LUMINARY_AI_BASE_URL` + `LUMINARY_AI_API_KEY` 对接（与 DataLuminary `AI_MODE=central` 默认一致）。`ai=local_byok` / `AI_MODE=local_byok` 是过渡、离线回放或显式 opt-out，**不是**私有化终态。
+
+未挂 sidecar 的参考场景：`ai=off` 或显式 `local_byok`。将 `CAPABILITY_MATURITY.ai.central` 抬高 **必须** 与对外宣称同一次改动。详见 [composable-deployment.md §9.2](./composable-deployment.md)。
 
 ## 8. 推理托管分层（D-AI-9）
 

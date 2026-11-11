@@ -13,6 +13,10 @@ export class ProviderConnectionEntity {
   @Column({ name: "owner_uid", type: "varchar", length: 128 })
   ownerUid!: string;
 
+  /** Optional product tag for multi-product shared vault listing (e.g. dataluminary). */
+  @Column({ name: "product_code", type: "varchar", length: 64, nullable: true })
+  productCode!: string | null;
+
   @Column({ name: "provider_type", type: "varchar", length: 64 })
   providerType!: string;
 

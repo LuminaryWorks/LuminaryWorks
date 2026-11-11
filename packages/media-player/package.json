@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "Polyform-Noncommercial-1.0.0",
-  "description": "xgplayer HLS session player for LuminaryWorks media-gateway. The playlist URL is issued by a product API.",
+  "description": "xgplayer HLS session player for LuminaryWorks media-gateway (playlist from product API). Optional SegmentFetcher for ciphertext P2P; reusable by non-LW apps against their own gateway.",
   "exports": {
     ".": "./src/index.ts"
   },

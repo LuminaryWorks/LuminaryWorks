@@ -57,6 +57,8 @@ Bootstrap (`object-storage-init`, idempotent) creates private buckets and one le
 | `vistacast-recordings` | VistaCast key | VistaCast only |
 | `backup-staging` | operator key | Staging copies / migration |
 
+**Co-located EntFunHub buckets (optional, same process):** Operator may create `efh-media` / `efh-images` on the **same** MinIO/AIStor instance with **separate** access keys and deny-cross-bucket policies. Those buckets are **not** LuminaryWorks media-gateway tenants and must not use `MEDIA_GATEWAY_SERVICE_KEY` or LW CDN origin. See `spec/media-gateway.md` §0. Quotas for `efh-*` sit **outside** the 120 GiB LW Hosted budget table above (operator tracks disk separately on trial OVH).
+
 Products address the API as `http://object-storage:9000` on `luminary-control-edge`. DoerFlow has no bucket in this work package. SyncroBrain reports stay in PostgreSQL / ThingsBoard until they actually emit object artifacts, so `syncrobrain-reports` is **not** created (the 120 GiB budget is already allocated).
 
 `trial/` prefix: bootstrap tries `mc ilm rule add --expire-days 7` (expiration only). If Free omits ILM, that is a warning. **Product `trial.purge` remains authoritative.** Do not configure `--transition` or site/bucket replication on Free.

@@ -7,7 +7,7 @@
   "scripts": {
     "build": "pnpm --dir ../../shared/packages/ai-client run build && pnpm --dir ../../shared/packages/entitlement-client run build && tsc -p tsconfig.json",
     "start": "node dist/main.js",
-    "start:dev": "node --import tsx src/main.ts",
+    "start:dev": "pnpm run build && node dist/main.js",
     "check": "pnpm --dir ../../shared/packages/ai-client run build && pnpm --dir ../../shared/packages/entitlement-client run build && tsc -p tsconfig.json --noEmit",
     "test": "pnpm run build && node --test --test-timeout 180000 test/*.test.mjs"
   },

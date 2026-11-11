@@ -11,7 +11,8 @@ import { WindowLimiter } from "./rate-limit";
 import { FileMediaStore, RedisMediaStore } from "./store";
 import { safeEqualSecret, signedUrl, verifySignedRequest } from "./token";
 
-const TENANTS = new Set(["blockyedu", "entfunhub", "vistaremote", "vistacast"]);
+/** LW products only — EntFunHub must not register here (runtime isolation). */
+const TENANTS = new Set(["blockyedu", "vistaremote", "vistacast"]);
 
 export type RegisterBody = {
   tenant?: string;

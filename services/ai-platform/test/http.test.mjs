@@ -140,7 +140,13 @@ test("anonymous business routes return AUTH_REQUIRED; health and ready stay open
 });
 
 test("service credential and OIDC JWT both authenticate product routes", async () => {
-  const byHeader = await hit("GET", "/v1/providers", { headers: { "x-service-key": SERVICE_KEY } });
+  const unfiltered = await hit("GET", "/v1/providers", { headers: { "x-service-key": SERVICE_KEY } });
+  assert.equal(unfiltered.status, 400);
+  assert.equal(unfiltered.json.error.code, "VALIDATION_ERROR");
+
+  const byHeader = await hit("GET", "/v1/providers?ownerKind=deployment&ownerUid=platform", {
+    headers: { "x-service-key": SERVICE_KEY },
+  });
   assert.equal(byHeader.status, 200);
   assert.ok(Array.isArray(byHeader.json.items));
 
@@ -166,7 +172,9 @@ test("PUBLIC_API_ENABLED hides /v1/public and does not affect product routes", a
   assert.equal(JSON.stringify(hidden.json).toLowerCase().includes("public"), false);
   assert.equal(JSON.stringify(hidden.json).includes("PUBLIC_API"), false);
 
-  const productOff = await hit("GET", "/v1/providers", { headers: auth() });
+  const productOff = await hit("GET", "/v1/providers?ownerKind=deployment&ownerUid=platform", {
+    headers: auth(),
+  });
   assert.equal(productOff.status, 200);
 
   process.env.PUBLIC_API_ENABLED = "true";
@@ -174,7 +182,9 @@ test("PUBLIC_API_ENABLED hides /v1/public and does not affect product routes", a
   assert.equal(open.status, 501);
   assert.equal(open.json.error.code, "NOT_IMPLEMENTED");
 
-  const productOn = await hit("GET", "/v1/providers", { headers: auth() });
+  const productOn = await hit("GET", "/v1/providers?ownerKind=deployment&ownerUid=platform", {
+    headers: auth(),
+  });
   assert.equal(productOn.status, 200);
   process.env.PUBLIC_API_ENABLED = "false";
 });
@@ -535,9 +545,19 @@ test("user JWT cannot impersonate subjectId, manage deployment connections, or r
   assert.equal(listed.json.items.some((item) => item.ownerKind === "deployment"), false);
   assert.equal(listed.json.items.some((item) => item.ownerUid === "user-1"), false);
 
-  const serviceList = await hit("GET", "/v1/providers", { headers: auth() });
+  const serviceList = await hit("GET", "/v1/providers?ownerKind=deployment&ownerUid=platform", {
+    headers: auth(),
+  });
+  assert.equal(serviceList.status, 200);
   assert.equal(serviceList.json.items.some((item) => item.ownerKind === "deployment"), true);
-  const personal = serviceList.json.items.find((item) => item.ownerUid === "user-1");
+  assert.equal(serviceList.json.items.every((item) => item.ownerUid === "platform"), true);
+
+  const personalList = await hit("GET", "/v1/providers?ownerKind=user&ownerUid=user-1", {
+    headers: auth(),
+  });
+  assert.equal(personalList.status, 200);
+  const personal = personalList.json.items.find((item) => item.ownerUid === "user-1");
+  assert.ok(personal);
   const stolen = await hit("POST", "/v1/chat/complete", {
     headers: headersA,
     body: {

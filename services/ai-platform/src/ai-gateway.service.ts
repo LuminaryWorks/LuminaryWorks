@@ -52,6 +52,7 @@ export interface ProviderConnectionPublic {
   uid: string;
   ownerKind: ConnectionOwnerKind;
   ownerUid: string;
+  productCode?: string | null;
   providerType: string;
   displayName: string;
   baseUrl?: string;
@@ -62,6 +63,12 @@ export interface ProviderConnectionPublic {
   extra?: Record<string, string> | null;
   secretFingerprint?: string;
   hasSecret: boolean;
+}
+
+export interface ListConnectionsQuery {
+  ownerKind?: ConnectionOwnerKind;
+  ownerUid?: string;
+  productCode?: string;
 }
 
 export interface EphemeralSecret {
@@ -113,8 +120,37 @@ export class AiGatewayService {
     private readonly wallet: WalletService,
   ) {}
 
-  async listConnections(principal: AiPrincipal): Promise<ProviderConnectionPublic[]> {
-    const rows = await this.connections.find({ order: { createdAt: "ASC" } });
+  async listConnections(
+    principal: AiPrincipal,
+    query: ListConnectionsQuery = {},
+  ): Promise<ProviderConnectionPublic[]> {
+    const ownerKind = query.ownerKind?.trim() as ConnectionOwnerKind | undefined;
+    const ownerUid = query.ownerUid?.trim() || undefined;
+    const productCode = query.productCode?.trim() || undefined;
+
+    if (principal.kind === "service") {
+      if (!ownerKind || !ownerUid) {
+        throw new AiPlatformException(
+          "VALIDATION_ERROR",
+          400,
+          "service callers must pass ownerKind and ownerUid",
+        );
+      }
+    }
+
+    const where: {
+      ownerKind?: ConnectionOwnerKind;
+      ownerUid?: string;
+      productCode?: string;
+    } = {};
+    if (ownerKind) where.ownerKind = ownerKind;
+    if (ownerUid) where.ownerUid = ownerUid;
+    if (productCode) where.productCode = productCode;
+
+    const rows = await this.connections.find({
+      where: Object.keys(where).length > 0 ? where : undefined,
+      order: { createdAt: "ASC" },
+    });
     const visible =
       principal.kind === "service" ? rows : rows.filter((row) => canManageConnection(principal, row));
     return visible.map((row) => toPublic(row));
@@ -124,6 +160,7 @@ export class AiGatewayService {
     uid?: string;
     ownerKind: ConnectionOwnerKind;
     ownerUid: string;
+    productCode?: string | null;
     providerType: string;
     displayName: string;
     baseUrl?: string | null;
@@ -153,10 +190,15 @@ export class AiGatewayService {
       ciphertext = encryptSecret(masterKey, secret);
       secretFingerprint = fingerprintSecret(secret);
     }
+    const productCode =
+      input.productCode === undefined
+        ? (prev?.productCode ?? null)
+        : input.productCode?.trim() || null;
     const row = this.connections.create({
       uid,
       ownerKind: input.ownerKind,
       ownerUid: input.ownerUid,
+      productCode,
       providerType: input.providerType,
       displayName: input.displayName,
       baseUrl,
@@ -185,6 +227,7 @@ export class AiGatewayService {
     input: {
       ownerKind?: ConnectionOwnerKind;
       ownerUid?: string;
+      productCode?: string | null;
       providerType?: string;
       displayName?: string;
       baseUrl?: string | null;
@@ -209,6 +252,7 @@ export class AiGatewayService {
         uid,
         ownerKind: prev.ownerKind,
         ownerUid: prev.ownerUid,
+        productCode: input.productCode === undefined ? prev.productCode : input.productCode,
         providerType: input.providerType ?? prev.providerType,
         displayName: input.displayName ?? prev.displayName,
         baseUrl: input.baseUrl === undefined ? prev.baseUrl : input.baseUrl,
@@ -310,19 +354,23 @@ export class AiGatewayService {
       secret?: string;
       connectionUid?: string;
       purpose?: "chat" | "stt" | "tts";
+      /** Same shape as /v1/providers/test — preferred by @luminaryworks/ai-client. */
+      ephemeral?: EphemeralSecret;
     },
     principal: AiPrincipal,
   ): Promise<AiProviderModelList> {
     this.consumeProbe(principal);
-    const supplied = body.secret?.trim() ?? "";
+    const supplied =
+      body.secret?.trim() || body.ephemeral?.secret?.trim() || "";
     this.assertEphemeral(Boolean(supplied), true);
     const requested = `${body.purpose ?? "chat"}`;
     if (requested !== "chat" && requested !== "stt" && requested !== "tts") {
       throw new AiPlatformException("VALIDATION_ERROR", 400, "purpose is invalid");
     }
     const purpose = requested;
-    let providerType = body.providerType?.trim() ?? "";
-    let baseUrl = body.baseUrl;
+    let providerType =
+      body.providerType?.trim() || body.ephemeral?.providerType?.trim() || "";
+    let baseUrl = body.baseUrl ?? body.ephemeral?.baseUrl;
     let secret = supplied;
     if (body.connectionUid) {
       const row = await this.requireUsable(body.connectionUid, principal);
@@ -1028,6 +1076,7 @@ function toPublic(row: ProviderConnectionEntity): ProviderConnectionPublic {
     uid: row.uid,
     ownerKind: row.ownerKind,
     ownerUid: row.ownerUid,
+    productCode: row.productCode,
     providerType: row.providerType,
     displayName: row.displayName,
     baseUrl: row.baseUrl ?? undefined,
